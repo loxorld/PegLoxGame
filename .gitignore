@@ -1,0 +1,71 @@
+# =======================
+# Unity
+# =======================
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+
+# Crash reports
+sysinfo.txt
+
+# =======================
+# IDEs
+# =======================
+.vs/
+.idea/
+*.suo
+*.user
+*.userprefs
+*.csproj
+*.unityproj
+*.sln
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# VSCode
+.vscode/
+
+# Rider
+*.DotSettings.user
+
+# =======================
+# OS junk
+# =======================
+.DS_Store
+Thumbs.db
+
+# =======================
+# Unity Addressables / AssetBundles 
+# =======================
+# [Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*/*.bin*
+# [Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*/*.json
+# [Aa]ssets/[Aa]sset[Bb]undles/
+
+# =======================
+# IL2CPP / Android Gradle builds 
+# =======================
+.gradle/
+**/gradle/
+**/gradlew
+**/gradlew.bat
+**/local.properties
+**/*.iml
+
+# =======================
+# Unity meta (IMPORTANT)
+# =======================
+
+!/[Aa]ssets/**/*.meta
+!/[Pp]ackages/**/*.meta
+!/[Pp]roject[Ss]ettings/**/*.meta
