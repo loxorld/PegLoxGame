@@ -6,6 +6,12 @@ public class BattleManager : MonoBehaviour
     [SerializeField] private Enemy enemy;                 // el Enemy de la escena
     [SerializeField] private EnemyData[] enemiesPool;     // pool de datos
 
+
+    public event System.Action EncounterCompleted;
+
+    [SerializeField] private int enemiesToDefeat = 3;
+    private int defeatedCount = 0;
+
     [Header("Flow")]
     [SerializeField] private float respawnDelay = 0.5f;
 
@@ -21,6 +27,7 @@ public class BattleManager : MonoBehaviour
 
         enemy.Defeated += OnEnemyDefeated;
 
+        defeatedCount = 0;
         SpawnRandomEnemy();
     }
 
@@ -32,9 +39,22 @@ public class BattleManager : MonoBehaviour
 
     private void OnEnemyDefeated()
     {
-        // Spawneo simple con delay
+        defeatedCount++;
+
+        if (defeatedCount >= enemiesToDefeat)
+        {
+            Debug.Log("Encounter completed!");
+            EncounterCompleted?.Invoke();
+
+            // Reiniciar encounter automáticamente
+            defeatedCount = 0;
+            Invoke(nameof(SpawnRandomEnemy), respawnDelay);
+            return;
+        }
+
         Invoke(nameof(SpawnRandomEnemy), respawnDelay);
     }
+
 
     private void SpawnRandomEnemy()
     {

@@ -7,5 +7,13 @@ public class RelicManager : MonoBehaviour
 
     public IReadOnlyList<ShotEffectBase> ActiveRelics => activeRelics;
 
+    public void AddRelic(ShotEffectBase relic)
+    {
+        if (relic == null) return;
+        if (!activeRelics.Contains(relic))
+            activeRelics.Add(relic);
+    }
+
     // MVP: se editan por Inspector. Más adelante: drop/tienda.
 }
+    
