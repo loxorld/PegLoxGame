@@ -17,3 +17,5 @@ MonoBehaviour:
   bounciness: 0.6
   linearDrag: 0.2
   color: {r: 0.4433962, g: 0.40365788, b: 0.40365788, a: 1}
+  orbEffects:
+  - {fileID: 11400000, guid: f05083d8c8489a14aa22aa8680d53068, type: 2}

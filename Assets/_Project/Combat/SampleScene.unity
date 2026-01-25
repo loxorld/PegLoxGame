@@ -962,6 +962,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 8a4d91169cd9300448b6dd42ce4cbb4a, type: 2}
   - {fileID: 11400000, guid: c0efe7abdd37a1649ba6f3307a3b1b06, type: 2}
   selectedOrbIndex: 0
+  orbManager: {fileID: 1163881908}
   launchForce: 10
 --- !u!4 &850092072
 Transform:
@@ -1081,6 +1082,52 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 83cf23b14e1225543a82078a7262bdde, type: 3}
+--- !u!1 &1163881907
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1163881909}
+  - component: {fileID: 1163881908}
+  m_Layer: 0
+  m_Name: OrbManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1163881908
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1163881907}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63ff5c0cb04e9d2419f6694e7908df3d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OrbManager
+  currentOrb: {fileID: 11400000, guid: 1828639057c111149941a48959fac33d, type: 2}
+  ownedOrbs: []
+--- !u!4 &1163881909
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1163881907}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 2.36363, y: 1.42265, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1180486794
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1458,10 +1505,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RewardManager
   battle: {fileID: 611753838}
   relics: {fileID: 1732774981}
+  orbs: {fileID: 1163881908}
   relicPool:
   - {fileID: 11400000, guid: 0a1647e88b2c61449baaefa2a8cc52c7, type: 2}
   - {fileID: 11400000, guid: 0bb46d0004373e24f85800d2a0fd31f7, type: 2}
   - {fileID: 11400000, guid: e6f28d60cbf906f4abe073f95de5e623, type: 2}
+  orbPool:
+  - {fileID: 11400000, guid: 8a4d91169cd9300448b6dd42ce4cbb4a, type: 2}
+  - {fileID: 11400000, guid: c0efe7abdd37a1649ba6f3307a3b1b06, type: 2}
+  chanceOrb: 1
 --- !u!4 &1394260778
 Transform:
   m_ObjectHideFlags: 0
@@ -2537,3 +2589,4 @@ SceneRoots:
   - {fileID: 611753839}
   - {fileID: 1732774982}
   - {fileID: 1394260778}
+  - {fileID: 1163881909}

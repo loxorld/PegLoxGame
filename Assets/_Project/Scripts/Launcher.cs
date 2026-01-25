@@ -10,6 +10,7 @@ public class Launcher : MonoBehaviour
     [Header("Orbs")]
     [SerializeField] private OrbData[] orbs;
     [SerializeField] private int selectedOrbIndex = 0;
+    [SerializeField] private OrbManager orbManager;
 
     [Header("Launch Settings")]
     [SerializeField] private float launchForce = 10f;
@@ -90,8 +91,8 @@ public class Launcher : MonoBehaviour
 
         PegManager.Instance.ResetAllPegs();
 
-        // Seleccionar orbe ANTES de avisar al ShotManager
-        OrbData orb = GetSelectedOrb();
+        // Orbe actual del run (modo B)
+        OrbData orb = (orbManager != null) ? orbManager.CurrentOrb : null;
 
         // Iniciar tiro con contexto
         ShotManager.Instance?.OnShotStarted(orb);
@@ -105,8 +106,10 @@ public class Launcher : MonoBehaviour
         if (ballController != null)
             ballController.Init(orb);
 
+        
         ballInstance.linearVelocity = direction * launchForce;
     }
+
 
 
     private OrbData GetSelectedOrb()

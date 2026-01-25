@@ -2,6 +2,8 @@ public class ShotContext
 {
     public OrbData Orb { get; private set; }
 
+
+
     public int NormalHits { get; private set; }
     public int CriticalHits { get; private set; }
 
@@ -9,6 +11,8 @@ public class ShotContext
     public int DamagePerHit { get; set; } = 2;     // puede ser modificado por efectos
 
     public int Multiplier { get; set; } = 1;       // puede ser modificado por efectos
+
+    public int HitsAppliedForThisShot { get; set; } // contador genérico para efectos “por primeros N hits”
 
     public bool FirstCritBonusApplied { get; set; }
     public int TotalHits => NormalHits + CriticalHits;
