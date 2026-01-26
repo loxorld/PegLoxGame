@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -16,6 +18,13 @@ public class RewardManager : MonoBehaviour
     [Header("Rules")]
     [SerializeField, Range(0f, 1f)] private float chanceOrb = 0.5f; // 50/50
 
+    // UI/event consumers
+    public event Action<OrbData[]> OrbChoicesPresented;
+    public event Action RewardResolved;
+
+    public bool IsAwaitingChoice => awaitingChoice;
+    public IReadOnlyList<OrbData> CurrentChoices => pendingOrbs;
+
     private OrbData[] pendingOrbs;
     private bool awaitingChoice;
 
@@ -33,7 +42,7 @@ public class RewardManager : MonoBehaviour
 
     private void Update()
     {
-        // MVP: elección por teclado en Editor/PC
+        // Fallback para Editor/PC (podés desactivarlo cuando UI esté OK)
         if (!awaitingChoice) return;
         if (Keyboard.current == null) return;
 
@@ -44,7 +53,7 @@ public class RewardManager : MonoBehaviour
 
     private void OnEncounterCompleted()
     {
-        bool giveOrb = Random.value < chanceOrb;
+        bool giveOrb = UnityEngine.Random.value < chanceOrb;
 
         if (giveOrb && orbs != null && orbPool != null && orbPool.Length > 0)
         {
@@ -57,18 +66,20 @@ public class RewardManager : MonoBehaviour
             for (int i = 0; i < pendingOrbs.Length; i++)
                 Debug.Log($"  [{i + 1}] {pendingOrbs[i].orbName}");
 
+            // Avisar a UI
+            OrbChoicesPresented?.Invoke(pendingOrbs);
+
             return;
         }
 
         // Si no hay orbe, damos reliquia (si hay pool)
         if (relics != null && relicPool != null && relicPool.Length > 0)
         {
-            ShotEffectBase chosen = relicPool[Random.Range(0, relicPool.Length)];
+            ShotEffectBase chosen = relicPool[UnityEngine.Random.Range(0, relicPool.Length)];
             relics.AddRelic(chosen);
             Debug.Log($"[Reward] Relic reward: {chosen.name}");
         }
 
-        // Reward resuelto instantáneo (reliquia o nada): continuar encounter
         ResolveRewardAndContinue();
     }
 
@@ -87,7 +98,7 @@ public class RewardManager : MonoBehaviour
         if (orbs == null)
         {
             Debug.LogError("[Reward] OrbManager reference missing.");
-            ResolveRewardAndContinue(); // evitamos quedarnos trabados
+            ResolveRewardAndContinue();
             return;
         }
 
@@ -99,6 +110,8 @@ public class RewardManager : MonoBehaviour
 
     private void ResolveRewardAndContinue()
     {
+        RewardResolved?.Invoke();
+
         GameFlowManager.Instance?.SetState(GameState.Combat);
 
         if (battle != null)
@@ -115,7 +128,7 @@ public class RewardManager : MonoBehaviour
         while (used.Count < count && guard < 200)
         {
             guard++;
-            OrbData candidate = orbPool[Random.Range(0, orbPool.Length)];
+            OrbData candidate = orbPool[UnityEngine.Random.Range(0, orbPool.Length)];
             if (candidate != null) used.Add(candidate);
         }
 
