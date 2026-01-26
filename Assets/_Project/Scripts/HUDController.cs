@@ -3,23 +3,76 @@ using UnityEngine;
 
 public class HUDController : MonoBehaviour
 {
-    [SerializeField] private TextMeshProUGUI pegsHitText;
-    [SerializeField] private TextMeshProUGUI playerHpText;
-
+    [Header("References")]
     [SerializeField] private PlayerStats player;
+    [SerializeField] private BattleManager battle;
+    [SerializeField] private OrbManager orbs;
+    [SerializeField] private GameFlowManager flow;
+
+    [Header("UI Text (optional)")]
+    [SerializeField] private TMP_Text orbNameText;
+    [SerializeField] private TMP_Text stateText; // opcional
+
+    [Header("Bars")]
+    [SerializeField] private HealthBarUI playerBar;
+    [SerializeField] private HealthBarUI enemyBar;
+
+    [Header("Update")]
+    [SerializeField, Range(0.05f, 1f)] private float refreshInterval = 0.15f;
+
+    private float timer;
+
+    private void Awake()
+    {
+        if (flow == null) flow = GameFlowManager.Instance;
+    }
 
     private void Update()
     {
-        if (ShotManager.Instance != null)
+        timer += Time.unscaledDeltaTime;
+        if (timer < refreshInterval) return;
+        timer = 0f;
+
+        Refresh();
+    }
+
+    private void Refresh()
+    {
+        // Player bar
+        if (playerBar != null && player != null)
+            playerBar.Set(player.CurrentHP, player.MaxHP);
+
+        // Enemy bar
+        Enemy e = (battle != null) ? battle.CurrentEnemy : null;
+        bool enemyVisible = e != null && e.gameObject.activeSelf;
+
+        if (enemyBar != null)
         {
-            pegsHitText.text =
-                $"Orb: {ShotManager.Instance.HudOrbName} | Hits: {ShotManager.Instance.HudTotalHits} (N:{ShotManager.Instance.HudNormalHits} C:{ShotManager.Instance.HudCriticalHits}) x{ShotManager.Instance.HudMultiplier}";
+            if (!enemyVisible)
+                enemyBar.Set(0, 1);
+            else
+                enemyBar.Set(e.CurrentHP, e.MaxHP);
         }
 
-
-        if (player != null)
+        // Orb text
+        if (orbNameText != null)
         {
-            playerHpText.text = $"HP: {player.CurrentHP}/{player.MaxHP}";
+            OrbData orb = (orbs != null) ? orbs.CurrentOrb : null;
+            orbNameText.text = orb != null ? $"Orb: {orb.orbName}" : "Orb: -";
+        }
+
+        // State text
+        if (stateText != null)
+        {
+            GameState s = (flow != null) ? flow.State : GameState.Combat;
+            stateText.text = s switch
+            {
+                GameState.Combat => "",
+                GameState.RewardChoice => "REWARD",
+                GameState.Paused => "PAUSED",
+                GameState.GameOver => "GAME OVER",
+                _ => s.ToString()
+            };
         }
     }
 }

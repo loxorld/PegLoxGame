@@ -5,6 +5,7 @@ public class ShotManager : MonoBehaviour
     public static ShotManager Instance { get; private set; }
 
     public bool ShotInProgress { get; private set; }
+
     public bool IsGameOver { get; private set; }
 
     [Header("Battle References")]
@@ -25,13 +26,29 @@ public class ShotManager : MonoBehaviour
             return;
         }
         Instance = this;
+
         ShotInProgress = false;
         IsGameOver = false;
     }
 
+    private void Update()
+    {
+        // Mantener IsGameOver sincronizado con el estado global 
+        if (GameFlowManager.Instance != null)
+            IsGameOver = GameFlowManager.Instance.State == GameState.GameOver;
+    }
+
+    private bool CanProcessCombat()
+    {
+        // Si no hay GameFlowManager, permitimos 
+        if (GameFlowManager.Instance == null) return true;
+        return GameFlowManager.Instance.State == GameState.Combat;
+    }
+
     public void OnShotStarted(OrbData orb)
     {
-        if (IsGameOver) return;
+        // Solo se puede iniciar tiro en combate
+        if (!CanProcessCombat()) return;
 
         ShotInProgress = true;
         currentShot = new ShotContext(orb);
@@ -51,7 +68,9 @@ public class ShotManager : MonoBehaviour
 
     public void RegisterPegHit(PegType pegType)
     {
+        // No contamos hits fuera de combate o fuera de un tiro activo
         if (!ShotInProgress || currentShot == null) return;
+        if (!CanProcessCombat()) return;
 
         currentShot.RegisterHit(pegType);
         pipeline.OnPegHit(currentShot, pegType);
@@ -59,37 +78,51 @@ public class ShotManager : MonoBehaviour
 
     public void OnShotEnded()
     {
-        // EXACTLY-ONCE: si ya terminó, no hagas nada
+        // si ya terminó, no hagas nada
         if (!ShotInProgress) return;
         ShotInProgress = false;
 
-        if (IsGameOver) { currentShot = null; return; }
-        if (battle == null || player == null || currentShot == null) return;
+        // Si ya no estamos en combate, cerramos el tiro sin aplicar nada
+        if (!CanProcessCombat())
+        {
+            currentShot = null;
+            return;
+        }
 
-        // Multiplicador base Peglin-ish (B)
+        if (battle == null || player == null || currentShot == null)
+        {
+            currentShot = null;
+            return;
+        }
+
+        // Multiplicador base
         currentShot.Multiplier = 1 + currentShot.CriticalHits;
 
         pipeline.OnShotEnd(currentShot);
 
         Enemy enemy = battle.CurrentEnemy;
-        if (enemy == null || !enemy.gameObject.activeSelf) { currentShot = null; return; }
+        if (enemy == null || !enemy.gameObject.activeSelf)
+        {
+            currentShot = null;
+            return;
+        }
 
         int damage = currentShot.TotalHits * currentShot.DamagePerHit * currentShot.Multiplier;
 
         enemy.TakeDamage(damage);
 
-        if (!enemy.gameObject.activeSelf) { currentShot = null; return; }
-
-        player.TakeDamage(enemy.AttackDamage);
-
-        if (player.IsDead)
+        // Si el enemigo murió, no contraataca
+        if (!enemy.gameObject.activeSelf)
         {
-            IsGameOver = true;
-            Debug.Log("GAME OVER");
             currentShot = null;
             return;
         }
 
+        // Contraataque
+        player.TakeDamage(enemy.AttackDamage);
+
+        // GameOver lo dispara PlayerStats.Died -> GameOverMenuUI -> GameFlowManager.SetState(GameOver)
+        // ShotManager NO decide GameOver, solo corta.
         currentShot = null;
     }
 

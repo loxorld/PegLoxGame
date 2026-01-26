@@ -16,6 +16,11 @@ public class Enemy : MonoBehaviour
     public int AttackDamage => data != null ? data.attackDamage : 5;
     public bool IsDead => currentHP <= 0;
 
+    public int CurrentHP => currentHP;
+    public int MaxHP => data != null ? data.maxHP : 50;
+    public string EnemyName => data != null ? data.enemyName : "Enemy";
+
+
     private void Awake()
     {
         sr = GetComponent<SpriteRenderer>();
