@@ -10,5 +10,5 @@ public class PegDefinition : ScriptableObject
     public Color hitColor = Color.gray;
 
     [Header("Rules (future-proof)")]
-    public bool countsForMultiplier = false; // por si después metés peg especiales
+    public bool countsForMultiplier = false; 
 }

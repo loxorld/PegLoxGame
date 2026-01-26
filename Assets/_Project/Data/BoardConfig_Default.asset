@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33a7a3d726b23a342b66d922e3e0f973, type: 3}
+  m_Name: BoardConfig_Default
+  m_EditorClassIdentifier: Assembly-CSharp::BoardConfig
+  rows: 8
+  cols: 7
+  spacingX: 1.2
+  spacingY: 1
+  jitter: 0.15
+  viewportMinY: 0.25
+  viewportMaxY: 0.9
+  viewportMinX: 0.1
+  viewportMaxX: 0.9
+  marginWorld: 0.4
+  seed: 12345
+  randomizeSeedEachRun: 1
+  criticalChance: 0.15

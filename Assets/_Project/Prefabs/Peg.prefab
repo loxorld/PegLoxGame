@@ -141,4 +141,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e4214b9426d4d3b43a0efec0fba42aa3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Peg
-  type: 0
+  definition: {fileID: 11400000, guid: 1cf2e80fab14b9c499f6847029e6f21a, type: 2}

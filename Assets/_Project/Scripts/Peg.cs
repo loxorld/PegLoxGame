@@ -1,61 +1,83 @@
 using UnityEngine;
 
-[RequireComponent(typeof(SpriteRenderer))]
+[RequireComponent(typeof(SpriteRenderer), typeof(Collider2D))]
 public class Peg : MonoBehaviour
 {
-    [SerializeField] private PegType type = PegType.Normal;
+    [Header("Definition")]
+    [SerializeField] private PegDefinition definition;
 
     private bool hit;
     private SpriteRenderer sr;
 
+    public PegType Type => definition != null ? definition.type : PegType.Normal;
+
+    
+
+    public void SetDefinition(PegDefinition def)
+    {
+        definition = def;
+        hit = false;
+        ApplyIdleVisual();
+    }
+
     private void Awake()
     {
         sr = GetComponent<SpriteRenderer>();
-        ApplyTypeVisual();
-    }
-
-    private void Start()
-    {
-        // fallback por si en OnEnable todavía no existía PegManager.Instance
-        PegManager.Instance?.RegisterPeg(this);
-    }
-
-
-    private void ApplyTypeVisual()
-    {
-        sr.color = (type == PegType.Critical) ? Color.yellow : Color.cyan;
-    }
-
-    public void ResetPeg()
-    {
-        hit = false;
-        ApplyTypeVisual();
-    }
-
-    private void OnCollisionEnter2D(Collision2D collision)
-    {
-        if (hit) return;
-
-        if (collision.gameObject.CompareTag("Ball"))
-        {
-            hit = true;
-            OnHit();
-        }
-    }
-
-    private void OnHit()
-    {
-        sr.color = Color.gray;
-        ShotManager.Instance?.RegisterPegHit(type);
+        ApplyIdleVisual();
     }
 
     private void OnEnable()
     {
         PegManager.Instance?.RegisterPeg(this);
+       
+        ApplyIdleVisual();
+        hit = false;
     }
 
     private void OnDisable()
     {
         PegManager.Instance?.UnregisterPeg(this);
     }
+
+    public void ResetPeg()
+    {
+        hit = false;
+        ApplyIdleVisual();
+    }
+
+    private void ApplyIdleVisual()
+    {
+        if (sr == null) return;
+        if (definition == null)
+        {
+            sr.color = Color.cyan; // fallback
+            return;
+        }
+        sr.color = definition.idleColor;
+    }
+
+    private void ApplyHitVisual()
+    {
+        if (sr == null) return;
+        if (definition == null)
+        {
+            sr.color = Color.gray; // fallback
+            return;
+        }
+        sr.color = definition.hitColor;
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (hit) return;
+        if (!collision.gameObject.CompareTag("Ball")) return;
+
+        hit = true;
+        ApplyHitVisual();
+
+        ShotManager.Instance?.RegisterPegHit(Type);
+    }
+
+    
+
 }
