@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: Enemy_Goblin
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
   enemyName: Goblin
-  maxHP: 50
+  maxHP: 10
   attackDamage: 5

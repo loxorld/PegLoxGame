@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: Enemy_Brute
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
   enemyName: Brute
-  maxHP: 80
+  maxHP: 10
   attackDamage: 8

@@ -18,6 +18,16 @@ public class Launcher : MonoBehaviour
     private Vector2 dragStart;
     private bool isDragging;
 
+    [Header("Trajectory Preview")]
+    [SerializeField] private LineRenderer trajectoryLine;
+    [SerializeField] private LayerMask collisionMask;           // Peg + Walls + Enemy 
+    [SerializeField] private int maxBounces = 2;
+    [SerializeField] private int maxSegments = 30;
+    [SerializeField] private float maxDistancePerSegment = 30f;
+    [SerializeField] private float previewBallRadius = 0.15f;   // aproximación del radio de la bola
+    [SerializeField] private float maxPreviewSpeed = 30f;       // velocidad “máxima” del preview 
+
+
 
     void Update()
     {
@@ -33,6 +43,8 @@ public class Launcher : MonoBehaviour
                 dragStart = ScreenToWorld(touch.position.ReadValue());
                 isDragging = true;
             }
+
+
 
             if (touch.press.wasReleasedThisFrame && isDragging)
             {
@@ -62,6 +74,12 @@ public class Launcher : MonoBehaviour
 
             LaunchBall(direction);
             isDragging = false;
+        }
+
+        if (Keyboard.current != null && orbManager != null)
+        {
+            if (Keyboard.current.qKey.wasPressedThisFrame) orbManager.PrevOrb();
+            if (Keyboard.current.eKey.wasPressedThisFrame) orbManager.NextOrb();
         }
     }
 

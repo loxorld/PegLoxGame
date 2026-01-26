@@ -1513,7 +1513,7 @@ MonoBehaviour:
   orbPool:
   - {fileID: 11400000, guid: 8a4d91169cd9300448b6dd42ce4cbb4a, type: 2}
   - {fileID: 11400000, guid: c0efe7abdd37a1649ba6f3307a3b1b06, type: 2}
-  chanceOrb: 1
+  chanceOrb: 0.503
 --- !u!4 &1394260778
 Transform:
   m_ObjectHideFlags: 0

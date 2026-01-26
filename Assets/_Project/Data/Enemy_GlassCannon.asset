@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: Enemy_GlassCannon
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
   enemyName: Glass Cannon
-  maxHP: 25
+  maxHP: 10
   attackDamage: 10
