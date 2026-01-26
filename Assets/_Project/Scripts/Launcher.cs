@@ -49,6 +49,16 @@ public class Launcher : MonoBehaviour
             if (Keyboard.current.eKey.wasPressedThisFrame) orbManager.NextOrb();
         }
 
+        bool canAim = (GameFlowManager.Instance == null) || GameFlowManager.Instance.CanShoot;
+        if (!canAim)
+        {
+            // Si entramos a RewardChoice mientras estabas arrastrando, limpiamos
+            isDragging = false;
+            SetTrajectoryVisible(false);
+            ClearTrajectory();
+            return;
+        }
+
         // Touch (Android)
         if (Touchscreen.current != null)
         {
@@ -132,6 +142,10 @@ public class Launcher : MonoBehaviour
 
     private void LaunchBall(Vector2 direction)
     {
+
+        if (GameFlowManager.Instance != null && !GameFlowManager.Instance.CanShoot)
+            return;
+
         if (ShotManager.Instance != null && ShotManager.Instance.IsGameOver)
             return;
 

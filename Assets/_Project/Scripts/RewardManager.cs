@@ -51,6 +51,8 @@ public class RewardManager : MonoBehaviour
             pendingOrbs = GetRandomUniqueOrbs(3);
             awaitingChoice = true;
 
+            GameFlowManager.Instance?.SetState(GameState.RewardChoice);
+
             Debug.Log("[Reward] Choose an orb: 1/2/3");
             for (int i = 0; i < pendingOrbs.Length; i++)
                 Debug.Log($"  [{i + 1}] {pendingOrbs[i].orbName}");
@@ -58,37 +60,49 @@ public class RewardManager : MonoBehaviour
             return;
         }
 
+        // Si no hay orbe, damos reliquia (si hay pool)
         if (relics != null && relicPool != null && relicPool.Length > 0)
         {
             ShotEffectBase chosen = relicPool[Random.Range(0, relicPool.Length)];
             relics.AddRelic(chosen);
             Debug.Log($"[Reward] Relic reward: {chosen.name}");
         }
+
+        // Reward resuelto instantáneo (reliquia o nada): continuar encounter
+        ResolveRewardAndContinue();
     }
 
     public void ChooseOrb(int choiceIndex)
     {
-        Debug.Log($"[Reward] ChooseOrb called with: {choiceIndex}");
-
         if (!awaitingChoice || pendingOrbs == null) return;
 
         int i = choiceIndex - 1;
         if (i < 0 || i >= pendingOrbs.Length) return;
 
         OrbData chosen = pendingOrbs[i];
+
         awaitingChoice = false;
         pendingOrbs = null;
 
         if (orbs == null)
         {
             Debug.LogError("[Reward] OrbManager reference missing.");
+            ResolveRewardAndContinue(); // evitamos quedarnos trabados
             return;
         }
 
-        Debug.Log($"[Reward] Applying orb reward: {chosen.orbName}");
         orbs.AddOrb(chosen);
-
         Debug.Log($"[Reward] Chosen orb: {chosen.orbName}");
+
+        ResolveRewardAndContinue();
+    }
+
+    private void ResolveRewardAndContinue()
+    {
+        GameFlowManager.Instance?.SetState(GameState.Combat);
+
+        if (battle != null)
+            battle.ContinueAfterRewards();
     }
 
     private OrbData[] GetRandomUniqueOrbs(int count)

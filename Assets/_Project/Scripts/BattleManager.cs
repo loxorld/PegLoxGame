@@ -3,17 +3,19 @@ using UnityEngine;
 public class BattleManager : MonoBehaviour
 {
     [Header("References")]
-    [SerializeField] private Enemy enemy;                 // el Enemy de la escena
+    [SerializeField] private Enemy enemy;                 // Enemy de la escena
     [SerializeField] private EnemyData[] enemiesPool;     // pool de datos
-
 
     public event System.Action EncounterCompleted;
 
+    [Header("Encounter")]
     [SerializeField] private int enemiesToDefeat = 3;
-    private int defeatedCount = 0;
 
     [Header("Flow")]
     [SerializeField] private float respawnDelay = 0.5f;
+
+    private int defeatedCount = 0;
+    private bool waitingForRewards = false;
 
     public Enemy CurrentEnemy => enemy;
 
@@ -28,6 +30,8 @@ public class BattleManager : MonoBehaviour
         enemy.Defeated += OnEnemyDefeated;
 
         defeatedCount = 0;
+        waitingForRewards = false;
+
         SpawnRandomEnemy();
     }
 
@@ -39,25 +43,37 @@ public class BattleManager : MonoBehaviour
 
     private void OnEnemyDefeated()
     {
+        if (waitingForRewards) return;
+
         defeatedCount++;
 
         if (defeatedCount >= enemiesToDefeat)
         {
             Debug.Log("Encounter completed!");
-            EncounterCompleted?.Invoke();
+            waitingForRewards = true;
 
-            // Reiniciar encounter automáticamente
-            defeatedCount = 0;
-            Invoke(nameof(SpawnRandomEnemy), respawnDelay);
-            return;
+            EncounterCompleted?.Invoke();
+            return; // IMPORTANTE: no spawnear acá
         }
 
         Invoke(nameof(SpawnRandomEnemy), respawnDelay);
     }
 
+    // Llamado por RewardManager cuando termina la elección/recompensa
+    public void ContinueAfterRewards()
+    {
+        if (!waitingForRewards) return;
+
+        waitingForRewards = false;
+        defeatedCount = 0;
+
+        Invoke(nameof(SpawnRandomEnemy), respawnDelay);
+    }
 
     private void SpawnRandomEnemy()
     {
+        if (waitingForRewards) return;
+
         if (enemiesPool == null || enemiesPool.Length == 0)
         {
             Debug.LogError("BattleManager: enemiesPool is empty.");
