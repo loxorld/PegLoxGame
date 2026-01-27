@@ -8,9 +8,10 @@ public class PauseMenuUI : MonoBehaviour
     [SerializeField] private GameFlowManager flow;
 
     [Header("UI")]
-    [SerializeField] private GameObject root;   // el panel overlay completo
+    [SerializeField] private GameObject root;   // Panel overlay completo
     [SerializeField] private Button resumeButton;
     [SerializeField] private Button restartButton;
+    [SerializeField] private Button menuButton; // Nuevo botón para volver al menú
 
     private void Awake()
     {
@@ -20,6 +21,7 @@ public class PauseMenuUI : MonoBehaviour
 
         if (resumeButton != null) resumeButton.onClick.AddListener(OnResume);
         if (restartButton != null) restartButton.onClick.AddListener(OnRestart);
+        if (menuButton != null) menuButton.onClick.AddListener(OnMenu); // Nuevo listener
     }
 
     private void OnEnable()
@@ -55,8 +57,21 @@ public class PauseMenuUI : MonoBehaviour
 
     private void OnRestart()
     {
-        // Reiniciar escena actual (MVP)
-        Time.timeScale = 1f; // por si estaba pausado
+        // Reiniciar la escena actual (MVP)
+        Time.timeScale = 1f; // Por si estaba pausado
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+    // NUEVO: volver al menú principal
+    private void OnMenu()
+    {
+        // Asegúrate de restaurar la escala de tiempo
+        Time.timeScale = 1f;
+
+        // Reanudar por si estaba en estado Paused
+        flow?.Resume();
+
+        // Cargar la escena del menú principal en modo Single
+        SceneManager.LoadScene("MainMenu", LoadSceneMode.Single);
     }
 }

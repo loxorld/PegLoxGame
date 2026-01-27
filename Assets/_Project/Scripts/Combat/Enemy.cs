@@ -7,6 +7,7 @@ public class Enemy : MonoBehaviour
     public event Action Defeated;
 
     [SerializeField] private EnemyData data;
+    [SerializeField] private EnemyFeedbackController feedback;
 
     private int currentHP;
     private int currentMaxHP;          // <- CLAVE: max runtime (escalado)
@@ -71,6 +72,7 @@ public class Enemy : MonoBehaviour
         if (damage <= 0) return;
 
         currentHP -= damage;
+        feedback?.Flash();
         currentHP = Mathf.Max(currentHP, 0);
 
         UpdateVisual();
