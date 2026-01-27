@@ -9,31 +9,28 @@ public class Enemy : MonoBehaviour
     [SerializeField] private EnemyData data;
 
     private int currentHP;
+    private int currentMaxHP;          // <- CLAVE: max runtime (escalado)
+    private int currentAttackDamage;
+
     private SpriteRenderer sr;
-
-    private bool initializedExternally; // <- clave
-
-    public int AttackDamage => data != null ? data.attackDamage : 5;
-    public bool IsDead => currentHP <= 0;
+    private bool initializedExternally;
 
     public int CurrentHP => currentHP;
-    public int MaxHP => data != null ? data.maxHP : 50;
+    public int MaxHP => currentMaxHP > 0 ? currentMaxHP : (data != null ? data.maxHP : 50);
+    public int AttackDamage => currentAttackDamage > 0 ? currentAttackDamage : (data != null ? data.attackDamage : 5);
+    public bool IsDead => currentHP <= 0;
     public string EnemyName => data != null ? data.enemyName : "Enemy";
-
 
     private void Awake()
     {
         sr = GetComponent<SpriteRenderer>();
-        // NO inicializamos acá
     }
 
     private void Start()
     {
-        // Si no lo inicializó BattleManager y hay data asignada en Inspector, inicializamos una vez.
+        // Fallback solo si no lo inicializó BattleManager
         if (!initializedExternally && data != null)
-        {
             ResetFromData();
-        }
     }
 
     public void SetDataAndReset(EnemyData newData)
@@ -47,16 +44,32 @@ public class Enemy : MonoBehaviour
 
     private void ResetFromData()
     {
-        int maxHP = data != null ? data.maxHP : 50;
-        currentHP = maxHP;
+        currentMaxHP = data != null ? data.maxHP : 50;
+        currentHP = currentMaxHP;
+
+        currentAttackDamage = data != null ? data.attackDamage : 5;
 
         UpdateVisual();
 
-        Debug.Log($"Enemy spawned: {(data != null ? data.enemyName : "Default")} HP {currentHP}/{maxHP}");
+        Debug.Log($"Enemy spawned: {EnemyName} HP {currentHP}/{currentMaxHP}");
+    }
+
+    public void ApplyDifficulty(int maxHp, int attackDamage)
+    {
+        // Seteo max/dmg escalados
+        currentMaxHP = Mathf.Max(1, maxHp);
+        currentAttackDamage = Mathf.Max(1, attackDamage);
+
+        // Para flujo actual (cada spawn arranca full):
+        currentHP = currentMaxHP;
+
+        UpdateVisual();
     }
 
     public void TakeDamage(int damage)
     {
+        if (damage <= 0) return;
+
         currentHP -= damage;
         currentHP = Mathf.Max(currentHP, 0);
 
@@ -68,8 +81,8 @@ public class Enemy : MonoBehaviour
 
     private void UpdateVisual()
     {
-        int maxHP = data != null ? data.maxHP : 50;
-        float hpPercent = maxHP > 0 ? (float)currentHP / maxHP : 0f;
+        int max = MaxHP;
+        float hpPercent = max > 0 ? (float)currentHP / max : 0f;
 
         sr.color = Color.Lerp(Color.black, Color.red, hpPercent);
     }

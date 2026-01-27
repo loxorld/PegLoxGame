@@ -21,6 +21,8 @@ public class BoardManager : MonoBehaviour
     [SerializeField, Min(1)] private int maxTriesPerCell = 10;
     [SerializeField, Min(0f)] private float extraSeparation = 0.02f;
 
+    [SerializeField] private BattleManager battle;
+
     private readonly List<GameObject> spawned = new List<GameObject>();
 
     private void Awake()
@@ -30,6 +32,23 @@ public class BoardManager : MonoBehaviour
     }
 
     private void Start()
+    {
+        if (battle != null)
+            battle.EncounterStarted += OnEncounterStarted;
+
+        // Primer encounter ya se dispara desde BattleManager.StartNewEncounter()
+        // pero por seguridad, si no hay battle asignado generamos una vez.
+        if (battle == null)
+            GenerateBoard();
+    }
+
+    private void OnDestroy()
+    {
+        if (battle != null)
+            battle.EncounterStarted -= OnEncounterStarted;
+    }
+
+    private void OnEncounterStarted()
     {
         GenerateBoard();
     }

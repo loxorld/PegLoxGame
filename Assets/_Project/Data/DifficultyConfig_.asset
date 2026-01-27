@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7225b2984d2ce44bf1e8eca9d3f9b0, type: 3}
+  m_Name: DifficultyConfig_
+  m_EditorClassIdentifier: Assembly-CSharp::DifficultyConfig
+  stages:
+  - enemiesToDefeat: 2
+    enemyHpMultiplier: 1
+    enemyDamageMultiplier: 1
+    enemyHpBonus: 0
+    enemyDamageBonus: 0
+    stageName: Act 1 - Floor 1
+  - enemiesToDefeat: 1
+    enemyHpMultiplier: 2
+    enemyDamageMultiplier: 2
+    enemyHpBonus: 0
+    enemyDamageBonus: 0
+    stageName: Act 1 - Floor 2
+  - enemiesToDefeat: 1
+    enemyHpMultiplier: 3
+    enemyDamageMultiplier: 3
+    enemyHpBonus: 0
+    enemyDamageBonus: 0
+    stageName: Act 1 - Floor 3

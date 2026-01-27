@@ -1,44 +1,78 @@
+using System;
 using UnityEngine;
 
 public class BattleManager : MonoBehaviour
 {
     [Header("References")]
-    [SerializeField] private Enemy enemy;                 // Enemy de la escena
-    [SerializeField] private EnemyData[] enemiesPool;     // pool de datos
+    [SerializeField] private Enemy enemy;
+    [SerializeField] private EnemyData[] enemiesPool;
 
-    public event System.Action EncounterCompleted;
+    [Header("Difficulty")]
+    [SerializeField] private DifficultyConfig difficulty;
 
-    [Header("Encounter")]
-    [SerializeField] private int enemiesToDefeat = 3;
+    public event Action EncounterStarted;
+    public event Action EncounterCompleted;
+
+    [Header("Encounter (fallback si no hay DifficultyConfig)")]
+    [SerializeField, Min(1)] private int enemiesToDefeatFallback = 3;
 
     [Header("Flow")]
-    [SerializeField] private float respawnDelay = 0.5f;
+    [SerializeField, Min(0f)] private float respawnDelay = 0.5f;
 
     private int defeatedCount = 0;
     private bool waitingForRewards = false;
 
+    private int encounterIndex = 0;         // 0,1,2...
+    private int enemiesToDefeat = 3;        // se setea por stage actual
+    private DifficultyStage stage;          // stage actual cacheado
+
     public Enemy CurrentEnemy => enemy;
+    public bool WaitingForRewards => waitingForRewards;
+
+    /// <summary>0-based (el HUD puede mostrar +1).</summary>
+    public int EncounterIndex => encounterIndex;
+
+    // --- Datos “stage actual” (encapsulados) ---
+    public int EnemiesToDefeat => enemiesToDefeat;
+    public float EnemyHpMultiplier => stage.enemyHpMultiplier;
+    public float EnemyDamageMultiplier => stage.enemyDamageMultiplier;
+    public int EnemyHpBonus => stage.enemyHpBonus;
+    public int EnemyDamageBonus => stage.enemyDamageBonus;
+    public bool HasDifficultyConfig => difficulty != null;
+
+    public string StageName => string.IsNullOrWhiteSpace(stage.stageName) ? $"Stage {encounterIndex + 1}" : stage.stageName;
+
 
     private void Start()
     {
         if (enemy == null)
         {
-            Debug.LogError("BattleManager: Enemy reference missing.");
+            Debug.LogError("[Battle] Enemy reference missing.");
             return;
         }
 
         enemy.Defeated += OnEnemyDefeated;
 
-        defeatedCount = 0;
-        waitingForRewards = false;
-
-        SpawnRandomEnemy();
+        // primer encounter
+        StartNewEncounter();
     }
 
     private void OnDestroy()
     {
         if (enemy != null)
             enemy.Defeated -= OnEnemyDefeated;
+    }
+
+    private void StartNewEncounter()
+    {
+        defeatedCount = 0;
+        waitingForRewards = false;
+
+        stage = (difficulty != null) ? difficulty.GetStage(encounterIndex) : DifficultyStage.Default;
+        enemiesToDefeat = (difficulty != null) ? stage.enemiesToDefeat : enemiesToDefeatFallback;
+
+        EncounterStarted?.Invoke();
+        SpawnRandomEnemy();
     }
 
     private void OnEnemyDefeated()
@@ -49,25 +83,22 @@ public class BattleManager : MonoBehaviour
 
         if (defeatedCount >= enemiesToDefeat)
         {
-            Debug.Log("Encounter completed!");
             waitingForRewards = true;
-
             EncounterCompleted?.Invoke();
-            return; // IMPORTANTE: no spawnear acá
+            return;
         }
 
         Invoke(nameof(SpawnRandomEnemy), respawnDelay);
     }
 
-    // Llamado por RewardManager cuando termina la elección/recompensa
     public void ContinueAfterRewards()
     {
         if (!waitingForRewards) return;
 
-        waitingForRewards = false;
-        defeatedCount = 0;
+        // Subimos dificultad para el próximo encounter
+        encounterIndex++;
 
-        Invoke(nameof(SpawnRandomEnemy), respawnDelay);
+        Invoke(nameof(StartNewEncounter), respawnDelay);
     }
 
     private void SpawnRandomEnemy()
@@ -76,11 +107,23 @@ public class BattleManager : MonoBehaviour
 
         if (enemiesPool == null || enemiesPool.Length == 0)
         {
-            Debug.LogError("BattleManager: enemiesPool is empty.");
+            Debug.LogError("[Battle] enemiesPool is empty.");
             return;
         }
 
-        EnemyData chosen = enemiesPool[Random.Range(0, enemiesPool.Length)];
+        EnemyData chosen = enemiesPool[UnityEngine.Random.Range(0, enemiesPool.Length)];
         enemy.SetDataAndReset(chosen);
+
+        // Aplicar dificultad (si hay config)
+        if (difficulty != null)
+        {
+            int baseHp = chosen != null ? chosen.maxHP : 50;
+            int baseDmg = chosen != null ? chosen.attackDamage : 5;
+
+            int scaledHp = Mathf.RoundToInt(baseHp * stage.enemyHpMultiplier) + stage.enemyHpBonus;
+            int scaledDmg = Mathf.RoundToInt(baseDmg * stage.enemyDamageMultiplier) + stage.enemyDamageBonus;
+
+            enemy.ApplyDifficulty(scaledHp, scaledDmg);
+        }
     }
 }

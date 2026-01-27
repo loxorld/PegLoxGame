@@ -13,6 +13,10 @@ public class HUDController : MonoBehaviour
     [SerializeField] private TMP_Text orbNameText;
     [SerializeField] private TMP_Text stateText; // opcional
 
+    [Header("Encounter / Difficulty (optional)")]
+    [SerializeField] private TMP_Text encounterText;   // "ENCOUNTER: 1"
+    [SerializeField] private TMP_Text difficultyText;  // "HP x1.2 (+0) | DMG x1.1 (+0) | N=3"
+
     [Header("Bars")]
     [SerializeField] private HealthBarUI playerBar;
     [SerializeField] private HealthBarUI enemyBar;
@@ -73,6 +77,22 @@ public class HUDController : MonoBehaviour
                 GameState.GameOver => "GAME OVER",
                 _ => s.ToString()
             };
+        }
+
+        // Encounter text
+        if (encounterText != null)
+        {
+            if (battle == null) encounterText.text = "";
+            else encounterText.text = $"ENCOUNTER: {battle.EncounterIndex + 1}";
+        }
+
+        // Difficulty text
+        if (difficultyText != null)
+        {
+            if (battle == null || !battle.HasDifficultyConfig)
+                difficultyText.text = "";
+            else
+                difficultyText.text = $"STAGE: {battle.StageName}";
         }
     }
 }
