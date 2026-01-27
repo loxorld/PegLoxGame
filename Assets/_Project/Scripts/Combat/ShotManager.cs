@@ -1,7 +1,12 @@
+using System;
 using UnityEngine;
 
 public class ShotManager : MonoBehaviour
 {
+
+    public event Action<ShotSummary> ShotStatsChanged;   // durante el tiro
+    public event Action<ShotSummary> ShotResolved;       // al terminar y aplicar daño
+
     public static ShotManager Instance { get; private set; }
 
     public bool ShotInProgress { get; private set; }
@@ -45,6 +50,27 @@ public class ShotManager : MonoBehaviour
         return GameFlowManager.Instance.State == GameState.Combat;
     }
 
+    private void PublishStats(bool resolved = false)
+    {
+        if (currentShot == null) return;
+
+        int mult = currentShot.Multiplier;
+        // Si todavía no hay set de multiplier, usa el helper consistente
+        if (mult <= 0) mult = 1 + currentShot.CriticalHits;
+
+        var summary = new ShotSummary(
+            orbName: currentShot.Orb != null ? currentShot.Orb.orbName : "None",
+            normalHits: currentShot.NormalHits,
+            criticalHits: currentShot.CriticalHits,
+            damagePerHit: currentShot.DamagePerHit,
+            multiplier: mult
+        );
+
+        if (resolved) ShotResolved?.Invoke(summary);
+        else ShotStatsChanged?.Invoke(summary);
+    }
+
+
     public void OnShotStarted(OrbData orb)
     {
         // Solo se puede iniciar tiro en combate
@@ -64,6 +90,7 @@ public class ShotManager : MonoBehaviour
             pipeline.AddRange(orb.orbEffects);
 
         pipeline.OnShotStart(currentShot);
+        PublishStats();
     }
 
     public void RegisterPegHit(PegType pegType)
@@ -74,6 +101,7 @@ public class ShotManager : MonoBehaviour
 
         currentShot.RegisterHit(pegType);
         pipeline.OnPegHit(currentShot, pegType);
+        PublishStats();
     }
 
     public void OnShotEnded()
@@ -100,6 +128,8 @@ public class ShotManager : MonoBehaviour
 
         pipeline.OnShotEnd(currentShot);
 
+        PublishStats();
+
         Enemy enemy = battle.CurrentEnemy;
         if (enemy == null || !enemy.gameObject.activeSelf)
         {
@@ -108,6 +138,14 @@ public class ShotManager : MonoBehaviour
         }
 
         int damage = currentShot.TotalHits * currentShot.DamagePerHit * currentShot.Multiplier;
+
+        ShotResolved?.Invoke(new ShotSummary(
+            currentShot.Orb != null ? currentShot.Orb.orbName : "None",
+            currentShot.NormalHits,
+            currentShot.CriticalHits,
+            currentShot.DamagePerHit,
+            currentShot.Multiplier
+        ));
 
         enemy.TakeDamage(damage);
 
