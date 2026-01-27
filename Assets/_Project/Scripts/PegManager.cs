@@ -29,13 +29,11 @@ public class PegManager : MonoBehaviour
 
     public void ResetAllPegs()
     {
-        // limpia referencias muertas por las dudas
+        // Limpia referencias muertas y resetea estado/visual
         for (int i = pegs.Count - 1; i >= 0; i--)
         {
             if (pegs[i] == null) { pegs.RemoveAt(i); continue; }
             pegs[i].ResetPeg();
         }
-
-        Debug.Log($"ResetAllPegs -> pegs registrados: {pegs.Count}");
     }
 }

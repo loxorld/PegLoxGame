@@ -9,16 +9,8 @@ public class Peg : MonoBehaviour
     private bool hit;
     private SpriteRenderer sr;
 
+    public PegDefinition Definition => definition;
     public PegType Type => definition != null ? definition.type : PegType.Normal;
-
-    
-
-    public void SetDefinition(PegDefinition def)
-    {
-        definition = def;
-        hit = false;
-        ApplyIdleVisual();
-    }
 
     private void Awake()
     {
@@ -29,14 +21,24 @@ public class Peg : MonoBehaviour
     private void OnEnable()
     {
         PegManager.Instance?.RegisterPeg(this);
-       
-        ApplyIdleVisual();
+        // Estado limpio al habilitarse (por si se reusa / reactiva)
         hit = false;
+        ApplyIdleVisual();
     }
 
     private void OnDisable()
     {
         PegManager.Instance?.UnregisterPeg(this);
+    }
+
+    /// <summary>
+    /// Setea definición (data-driven) y resetea estado visual/hit.
+    /// Lo llama el BoardManager al spawnear.
+    /// </summary>
+    public void SetDefinition(PegDefinition def)
+    {
+        definition = def;
+        ResetPeg();
     }
 
     public void ResetPeg()
@@ -48,23 +50,19 @@ public class Peg : MonoBehaviour
     private void ApplyIdleVisual()
     {
         if (sr == null) return;
-        if (definition == null)
-        {
-            sr.color = Color.cyan; // fallback
-            return;
-        }
-        sr.color = definition.idleColor;
+
+        sr.color = (definition != null)
+            ? definition.idleColor
+            : Color.cyan; // fallback razonable
     }
 
     private void ApplyHitVisual()
     {
         if (sr == null) return;
-        if (definition == null)
-        {
-            sr.color = Color.gray; // fallback
-            return;
-        }
-        sr.color = definition.hitColor;
+
+        sr.color = (definition != null)
+            ? definition.hitColor
+            : Color.gray; // fallback razonable
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
@@ -77,7 +75,4 @@ public class Peg : MonoBehaviour
 
         ShotManager.Instance?.RegisterPegHit(Type);
     }
-
-    
-
 }

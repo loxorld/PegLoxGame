@@ -24,4 +24,9 @@ MonoBehaviour:
   marginWorld: 0.4
   seed: 12345
   randomizeSeedEachRun: 1
-  criticalChance: 0.15
+  criticalChance: 0
+  layouts:
+  - {fileID: 11400000, guid: 0e60b14eedfb9e54588f9ec73e1bd81f, type: 2}
+  - {fileID: 11400000, guid: e3a523c1a5a464846bc32ef22cfa42e2, type: 2}
+  - {fileID: 11400000, guid: 3c5c695a111024547aea6579196620c5, type: 2}
+  useLayoutDimensions: 1

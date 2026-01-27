@@ -1,5 +1,5 @@
+using System;
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
 
 public class BoardManager : MonoBehaviour
@@ -8,14 +8,18 @@ public class BoardManager : MonoBehaviour
     [SerializeField] private Camera cam;
     [SerializeField] private Transform boardRoot;
 
-    [Header("Prefabs / Definitions")]
-    [SerializeField] private GameObject pegPrefab;           
+    [Header("Prefab / Definitions")]
+    [SerializeField] private GameObject pegPrefab;
     [SerializeField] private PegDefinition normalPegDef;
     [SerializeField] private PegDefinition criticalPegDef;
-    [SerializeField] private PegDefinition definition;
 
     [Header("Config")]
     [SerializeField] private BoardConfig config;
+
+    [Header("Anti-Overlap")]
+    [SerializeField] private LayerMask pegOverlapMask;          // capa donde están los Pegs
+    [SerializeField, Min(1)] private int maxTriesPerCell = 10;
+    [SerializeField, Min(0f)] private float extraSeparation = 0.02f;
 
     private readonly List<GameObject> spawned = new List<GameObject>();
 
@@ -47,91 +51,118 @@ public class BoardManager : MonoBehaviour
             return;
         }
 
-        int seed = config.randomizeSeedEachRun ? Random.Range(int.MinValue, int.MaxValue) : config.seed;
+        int seed = config.randomizeSeedEachRun
+            ? UnityEngine.Random.Range(int.MinValue, int.MaxValue)
+            : config.seed;
+
         var rng = new System.Random(seed);
 
-     
+        BoardLayout layout = PickRandomLayout(rng);
+        int rows = config.rows;
+        int cols = config.cols;
+
+        if (layout != null && config.useLayoutDimensions)
+        {
+            rows = layout.rows;
+            cols = layout.cols;
+        }
+
+        // Área jugable en world (por viewport) + margen
         Vector2 minW = cam.ViewportToWorldPoint(new Vector3(config.viewportMinX, config.viewportMinY, 0f));
         Vector2 maxW = cam.ViewportToWorldPoint(new Vector3(config.viewportMaxX, config.viewportMaxY, 0f));
-
-        // Margen extra para no tocar paredes/techo
         minW += Vector2.one * config.marginWorld;
         maxW -= Vector2.one * config.marginWorld;
 
-        // Tamaño total que ocuparía la grilla
-        float gridW = (config.cols - 1) * config.spacingX;
-        float gridH = (config.rows - 1) * config.spacingY;
+        float gridW = (cols - 1) * config.spacingX;
+        float gridH = (rows - 1) * config.spacingY;
 
-        // Punto de inicio centrado dentro del rectángulo jugable
         Vector2 center = (minW + maxW) * 0.5f;
         Vector2 start = new Vector2(center.x - gridW * 0.5f, center.y + gridH * 0.5f);
 
-        // Clamp por si la grilla es más grande que el área
-       
+        // Clamp del origen para que la grilla entre completa
         start.x = Mathf.Clamp(start.x, minW.x, maxW.x - gridW);
         start.y = Mathf.Clamp(start.y, minW.y + gridH, maxW.y);
 
-        for (int r = 0; r < config.rows; r++)
+        float pegRadius = GetPegWorldRadius();
+        float overlapRadius = pegRadius + extraSeparation;
+
+        for (int r = 0; r < rows; r++)
         {
-            for (int c = 0; c < config.cols; c++)
+            for (int c = 0; c < cols; c++)
             {
-                float x = start.x + c * config.spacingX;
-                float y = start.y - r * config.spacingY;
+                bool cellActive = layout == null || layout.IsActive(r, c);
+                if (!cellActive) continue;
 
-                // Jitter
-                float jx = (float)(rng.NextDouble() * 2.0 - 1.0) * config.jitter * config.spacingX;
-                float jy = (float)(rng.NextDouble() * 2.0 - 1.0) * config.jitter * config.spacingY;
+                Vector2 basePos = new Vector2(
+                    start.x + c * config.spacingX,
+                    start.y - r * config.spacingY
+                );
 
-                Vector2 pos = new Vector2(x + jx, y + jy);
+                if (!TrySpawnPegInCell(basePos, rng, overlapRadius, out GameObject go))
+                    continue;
 
-                // Asegurar que queda dentro del área
-                pos.x = Mathf.Clamp(pos.x, minW.x, maxW.x);
-                pos.y = Mathf.Clamp(pos.y, minW.y, maxW.y);
-
-                var go = Instantiate(pegPrefab, pos, Quaternion.identity, boardRoot);
                 spawned.Add(go);
 
-                // Elegir tipo por probabilidad
-                bool isCrit = rng.NextDouble() < config.criticalChance;
-
-                // Setear definition en el Peg
-                var peg = go.GetComponent<Peg>();
+                Peg peg = go.GetComponent<Peg>();
                 if (peg == null)
                 {
                     Debug.LogError("[Board] Spawned peg prefab missing Peg component.");
                     continue;
                 }
 
-                // Set Definition por reflexión controlada
-                ApplyDefinition(peg, isCrit ? criticalPegDef : normalPegDef);
+                bool isCrit = rng.NextDouble() < config.criticalChance;
+                PegDefinition def = isCrit ? criticalPegDef : normalPegDef;
+
+                peg.SetDefinition(def);
             }
         }
 
-        Debug.Log($"[Board] Generated {spawned.Count} pegs (seed={seed}).");
-
-        // Importante: al generar, reseteamos conteo/colores
+        // Al terminar, por las dudas de orden de ejecución, reseteamos estado/visual coherente
         PegManager.Instance?.ResetAllPegs();
     }
 
-    private void ApplyDefinition(Peg peg, PegDefinition def)
+    private BoardLayout PickRandomLayout(System.Random rng)
     {
-        
-        // Esto evita reflection y mantiene encapsulación.
-        var setter = peg as IPegDefinitionReceiver;
-        if (setter != null)
+        if (config.layouts == null || config.layouts.Length == 0)
+            return null;
+
+        int idx = rng.Next(0, config.layouts.Length);
+        return config.layouts[idx];
+    }
+
+    private bool TrySpawnPegInCell(Vector2 basePos, System.Random rng, float overlapRadius, out GameObject spawnedPeg)
+    {
+        spawnedPeg = null;
+
+        for (int attempt = 0; attempt < maxTriesPerCell; attempt++)
         {
-            setter.SetDefinition(def);
-            return;
+            Vector2 pos = ApplyJitter(basePos, rng);
+
+            // Anti-overlap: si ya hay un peg cerca, reintenta
+            if (Physics2D.OverlapCircle(pos, overlapRadius, pegOverlapMask) != null)
+                continue;
+
+            spawnedPeg = Instantiate(pegPrefab, pos, Quaternion.identity, boardRoot);
+            return true;
         }
 
-      
-        var so = new SerializedObject(peg);
-        var prop = so.FindProperty("definition");
-        if (prop != null)
-        {
-            prop.objectReferenceValue = def;
-            so.ApplyModifiedPropertiesWithoutUndo();
-        }
+        return false;
+    }
+
+    private Vector2 ApplyJitter(Vector2 basePos, System.Random rng)
+    {
+        float jx = (float)(rng.NextDouble() * 2.0 - 1.0) * config.jitter * config.spacingX;
+        float jy = (float)(rng.NextDouble() * 2.0 - 1.0) * config.jitter * config.spacingY;
+        return new Vector2(basePos.x + jx, basePos.y + jy);
+    }
+
+    private float GetPegWorldRadius()
+    {
+        var col = pegPrefab.GetComponent<CircleCollider2D>();
+        if (col == null) return 0.15f;
+
+        float scale = pegPrefab.transform.localScale.x; // asumimos escala uniforme
+        return col.radius * scale;
     }
 
     public void ClearBoard()

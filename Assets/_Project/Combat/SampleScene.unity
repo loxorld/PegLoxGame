@@ -571,8 +571,12 @@ MonoBehaviour:
   pegPrefab: {fileID: 552125080464933204, guid: 83cf23b14e1225543a82078a7262bdde, type: 3}
   normalPegDef: {fileID: 11400000, guid: 1cf2e80fab14b9c499f6847029e6f21a, type: 2}
   criticalPegDef: {fileID: 11400000, guid: a44a6bc639fe7da47b9762a80d9b028e, type: 2}
-  definition: {fileID: 0}
   config: {fileID: 11400000, guid: 57aa2a1dee64d304d90c7ee545cc7956, type: 2}
+  pegOverlapMask:
+    serializedVersion: 2
+    m_Bits: 8
+  maxTriesPerCell: 10
+  extraSeparation: 0.05
 --- !u!4 &175921410
 Transform:
   m_ObjectHideFlags: 0

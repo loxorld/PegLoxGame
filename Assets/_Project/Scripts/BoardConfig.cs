@@ -29,4 +29,8 @@ public class BoardConfig : ScriptableObject
 
     [Header("Pegs")]
     [Range(0f, 1f)] public float criticalChance = 0.15f;
+
+    [Header("Layouts")]
+    public BoardLayout[] layouts;
+    public bool useLayoutDimensions = true;
 }

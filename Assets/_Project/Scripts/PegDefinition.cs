@@ -10,5 +10,6 @@ public class PegDefinition : ScriptableObject
     public Color hitColor = Color.gray;
 
     [Header("Rules (future-proof)")]
-    public bool countsForMultiplier = false; 
+    [Tooltip("Si true, este peg cuenta para el multiplicador (por ejemplo críticos).")]
+    public bool countsForMultiplier = false;
 }
