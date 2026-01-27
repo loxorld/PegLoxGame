@@ -2,18 +2,22 @@ using UnityEngine;
 using System.Collections;
 
 /// <summary>
-/// Proporciona feedback visual simple (flash y escala) cuando el enemigo recibe daño.
-/// Adjunta este script a cualquier GameObject del enemigo que tenga un SpriteRenderer.
+/// Da feedback visual cuando el enemigo recibe daño: aclara temporalmente su color
+/// actual (no lo blanquea del todo) y lo escala ligeramente. Al terminar, restaura
+/// el color y la escala originales. Desacoplado de la lógica de daño.
 /// </summary>
 [RequireComponent(typeof(SpriteRenderer))]
 public class EnemyFeedbackController : MonoBehaviour
 {
-    [SerializeField] private float flashDuration = 0.1f;
-    [SerializeField] private float scaleMultiplier = 1.1f;
+    [SerializeField, Tooltip("Duración del destello en segundos.")]
+    private float flashDuration = 0.1f;
+
+    [SerializeField, Tooltip("Multiplicador de escala durante el flash (1 = sin cambio).")]
+    private float scaleMultiplier = 1.05f;
 
     private SpriteRenderer spriteRenderer;
     private Vector3 originalScale;
-    private Coroutine currentRoutine;
+    private Coroutine flashRoutine;
 
     private void Awake()
     {
@@ -22,25 +26,39 @@ public class EnemyFeedbackController : MonoBehaviour
     }
 
     /// <summary>
-    /// Dispara el efecto visual. Llama a este método desde tu código de daño.
+    /// Ejecuta el efecto de flash. Si hay uno en curso, lo reinicia.
     /// </summary>
     public void Flash()
     {
-        if (currentRoutine != null) StopCoroutine(currentRoutine);
-        currentRoutine = StartCoroutine(FlashRoutine());
+        if (!gameObject.activeInHierarchy) return;
+
+        if (flashRoutine != null)
+        {
+            StopCoroutine(flashRoutine);
+        }
+        flashRoutine = StartCoroutine(FlashCoroutine());
     }
 
-    private IEnumerator FlashRoutine()
+    private IEnumerator FlashCoroutine()
     {
-        Color originalColor = spriteRenderer.color;
-        // Aplica flash y escala
-        spriteRenderer.color = Color.white;
-        transform.localScale = originalScale * scaleMultiplier;
+        // Capturar el color actual (ya tintado por la vida) y la escala actual
+        Color baseColor = spriteRenderer.color;
+        Vector3 baseScale = originalScale;
 
-        yield return new WaitForSeconds(flashDuration);
+        // Generar un color aclarado hacia blanco (50 % de intensidad)
+        Color flashColor = Color.Lerp(baseColor, Color.white, 0.5f);
 
-        // Vuelve a la normalidad
-        spriteRenderer.color = originalColor;
-        transform.localScale = originalScale;
+        // Aplicar flash: color aclarado y escala aumentada
+        spriteRenderer.color = flashColor;
+        transform.localScale = baseScale * scaleMultiplier;
+
+        // Esperar la duración indicada (sin afectar por Time.timeScale)
+        yield return new WaitForSecondsRealtime(flashDuration);
+
+        // Restaurar color y escala originales
+        spriteRenderer.color = baseColor;
+        transform.localScale = baseScale;
+
+        flashRoutine = null;
     }
 }

@@ -71,14 +71,21 @@ public class Enemy : MonoBehaviour
     {
         if (damage <= 0) return;
 
+        // Restar vida y clavarla a cero como mínimo
         currentHP -= damage;
-        feedback?.Flash();
         currentHP = Mathf.Max(currentHP, 0);
 
+        // Actualizar la apariencia (tinte según vida) antes del flash
         UpdateVisual();
 
+        // Reproducir el feedback visual si existe
+        feedback?.Flash();
+
+        // Si la vida llegó a cero, ejecutar la muerte
         if (currentHP <= 0)
+        {
             Die();
+        }
     }
 
     private void UpdateVisual()
