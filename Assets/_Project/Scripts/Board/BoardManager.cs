@@ -89,16 +89,16 @@ public class BoardManager : MonoBehaviour
             cols = layout.cols;
         }
 
-      
-        Rect vr = cam.rect;
 
-        float vMinX = Mathf.Lerp(vr.xMin, vr.xMax, config.viewportMinX);
-        float vMaxX = Mathf.Lerp(vr.xMin, vr.xMax, config.viewportMaxX);
-        float vMinY = Mathf.Lerp(vr.yMin, vr.yMax, config.viewportMinY);
-        float vMaxY = Mathf.Lerp(vr.yMin, vr.yMax, config.viewportMaxY);
+        Rect visibleWorld = CameraWorldRect.GetVisibleWorldRect(cam);
 
-        Vector2 minW = cam.ViewportToWorldPoint(new Vector3(vMinX, vMinY, 0f));
-        Vector2 maxW = cam.ViewportToWorldPoint(new Vector3(vMaxX, vMaxY, 0f));
+        float minWorldX = Mathf.Lerp(visibleWorld.xMin, visibleWorld.xMax, config.viewportMinX);
+        float maxWorldX = Mathf.Lerp(visibleWorld.xMin, visibleWorld.xMax, config.viewportMaxX);
+        float minWorldY = Mathf.Lerp(visibleWorld.yMin, visibleWorld.yMax, config.viewportMinY);
+        float maxWorldY = Mathf.Lerp(visibleWorld.yMin, visibleWorld.yMax, config.viewportMaxY);
+
+        Vector2 minW = new Vector2(minWorldX, minWorldY);
+        Vector2 maxW = new Vector2(maxWorldX, maxWorldY);
 
         // Normalizar por si vienen invertidos
         Vector2 worldMin = new Vector2(Mathf.Min(minW.x, maxW.x), Mathf.Min(minW.y, maxW.y));
@@ -121,8 +121,23 @@ public class BoardManager : MonoBehaviour
             bottomBound = worldMin.y; // fallback: no recortar
         }
 
-        float gridW = (cols - 1) * config.spacingX;
-        float gridH = (rows - 1) * config.spacingY;
+        float spacingX = config.spacingX;
+        float spacingY = config.spacingY;
+        float gridW = (cols - 1) * spacingX;
+        float gridH = (rows - 1) * spacingY;
+        float availableW = rightBound - leftBound;
+        float availableH = topBound - bottomBound;
+
+        if ((gridW > availableW || gridH > availableH) && availableW > 0f && availableH > 0f)
+        {
+            float scaleX = gridW > 0f ? availableW / gridW : 1f;
+            float scaleY = gridH > 0f ? availableH / gridH : 1f;
+            float scale = Mathf.Min(scaleX, scaleY);
+            spacingX *= scale;
+            spacingY *= scale;
+            gridW = (cols - 1) * spacingX;
+            gridH = (rows - 1) * spacingY;
+        }
 
         // Centro de zona permitida (X normal, Y respeta bottomBound)
         Vector2 permittedCenter = new Vector2(
@@ -150,11 +165,11 @@ public class BoardManager : MonoBehaviour
                 if (!cellActive) continue;
 
                 Vector2 basePos = new Vector2(
-                    start.x + c * config.spacingX,
-                    start.y - r * config.spacingY
+                    start.x + c * spacingX,
+                    start.y - r * spacingY
                 );
 
-                if (!TrySpawnPegInCell(basePos, rng, overlapRadius, out GameObject go))
+                if (!TrySpawnPegInCell(basePos, rng, overlapRadius, spacingX, spacingY, out GameObject go))
                     continue;
 
                 spawned.Add(go);
@@ -186,13 +201,13 @@ public class BoardManager : MonoBehaviour
         return config.layouts[idx];
     }
 
-    private bool TrySpawnPegInCell(Vector2 basePos, System.Random rng, float overlapRadius, out GameObject spawnedPeg)
+    private bool TrySpawnPegInCell(Vector2 basePos, System.Random rng, float overlapRadius, float spacingX, float spacingY, out GameObject spawnedPeg)
     {
         spawnedPeg = null;
 
         for (int attempt = 0; attempt < maxTriesPerCell; attempt++)
         {
-            Vector2 pos = ApplyJitter(basePos, rng);
+            Vector2 pos = ApplyJitter(basePos, rng, spacingX, spacingY);
 
             // Anti-overlap: si ya hay un peg cerca, reintenta
             if (Physics2D.OverlapCircle(pos, overlapRadius, pegOverlapMask) != null)
@@ -205,10 +220,10 @@ public class BoardManager : MonoBehaviour
         return false;
     }
 
-    private Vector2 ApplyJitter(Vector2 basePos, System.Random rng)
+    private Vector2 ApplyJitter(Vector2 basePos, System.Random rng, float spacingX, float spacingY)
     {
-        float jx = (float)(rng.NextDouble() * 2.0 - 1.0) * config.jitter * config.spacingX;
-        float jy = (float)(rng.NextDouble() * 2.0 - 1.0) * config.jitter * config.spacingY;
+        float jx = (float)(rng.NextDouble() * 2.0 - 1.0) * config.jitter * spacingX;
+        float jy = (float)(rng.NextDouble() * 2.0 - 1.0) * config.jitter * spacingY;
         return new Vector2(basePos.x + jx, basePos.y + jy);
     }
 

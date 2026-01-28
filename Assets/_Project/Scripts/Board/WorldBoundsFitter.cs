@@ -8,6 +8,9 @@ public class WorldBoundsFitter : MonoBehaviour
     [SerializeField] private Transform leftWall;
     [SerializeField] private Transform rightWall;
 
+    [Header("Board Area Source (reusa lo del BoardManager)")]
+    [SerializeField] private BoardConfig boardConfig;
+
     [Header("Sizing")]
     [SerializeField] private float wallThickness = 1f;
     [SerializeField] private float ceilingThickness = 1f;
@@ -43,7 +46,6 @@ public class WorldBoundsFitter : MonoBehaviour
     {
         if (!autoRefitOnChanges || cam == null) return;
 
-        // Si cambia la resolución (rotación, notch, etc.)
         if (Screen.width != lastW || Screen.height != lastH)
         {
             Fit();
@@ -51,7 +53,6 @@ public class WorldBoundsFitter : MonoBehaviour
             return;
         }
 
-        // Si cambia el viewport real de la cámara (cam.rect)
         if (cam.rect != lastCamRect)
         {
             Fit();
@@ -67,43 +68,61 @@ public class WorldBoundsFitter : MonoBehaviour
     }
 
     [ContextMenu("Fit Now")]
-    // WorldBoundsFitter.cs (método Fit)
     public void Fit()
     {
-        var cam = Camera.main;
+        if (cam == null) cam = Camera.main;
         if (cam == null) return;
 
-        // obtener rect visible de la cámara (en coordenadas de mundo)
-        Rect worldRect = CameraWorldRect.GetVisibleWorldRect(cam);
+        Rect vr = cam.rect;
 
-        // aplicar padding
-        float topY = worldRect.yMax + topPadding;
+        
+
+        // --- TOP: respeta BoardConfig (debajo del HUD) ---
+        float vTopY = vr.yMax;
+        if (boardConfig != null)
+        {
+            vTopY = Mathf.Lerp(vr.yMin, vr.yMax, boardConfig.viewportMaxY);
+        }
+
+        // --- LEFT / RIGHT: pantalla completa ---
+        float vLeftX = vr.xMin;
+        float vRightX = vr.xMax;
+
+        // Convertir a mundo
+        float topY = cam.ViewportToWorldPoint(new Vector3(0.5f, vTopY, 0f)).y;
+        float leftX = cam.ViewportToWorldPoint(new Vector3(vLeftX, 0.5f, 0f)).x;
+        float rightX = cam.ViewportToWorldPoint(new Vector3(vRightX, 0.5f, 0f)).x;
+
+        // Aplicar padding
+        float targetTopY = topY + topPadding;
+        float targetLeftX = leftX - sidePadding;
+        float targetRightX = rightX + sidePadding;
+
         float bottomY = worldBottomY - bottomPadding;
-        float leftX = worldRect.xMin - sidePadding;
-        float rightX = worldRect.xMax + sidePadding;
 
-        // techo
+        // Techo
         if (ceiling != null)
         {
-            ceiling.position = new Vector3(0f, topY, 0f);
-            float width = (rightX - leftX) + wallThickness;
+            ceiling.position = new Vector3(0f, targetTopY, 0f);
+
+            float width = (targetRightX - targetLeftX) + wallThickness;
             ceiling.localScale = new Vector3(width, ceilingThickness, 1f);
         }
 
-        // paredes
-        float wallHeight = Mathf.Max(1f, (topY - bottomY));
+        // Paredes
+        float wallHeight = Mathf.Max(1f, (targetTopY - bottomY));
         float wallCenterY = bottomY + wallHeight * 0.5f;
 
         if (leftWall != null)
         {
-            leftWall.position = new Vector3(leftX, wallCenterY, 0f);
+            leftWall.position = new Vector3(targetLeftX, wallCenterY, 0f);
             leftWall.localScale = new Vector3(wallThickness, wallHeight, 1f);
         }
+
         if (rightWall != null)
         {
-            rightWall.position = new Vector3(rightX, wallCenterY, 0f);
+            rightWall.position = new Vector3(targetRightX, wallCenterY, 0f);
             rightWall.localScale = new Vector3(wallThickness, wallHeight, 1f);
         }
     }
-
 }
