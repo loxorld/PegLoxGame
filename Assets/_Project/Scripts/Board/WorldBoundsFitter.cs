@@ -67,46 +67,43 @@ public class WorldBoundsFitter : MonoBehaviour
     }
 
     [ContextMenu("Fit Now")]
+    // WorldBoundsFitter.cs (método Fit)
     public void Fit()
     {
-        if (cam == null) cam = Camera.main;
+        var cam = Camera.main;
         if (cam == null) return;
 
-        Rect vis = CameraWorldRect.GetVisibleWorldRect(cam);
+        // obtener rect visible de la cámara (en coordenadas de mundo)
+        Rect worldRect = CameraWorldRect.GetVisibleWorldRect(cam);
 
-        float topY = vis.yMax;
-        float leftX = vis.xMin;
-        float rightX = vis.xMax;
-
-        float targetTopY = topY + topPadding;
-        float targetLeftX = leftX - sidePadding;
-        float targetRightX = rightX + sidePadding;
-
+        // aplicar padding
+        float topY = worldRect.yMax + topPadding;
         float bottomY = worldBottomY - bottomPadding;
+        float leftX = worldRect.xMin - sidePadding;
+        float rightX = worldRect.xMax + sidePadding;
 
-        // Techo
+        // techo
         if (ceiling != null)
         {
-            ceiling.position = new Vector3(0f, targetTopY, 0f);
-
-            float width = (targetRightX - targetLeftX) + wallThickness;
+            ceiling.position = new Vector3(0f, topY, 0f);
+            float width = (rightX - leftX) + wallThickness;
             ceiling.localScale = new Vector3(width, ceilingThickness, 1f);
         }
 
-        // Paredes
-        float wallHeight = Mathf.Max(1f, (targetTopY - bottomY));
+        // paredes
+        float wallHeight = Mathf.Max(1f, (topY - bottomY));
         float wallCenterY = bottomY + wallHeight * 0.5f;
 
         if (leftWall != null)
         {
-            leftWall.position = new Vector3(targetLeftX, wallCenterY, 0f);
+            leftWall.position = new Vector3(leftX, wallCenterY, 0f);
             leftWall.localScale = new Vector3(wallThickness, wallHeight, 1f);
         }
-
         if (rightWall != null)
         {
-            rightWall.position = new Vector3(targetRightX, wallCenterY, 0f);
+            rightWall.position = new Vector3(rightX, wallCenterY, 0f);
             rightWall.localScale = new Vector3(wallThickness, wallHeight, 1f);
         }
     }
+
 }

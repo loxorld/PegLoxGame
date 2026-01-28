@@ -21,6 +21,9 @@ public class BoardManager : MonoBehaviour
     [SerializeField, Min(1)] private int maxTriesPerCell = 10;
     [SerializeField, Min(0f)] private float extraSeparation = 0.02f;
 
+    [Header("Spawn Safe Zone")]
+    [SerializeField, Min(0f)] private float spawnSafeHeight = 1.5f; // espacio libre arriba del bottom del área jugable
+
     [SerializeField] private BattleManager battle;
 
     private readonly List<GameObject> spawned = new List<GameObject>();
@@ -86,10 +89,7 @@ public class BoardManager : MonoBehaviour
             cols = layout.cols;
         }
 
-        // ============================
-        // ✅ VIEWPORT REAL (cam.rect)
-        // ============================
-        // Mapeamos los min/max del config (0..1) dentro del viewport real de la cámara (cam.rect)
+      
         Rect vr = cam.rect;
 
         float vMinX = Mathf.Lerp(vr.xMin, vr.xMax, config.viewportMinX);
@@ -108,15 +108,36 @@ public class BoardManager : MonoBehaviour
         worldMin += Vector2.one * config.marginWorld;
         worldMax -= Vector2.one * config.marginWorld;
 
+        float leftBound = worldMin.x;
+        float rightBound = worldMax.x;
+        float topBound = worldMax.y;
+
+        float bottomBound = worldMin.y + spawnSafeHeight;
+
+        // Si el safe zone hace que no haya espacio, evitamos valores inválidos
+        if (bottomBound >= topBound)
+        {
+            Debug.LogWarning("[Board] spawnSafeHeight too large for current playable area. Reducing to fit.");
+            bottomBound = worldMin.y; // fallback: no recortar
+        }
+
         float gridW = (cols - 1) * config.spacingX;
         float gridH = (rows - 1) * config.spacingY;
 
-        Vector2 center = (worldMin + worldMax) * 0.5f;
-        Vector2 start = new Vector2(center.x - gridW * 0.5f, center.y + gridH * 0.5f);
+        // Centro de zona permitida (X normal, Y respeta bottomBound)
+        Vector2 permittedCenter = new Vector2(
+            (leftBound + rightBound) * 0.5f,
+            (bottomBound + topBound) * 0.5f
+        );
 
-        // Clamp para asegurar que entre completa dentro del rect
-        start.x = Mathf.Clamp(start.x, worldMin.x, worldMax.x - gridW);
-        start.y = Mathf.Clamp(start.y, worldMin.y + gridH, worldMax.y);
+        Vector2 start = new Vector2(
+            permittedCenter.x - gridW * 0.5f,
+            permittedCenter.y + gridH * 0.5f
+        );
+
+        // Clamp para asegurar que la grilla entra completa dentro de la zona permitida
+        start.x = Mathf.Clamp(start.x, leftBound, rightBound - gridW);
+        start.y = Mathf.Clamp(start.y, bottomBound + gridH, topBound);
 
         float pegRadius = GetPegWorldRadius();
         float overlapRadius = pegRadius + extraSeparation;
@@ -153,6 +174,7 @@ public class BoardManager : MonoBehaviour
 
         PegManager.Instance?.ResetAllPegs();
     }
+
 
 
     private BoardLayout PickRandomLayout(System.Random rng)
