@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class BallLifecycle : MonoBehaviour
@@ -13,10 +13,14 @@ public class BallLifecycle : MonoBehaviour
     [SerializeField] private float minSpeedToConsiderStopped = 0.2f;
     [SerializeField] private float stoppedTimeToEndShot = 1.0f;
 
+    [Header("Lifetime (hard cap)")]
+    [SerializeField, Min(0.1f)] private float maxLifetimeSeconds = 10f;
+
     private Rigidbody2D rb;
     private float stoppedTimer;
 
-    private bool hasEnded; // <- clave
+    private float lifeTimer;     // 👈 NUEVO
+    private bool hasEnded;
 
     private void Awake()
     {
@@ -27,11 +31,20 @@ public class BallLifecycle : MonoBehaviour
     {
         hasEnded = false;
         stoppedTimer = 0f;
+        lifeTimer = 0f;
     }
 
     private void Update()
     {
         if (hasEnded) return;
+
+        // 0) TTL: si pasó demasiado tiempo, terminamos igual
+        lifeTimer += Time.deltaTime;
+        if (lifeTimer >= maxLifetimeSeconds)
+        {
+            EndShot();
+            return;
+        }
 
         // 1) Si se fue del tablero
         Vector3 p = transform.position;
@@ -41,7 +54,7 @@ public class BallLifecycle : MonoBehaviour
             return;
         }
 
-        // 2) Si est� casi quieta durante un tiempo
+        // 2) Si está casi quieta durante un tiempo
         if (rb.linearVelocity.magnitude < minSpeedToConsiderStopped)
         {
             stoppedTimer += Time.deltaTime;
@@ -62,7 +75,6 @@ public class BallLifecycle : MonoBehaviour
         hasEnded = true;
 
         ShotManager.Instance?.OnShotEnded();
-
         Destroy(gameObject);
     }
 }

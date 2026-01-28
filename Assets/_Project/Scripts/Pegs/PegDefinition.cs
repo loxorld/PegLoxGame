@@ -7,7 +7,12 @@ public class PegDefinition : ScriptableObject
 
     [Header("Visuals")]
     public Color idleColor = Color.cyan;
+
+    [Tooltip("Color que se usa si querés feedback de 'hit' estándar. (En tu caso el peg se oculta al consumirse).")]
     public Color hitColor = Color.gray;
+
+    [Header("Behaviors (data-driven)")]
+    public PegBehaviorBase[] behaviors;
 
     [Header("Rules (future-proof)")]
     [Tooltip("Si true, este peg cuenta para el multiplicador (por ejemplo críticos).")]

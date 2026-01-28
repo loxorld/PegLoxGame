@@ -27,8 +27,31 @@ public class BoardConfig : ScriptableObject
     public int seed = 12345;
     public bool randomizeSeedEachRun = true;
 
-    [Header("Pegs")]
+    [Header("Base Pegs")]
     [Range(0f, 1f)] public float criticalChance = 0.15f;
+
+    // ------------------ NUEVO ------------------
+
+    [System.Serializable]
+    public class SpecialPegSpawn
+    {
+        [Tooltip("Qué PegDefinition spawnea (ej: PegDef_Bomb, PegDef_Refresh, PegDef_Durable)")]
+        public PegDefinition definition;
+
+        [Tooltip("Peso relativo dentro de los especiales (no es % directo)")]
+        [Min(0f)] public float weight = 1f;
+
+        [Tooltip("Máximo por board (0 = sin límite)")]
+        [Min(0)] public int maxPerBoard = 0;
+    }
+
+    [Header("Special Pegs (data-driven)")]
+    [Tooltip("Probabilidad global de que un peg sea 'especial' (en vez de normal/critical)")]
+    [Range(0f, 1f)] public float specialChance = 0.10f;
+
+    public SpecialPegSpawn[] specialPegs;
+
+    // ------------------------------------------
 
     [Header("Layouts")]
     public BoardLayout[] layouts;

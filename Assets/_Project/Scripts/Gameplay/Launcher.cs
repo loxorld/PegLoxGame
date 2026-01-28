@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+Ôªøusing System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -16,20 +16,33 @@ public class Launcher : MonoBehaviour
     [SerializeField] private OrbManager orbManager;
 
     [Header("Launch Settings")]
-    [SerializeField] private float launchForce = 10f;
+    [SerializeField] private float launchForce = 10f; // legacy (no se usa para velocidad, lo dejamos por compat)
     [SerializeField] private float maxAimMagnitude = 3.0f;
 
-    private Vector2 dragStart;
+    [Header("Drag Tuning (screen space)")]
+    [SerializeField, Min(10f)] private float maxDragPixels = 220f;
+    [SerializeField] private bool useScreenSpaceDragForPower = true;
+
+    [Header("Launch Speed Cap")]
+    [SerializeField] private float maxLaunchSpeed = 18f;
+    [SerializeField] private float minLaunchSpeed = 3f;
+
+    [Header("Power Curve")]
+    [SerializeField] private AnimationCurve powerCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+    [SerializeField] private bool clampCurveOutput01 = true;
+
+    private Vector2 dragStartWorld;
+    private Vector2 dragStartScreen;
     private bool isDragging;
 
     [Header("Trajectory Preview")]
     [SerializeField] private LineRenderer trajectoryLine;
-    [SerializeField] private LayerMask collisionMask;          // Pegs + Walls 
-    [SerializeField] private int maxBounces = 1;               // 1 rebote visible 
-    [SerializeField] private float maxDistancePerSegment = 30f; // largo m·ximo del primer tramo
+    [SerializeField] private LayerMask collisionMask;           // Pegs + Walls
+    [SerializeField] private int maxBounces = 1;                // 1 rebote visible
+    [SerializeField] private float maxDistancePerSegment = 30f; // largo m√°ximo del primer tramo
     [SerializeField] private float previewBallRadiusFallback = 0.15f;
-    [SerializeField] private float maxPreviewSpeed = 30f;      // cap para preview
-    [SerializeField] private float bounceTailLength = 2.0f;    // ìcolitaî del rebote
+    [SerializeField] private float maxPreviewSpeed = 30f;       // recomendado = maxLaunchSpeed
+    [SerializeField] private float bounceTailLength = 2.0f;
 
     private float ballRadiusWorld;
 
@@ -52,7 +65,6 @@ public class Launcher : MonoBehaviour
         bool canAim = (GameFlowManager.Instance == null) || GameFlowManager.Instance.CanShoot;
         if (!canAim)
         {
-            // Si entramos a RewardChoice mientras estabas arrastrando, limpiamos
             isDragging = false;
             SetTrajectoryVisible(false);
             ClearTrajectory();
@@ -66,27 +78,32 @@ public class Launcher : MonoBehaviour
 
             if (touch.press.wasPressedThisFrame)
             {
-                dragStart = ScreenToWorld(touch.position.ReadValue());
+                dragStartScreen = touch.position.ReadValue();
+                dragStartWorld = ScreenToWorld(dragStartScreen);
+
                 isDragging = true;
                 SetTrajectoryVisible(true);
             }
 
             if (touch.press.isPressed && isDragging)
             {
-                Vector2 current = ScreenToWorld(touch.position.ReadValue());
-                Vector2 direction = dragStart - current;
-                UpdateTrajectoryPreview(direction);
+                Vector2 currentScreen = touch.position.ReadValue();
+                Vector2 currentWorld = ScreenToWorld(currentScreen);
+                Vector2 directionWorld = dragStartWorld - currentWorld;
+
+                UpdateTrajectoryPreview(directionWorld, currentScreen);
             }
 
             if (touch.press.wasReleasedThisFrame && isDragging)
             {
-                Vector2 dragEnd = ScreenToWorld(touch.position.ReadValue());
-                Vector2 direction = dragStart - dragEnd;
+                Vector2 releaseScreen = touch.position.ReadValue();
+                Vector2 releaseWorld = ScreenToWorld(releaseScreen);
+                Vector2 directionWorld = dragStartWorld - releaseWorld;
 
                 SetTrajectoryVisible(false);
                 ClearTrajectory();
 
-                LaunchBall(direction);
+                LaunchBall(directionWorld, releaseScreen);
                 isDragging = false;
             }
 
@@ -98,34 +115,38 @@ public class Launcher : MonoBehaviour
 
         if (Mouse.current.leftButton.wasPressedThisFrame)
         {
-            dragStart = ScreenToWorld(Mouse.current.position.ReadValue());
+            dragStartScreen = Mouse.current.position.ReadValue();
+            dragStartWorld = ScreenToWorld(dragStartScreen);
+
             isDragging = true;
             SetTrajectoryVisible(true);
         }
 
         if (isDragging && Mouse.current.leftButton.isPressed)
         {
-            Vector2 current = ScreenToWorld(Mouse.current.position.ReadValue());
-            Vector2 direction = dragStart - current;
-            UpdateTrajectoryPreview(direction);
+            Vector2 currentScreen = Mouse.current.position.ReadValue();
+            Vector2 currentWorld = ScreenToWorld(currentScreen);
+            Vector2 directionWorld = dragStartWorld - currentWorld;
+
+            UpdateTrajectoryPreview(directionWorld, currentScreen);
         }
 
         if (Mouse.current.leftButton.wasReleasedThisFrame && isDragging)
         {
-            Vector2 dragEnd = ScreenToWorld(Mouse.current.position.ReadValue());
-            Vector2 direction = dragStart - dragEnd;
+            Vector2 releaseScreen = Mouse.current.position.ReadValue();
+            Vector2 releaseWorld = ScreenToWorld(releaseScreen);
+            Vector2 directionWorld = dragStartWorld - releaseWorld;
 
             SetTrajectoryVisible(false);
             ClearTrajectory();
 
-            LaunchBall(direction);
+            LaunchBall(directionWorld, releaseScreen);
             isDragging = false;
         }
     }
 
     private void HandleOrbSelectionLegacy()
     {
-        // Opcional: el modo real es OrbManager.CurrentOrb
         if (Keyboard.current == null || orbs == null || orbs.Length == 0) return;
 
         if (Keyboard.current.digit1Key.wasPressedThisFrame) selectedOrbIndex = 0;
@@ -140,9 +161,59 @@ public class Launcher : MonoBehaviour
         return Camera.main.ScreenToWorldPoint(screenPos);
     }
 
-    private void LaunchBall(Vector2 direction)
+    /// <summary>
+    /// Convierte drag -> velocidad cappeada.
+    /// Direcci√≥n (orientaci√≥n) viene en world.
+    /// Potencia puede venir en pixeles (estable en m√≥vil).
+    /// </summary>
+    private Vector2 ComputeLaunchVelocity(Vector2 rawDirectionWorld, Vector2 currentScreenPos)
     {
+        Vector2 dirWorld = Vector2.ClampMagnitude(rawDirectionWorld, maxAimMagnitude);
+        if (dirWorld.sqrMagnitude < 0.0001f) return Vector2.zero;
 
+        float drag01;
+        if (useScreenSpaceDragForPower)
+        {
+            float pixels = Vector2.Distance(dragStartScreen, currentScreenPos);
+            drag01 = Mathf.Clamp01(pixels / maxDragPixels);
+        }
+        else
+        {
+            drag01 = Mathf.InverseLerp(0f, maxAimMagnitude, dirWorld.magnitude);
+        }
+
+        float power01 = powerCurve != null ? powerCurve.Evaluate(drag01) : drag01;
+        if (clampCurveOutput01) power01 = Mathf.Clamp01(power01);
+
+        float speed = Mathf.Lerp(minLaunchSpeed, maxLaunchSpeed, power01);
+        return dirWorld.normalized * speed;
+    }
+
+    private float ComputePower01(Vector2 rawDirectionWorld, Vector2 currentScreenPos)
+    {
+        Vector2 dirWorld = Vector2.ClampMagnitude(rawDirectionWorld, maxAimMagnitude);
+        if (dirWorld.sqrMagnitude < 0.0001f) return 0f;
+
+        float drag01;
+        if (useScreenSpaceDragForPower)
+        {
+            float pixels = Vector2.Distance(dragStartScreen, currentScreenPos);
+            drag01 = Mathf.Clamp01(pixels / maxDragPixels);
+        }
+        else
+        {
+            drag01 = Mathf.InverseLerp(0f, maxAimMagnitude, dirWorld.magnitude);
+        }
+
+        float power01 = powerCurve != null ? powerCurve.Evaluate(drag01) : drag01;
+        if (clampCurveOutput01) power01 = Mathf.Clamp01(power01);
+
+        return power01;
+    }
+
+
+    private void LaunchBall(Vector2 directionWorld, Vector2 releaseScreenPos)
+    {
         if (GameFlowManager.Instance != null && !GameFlowManager.Instance.CanShoot)
             return;
 
@@ -152,13 +223,9 @@ public class Launcher : MonoBehaviour
         if (ShotManager.Instance != null && ShotManager.Instance.ShotInProgress)
             return;
 
-        PegManager.Instance.ResetAllPegs();
-
         OrbData orb = (orbManager != null) ? orbManager.CurrentOrb : null;
 
         ShotManager.Instance?.OnShotStarted(orb);
-
-        direction = Vector2.ClampMagnitude(direction, maxAimMagnitude);
 
         Rigidbody2D ballInstance = Instantiate(ballPrefab, launchPoint.position, Quaternion.identity);
 
@@ -166,7 +233,8 @@ public class Launcher : MonoBehaviour
         if (ballController != null)
             ballController.Init(orb);
 
-        ballInstance.linearVelocity = direction * launchForce;
+        Vector2 vel = ComputeLaunchVelocity(directionWorld, releaseScreenPos);
+        ballInstance.linearVelocity = vel;
     }
 
     // ---------------- Trajectory Preview ----------------
@@ -183,7 +251,7 @@ public class Launcher : MonoBehaviour
             trajectoryLine.positionCount = 0;
     }
 
-    private void UpdateTrajectoryPreview(Vector2 direction)
+    private void UpdateTrajectoryPreview(Vector2 directionWorld, Vector2 currentScreenPos)
     {
         if (trajectoryLine == null || launchPoint == null) return;
 
@@ -193,27 +261,25 @@ public class Launcher : MonoBehaviour
             return;
         }
 
-        direction = Vector2.ClampMagnitude(direction, maxAimMagnitude);
-
-        if (direction.sqrMagnitude < 0.0001f)
+        Vector2 velocity = ComputeLaunchVelocity(directionWorld, currentScreenPos);
+        if (velocity.sqrMagnitude < 0.0001f)
         {
             ClearTrajectory();
             return;
         }
 
-        // Velocidad (coherente con LaunchBall)
-        Vector2 velocity = direction * launchForce;
-
-        // Cap para preview
+        // Cap opcional del preview (recomendado: maxPreviewSpeed = maxLaunchSpeed)
         if (velocity.magnitude > maxPreviewSpeed)
             velocity = velocity.normalized * maxPreviewSpeed;
 
         Vector2 pos = launchPoint.position;
         Vector2 dir = velocity.normalized;
 
-        // tramo inicial proporcional a potencia
-        float power01 = Mathf.InverseLerp(0f, maxPreviewSpeed, velocity.magnitude);
-        float firstLen = Mathf.Lerp(3f, maxDistancePerSegment, power01);
+        float power01 = ComputePower01(directionWorld, currentScreenPos);
+
+        float minLen = 0.8f;
+        float firstLen = Mathf.Lerp(minLen, maxDistancePerSegment, power01);
+
 
         float radius = (ballRadiusWorld > 0f) ? ballRadiusWorld : previewBallRadiusFallback;
 
@@ -225,8 +291,7 @@ public class Launcher : MonoBehaviour
             collisionMask
         );
 
-        List<Vector3> points = new List<Vector3>(4);
-        points.Add(pos);
+        List<Vector3> points = new List<Vector3>(4) { pos };
 
         if (hit.collider == null)
         {
@@ -241,10 +306,11 @@ public class Launcher : MonoBehaviour
         if (maxBounces > 0)
         {
             Vector2 bounceDir = Vector2.Reflect(dir, hit.normal).normalized;
-
-            // arrancamos fuera del collider
             Vector2 bounceStart = hitPoint + hit.normal * (radius + 0.01f);
-            points.Add(bounceStart + bounceDir * bounceTailLength);
+            float minTail = 0.2f;
+            float tailT = Mathf.SmoothStep(0f, 1f, power01);
+            float tailLen = Mathf.Lerp(minTail, bounceTailLength, tailT);
+            points.Add(bounceStart + bounceDir * tailLen);
         }
 
         ApplyLine(points);
@@ -264,7 +330,6 @@ public class Launcher : MonoBehaviour
         var circle = ballPrefab.GetComponent<CircleCollider2D>();
         if (circle == null) return previewBallRadiusFallback;
 
-        // Prefab suele tener escala uniforme
         float scale = ballPrefab.transform.localScale.x;
         return circle.radius * scale;
     }

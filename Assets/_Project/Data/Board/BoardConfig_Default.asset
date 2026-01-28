@@ -25,6 +25,17 @@ MonoBehaviour:
   seed: 12345
   randomizeSeedEachRun: 1
   criticalChance: 0.276
+  specialChance: 0.503
+  specialPegs:
+  - definition: {fileID: 11400000, guid: 06d4b2a7020065c4883d00e5141d2be8, type: 2}
+    weight: 0.6
+    maxPerBoard: 3
+  - definition: {fileID: 11400000, guid: 1e0b2bfc337364b4fae5cbe2d06e4ac0, type: 2}
+    weight: 1
+    maxPerBoard: 3
+  - definition: {fileID: 11400000, guid: b247ae88b1b4856439aff3f65f684458, type: 2}
+    weight: 1.2
+    maxPerBoard: 3
   layouts:
   - {fileID: 11400000, guid: 0e60b14eedfb9e54588f9ec73e1bd81f, type: 2}
   - {fileID: 11400000, guid: e3a523c1a5a464846bc32ef22cfa42e2, type: 2}

@@ -17,8 +17,7 @@ public class PegManager : MonoBehaviour
     public void RegisterPeg(Peg peg)
     {
         if (peg == null) return;
-        if (!pegs.Contains(peg))
-            pegs.Add(peg);
+        if (!pegs.Contains(peg)) pegs.Add(peg);
     }
 
     public void UnregisterPeg(Peg peg)
@@ -27,13 +26,51 @@ public class PegManager : MonoBehaviour
         pegs.Remove(peg);
     }
 
-    public void ResetAllPegs()
+    public void ResetAllPegsForNewEncounter()
     {
-        // Limpia referencias muertas y resetea estado/visual
         for (int i = pegs.Count - 1; i >= 0; i--)
         {
             if (pegs[i] == null) { pegs.RemoveAt(i); continue; }
-            pegs[i].ResetPeg();
+            pegs[i].ResetForNewEncounter();
+        }
+    }
+
+    /// <summary>Revive todos los consumidos en el encounter actual (excepto un peg opcional).</summary>
+    public void RefreshEncounterPegs(Peg exclude)
+    {
+        for (int i = pegs.Count - 1; i >= 0; i--)
+        {
+            Peg p = pegs[i];
+            if (p == null) { pegs.RemoveAt(i); continue; }
+            if (p == exclude) continue;
+
+            if (p.IsConsumed)
+                p.RestoreForSameEncounter();
+        }
+    }
+
+    /// <summary>
+    /// Consume pegs dentro de un radio. Opcional: contar como hits (normal/crit según cada peg).
+    /// </summary>
+    public void ConsumePegsInRadius(Vector2 center, float radius, LayerMask mask, Peg exclude, bool countHits)
+    {
+        Collider2D[] hits = Physics2D.OverlapCircleAll(center, radius, mask);
+        if (hits == null || hits.Length == 0) return;
+
+        for (int i = 0; i < hits.Length; i++)
+        {
+            var col = hits[i];
+            if (col == null) continue;
+
+            Peg p = col.GetComponent<Peg>();
+            if (p == null) continue;
+            if (p == exclude) continue;
+            if (p.IsConsumed) continue;
+
+            if (countHits)
+                ShotManager.Instance?.RegisterPegHit(p.Type);
+
+            p.ForceConsumeNoHitCount();
         }
     }
 }

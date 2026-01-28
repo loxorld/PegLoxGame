@@ -17,16 +17,19 @@ public class BoardManager : MonoBehaviour
     [SerializeField] private BoardConfig config;
 
     [Header("Anti-Overlap")]
-    [SerializeField] private LayerMask pegOverlapMask;          // capa donde están los Pegs
+    [SerializeField] private LayerMask pegOverlapMask;
     [SerializeField, Min(1)] private int maxTriesPerCell = 10;
     [SerializeField, Min(0f)] private float extraSeparation = 0.02f;
 
     [Header("Spawn Safe Zone")]
-    [SerializeField, Min(0f)] private float spawnSafeHeight = 1.5f; // espacio libre arriba del bottom del área jugable
+    [SerializeField, Min(0f)] private float spawnSafeHeight = 1.5f;
 
     [SerializeField] private BattleManager battle;
 
     private readonly List<GameObject> spawned = new List<GameObject>();
+
+    // Track de cuántos especiales spawneamos este board
+    private readonly Dictionary<PegDefinition, int> specialCounts = new Dictionary<PegDefinition, int>();
 
     private void Awake()
     {
@@ -39,8 +42,6 @@ public class BoardManager : MonoBehaviour
         if (battle != null)
             battle.EncounterStarted += OnEncounterStarted;
 
-        // Primer encounter ya se dispara desde BattleManager.StartNewEncounter()
-        // pero por seguridad, si no hay battle asignado generamos una vez.
         if (battle == null)
             GenerateBoard();
     }
@@ -60,6 +61,7 @@ public class BoardManager : MonoBehaviour
     public void GenerateBoard()
     {
         ClearBoard();
+        specialCounts.Clear();
 
         if (cam == null || pegPrefab == null || config == null)
         {
@@ -89,7 +91,6 @@ public class BoardManager : MonoBehaviour
             cols = layout.cols;
         }
 
-
         Rect visibleWorld = CameraWorldRect.GetVisibleWorldRect(cam);
 
         float minWorldX = Mathf.Lerp(visibleWorld.xMin, visibleWorld.xMax, config.viewportMinX);
@@ -100,11 +101,9 @@ public class BoardManager : MonoBehaviour
         Vector2 minW = new Vector2(minWorldX, minWorldY);
         Vector2 maxW = new Vector2(maxWorldX, maxWorldY);
 
-        // Normalizar por si vienen invertidos
         Vector2 worldMin = new Vector2(Mathf.Min(minW.x, maxW.x), Mathf.Min(minW.y, maxW.y));
         Vector2 worldMax = new Vector2(Mathf.Max(minW.x, maxW.x), Mathf.Max(minW.y, maxW.y));
 
-        // Margen
         worldMin += Vector2.one * config.marginWorld;
         worldMax -= Vector2.one * config.marginWorld;
 
@@ -113,12 +112,10 @@ public class BoardManager : MonoBehaviour
         float topBound = worldMax.y;
 
         float bottomBound = worldMin.y + spawnSafeHeight;
-
-        // Si el safe zone hace que no haya espacio, evitamos valores inválidos
         if (bottomBound >= topBound)
         {
             Debug.LogWarning("[Board] spawnSafeHeight too large for current playable area. Reducing to fit.");
-            bottomBound = worldMin.y; // fallback: no recortar
+            bottomBound = worldMin.y;
         }
 
         float spacingX = config.spacingX;
@@ -139,7 +136,6 @@ public class BoardManager : MonoBehaviour
             gridH = (rows - 1) * spacingY;
         }
 
-        // Centro de zona permitida (X normal, Y respeta bottomBound)
         Vector2 permittedCenter = new Vector2(
             (leftBound + rightBound) * 0.5f,
             (bottomBound + topBound) * 0.5f
@@ -150,7 +146,6 @@ public class BoardManager : MonoBehaviour
             permittedCenter.y + gridH * 0.5f
         );
 
-        // Clamp para asegurar que la grilla entra completa dentro de la zona permitida
         start.x = Mathf.Clamp(start.x, leftBound, rightBound - gridW);
         start.y = Mathf.Clamp(start.y, bottomBound + gridH, topBound);
 
@@ -181,16 +176,89 @@ public class BoardManager : MonoBehaviour
                     continue;
                 }
 
-                bool isCrit = rng.NextDouble() < config.criticalChance;
-                PegDefinition def = isCrit ? criticalPegDef : normalPegDef;
+                PegDefinition def = ChoosePegDefinition(rng);
                 peg.SetDefinition(def);
             }
         }
 
-        PegManager.Instance?.ResetAllPegs();
+        PegManager.Instance?.ResetAllPegsForNewEncounter();
     }
 
+    // -------------------- NUEVO: selector data-driven --------------------
 
+    private PegDefinition ChoosePegDefinition(System.Random rng)
+    {
+        // 1) Intentar especial
+        if (config.specialPegs != null && config.specialPegs.Length > 0)
+        {
+            double roll = rng.NextDouble();
+            if (roll < config.specialChance)
+            {
+                PegDefinition special = PickWeightedSpecial(rng);
+                if (special != null) return special;
+                // si no se pudo (por límites), caemos a base normal/crit
+            }
+        }
+
+        // 2) Base: normal vs critical
+        bool isCrit = rng.NextDouble() < config.criticalChance;
+        return isCrit ? criticalPegDef : normalPegDef;
+    }
+
+    private PegDefinition PickWeightedSpecial(System.Random rng)
+    {
+        // Filtramos los que están habilitados y no superaron maxPerBoard
+        float totalWeight = 0f;
+
+        for (int i = 0; i < config.specialPegs.Length; i++)
+        {
+            var entry = config.specialPegs[i];
+            if (entry == null || entry.definition == null) continue;
+            if (entry.weight <= 0f) continue;
+
+            if (entry.maxPerBoard > 0)
+            {
+                int current = specialCounts.TryGetValue(entry.definition, out int v) ? v : 0;
+                if (current >= entry.maxPerBoard) continue;
+            }
+
+            totalWeight += entry.weight;
+        }
+
+        if (totalWeight <= 0f)
+            return null;
+
+        // Roulette wheel
+        float pick = (float)(rng.NextDouble() * totalWeight);
+        float acc = 0f;
+
+        for (int i = 0; i < config.specialPegs.Length; i++)
+        {
+            var entry = config.specialPegs[i];
+            if (entry == null || entry.definition == null) continue;
+            if (entry.weight <= 0f) continue;
+
+            if (entry.maxPerBoard > 0)
+            {
+                int current = specialCounts.TryGetValue(entry.definition, out int v) ? v : 0;
+                if (current >= entry.maxPerBoard) continue;
+            }
+
+            acc += entry.weight;
+            if (pick <= acc)
+            {
+                // Registrar conteo
+                if (!specialCounts.ContainsKey(entry.definition)) specialCounts[entry.definition] = 0;
+                specialCounts[entry.definition]++;
+
+                return entry.definition;
+            }
+        }
+
+        return null;
+    }
+
+    // -------------------------------------------------------------------
 
     private BoardLayout PickRandomLayout(System.Random rng)
     {
@@ -209,7 +277,6 @@ public class BoardManager : MonoBehaviour
         {
             Vector2 pos = ApplyJitter(basePos, rng, spacingX, spacingY);
 
-            // Anti-overlap: si ya hay un peg cerca, reintenta
             if (Physics2D.OverlapCircle(pos, overlapRadius, pegOverlapMask) != null)
                 continue;
 
@@ -232,7 +299,7 @@ public class BoardManager : MonoBehaviour
         var col = pegPrefab.GetComponent<CircleCollider2D>();
         if (col == null) return 0.15f;
 
-        float scale = pegPrefab.transform.localScale.x; // asumimos escala uniforme
+        float scale = pegPrefab.transform.localScale.x;
         return col.radius * scale;
     }
 
