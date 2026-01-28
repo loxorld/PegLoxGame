@@ -35,7 +35,10 @@ public class PegManager : MonoBehaviour
         }
     }
 
-    /// <summary>Revive todos los consumidos en el encounter actual (excepto un peg opcional).</summary>
+    /// <summary>
+    /// Revive todos los consumidos en el encounter actual (excepto un peg opcional).
+    /// (Este método queda igual para no romper nada)
+    /// </summary>
     public void RefreshEncounterPegs(Peg exclude)
     {
         for (int i = pegs.Count - 1; i >= 0; i--)
@@ -43,6 +46,28 @@ public class PegManager : MonoBehaviour
             Peg p = pegs[i];
             if (p == null) { pegs.RemoveAt(i); continue; }
             if (p == exclude) continue;
+
+            if (p.IsConsumed)
+                p.RestoreForSameEncounter();
+        }
+    }
+
+    /// <summary>
+    /// NUEVO: Revive consumidos en el encounter actual, excluyendo:
+    /// - un peg puntual (exclude)
+    /// - y opcionalmente todos los pegs con una PegDefinition específica (excludeDefinition)
+    ///
+    /// Usalo para: "Refresh no revive Refresh".
+    /// </summary>
+    public void RefreshEncounterPegs(Peg exclude, PegDefinition excludeDefinition)
+    {
+        for (int i = pegs.Count - 1; i >= 0; i--)
+        {
+            Peg p = pegs[i];
+            if (p == null) { pegs.RemoveAt(i); continue; }
+
+            if (p == exclude) continue;
+            if (excludeDefinition != null && p.Definition == excludeDefinition) continue;
 
             if (p.IsConsumed)
                 p.RestoreForSameEncounter();
