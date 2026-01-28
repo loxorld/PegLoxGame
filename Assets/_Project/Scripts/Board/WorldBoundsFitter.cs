@@ -1,15 +1,16 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class WorldBoundsFitter : MonoBehaviour
 {
     [Header("References")]
+    [SerializeField] private Camera cam;
     [SerializeField] private Transform ceiling;
     [SerializeField] private Transform leftWall;
     [SerializeField] private Transform rightWall;
 
     [Header("Sizing")]
-    [SerializeField] private float wallThickness = 1f;      // ancho de paredes (world units)
-    [SerializeField] private float ceilingThickness = 1f;   // alto del techo (world units)
+    [SerializeField] private float wallThickness = 1f;
+    [SerializeField] private float ceilingThickness = 1f;
 
     [Header("Padding")]
     [SerializeField] private float topPadding = 0.25f;
@@ -17,23 +18,65 @@ public class WorldBoundsFitter : MonoBehaviour
     [SerializeField] private float bottomPadding = 0.5f;
 
     [Header("World Height")]
-    [SerializeField] private float worldBottomY = -6f;      // 
+    [SerializeField] private float worldBottomY = -6f;
 
-    private void Start()
+    [Header("Auto Refit")]
+    [SerializeField] private bool autoRefitOnChanges = true;
+
+    private Rect lastCamRect;
+    private int lastW;
+    private int lastH;
+
+    private void Awake()
+    {
+        if (cam == null) cam = Camera.main;
+        CacheState();
+    }
+
+    private void OnEnable()
     {
         Fit();
+        CacheState();
+    }
+
+    private void Update()
+    {
+        if (!autoRefitOnChanges || cam == null) return;
+
+        // Si cambia la resolución (rotación, notch, etc.)
+        if (Screen.width != lastW || Screen.height != lastH)
+        {
+            Fit();
+            CacheState();
+            return;
+        }
+
+        // Si cambia el viewport real de la cámara (cam.rect)
+        if (cam.rect != lastCamRect)
+        {
+            Fit();
+            CacheState();
+        }
+    }
+
+    private void CacheState()
+    {
+        lastW = Screen.width;
+        lastH = Screen.height;
+        if (cam != null) lastCamRect = cam.rect;
     }
 
     [ContextMenu("Fit Now")]
     public void Fit()
     {
-        var cam = Camera.main;
+        if (cam == null) cam = Camera.main;
         if (cam == null) return;
 
-        // Bordes visibles del mundo 
-        float topY = cam.ViewportToWorldPoint(new Vector3(0.5f, 1f, 0f)).y;
-        float leftX = cam.ViewportToWorldPoint(new Vector3(0f, 0.5f, 0f)).x;
-        float rightX = cam.ViewportToWorldPoint(new Vector3(1f, 0.5f, 0f)).x;
+        Rect vis = CameraWorldRect.GetVisibleWorldRect(cam);
+
+        float topY = vis.yMax;
+        float leftX = vis.xMin;
+        float rightX = vis.xMax;
 
         float targetTopY = topY + topPadding;
         float targetLeftX = leftX - sidePadding;
@@ -41,16 +84,16 @@ public class WorldBoundsFitter : MonoBehaviour
 
         float bottomY = worldBottomY - bottomPadding;
 
-        // Techo: ancho = distancia entre paredes + margen; alto = ceilingThickness
+        // Techo
         if (ceiling != null)
         {
             ceiling.position = new Vector3(0f, targetTopY, 0f);
 
-            float width = (targetRightX - targetLeftX) + wallThickness; 
+            float width = (targetRightX - targetLeftX) + wallThickness;
             ceiling.localScale = new Vector3(width, ceilingThickness, 1f);
         }
 
-        // Paredes: alto = desde bottom hasta techo; ancho = wallThickness
+        // Paredes
         float wallHeight = Mathf.Max(1f, (targetTopY - bottomY));
         float wallCenterY = bottomY + wallHeight * 0.5f;
 

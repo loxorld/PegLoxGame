@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Collections;
 
 public class DamagePopupSpawner : MonoBehaviour
 {
@@ -13,6 +14,8 @@ public class DamagePopupSpawner : MonoBehaviour
     [SerializeField] private int prewarm = 10;
 
     private readonly Queue<DamagePopup> pool = new();
+    private bool subscribed;
+    private Coroutine subscribeRoutine;
 
     private void Awake()
     {
@@ -24,23 +27,62 @@ public class DamagePopupSpawner : MonoBehaviour
 
     private void OnEnable()
     {
-        if (ShotManager.Instance != null)
-            ShotManager.Instance.ShotResolved += OnShotResolved;
+        TrySubscribe();
+
+        if (!subscribed && subscribeRoutine == null)
+            subscribeRoutine = StartCoroutine(WaitAndSubscribe());
+    }
+
+    private void Start()
+    {
+        if (!subscribed)
+            TrySubscribe();
     }
 
     private void OnDisable()
     {
-        if (ShotManager.Instance != null)
-            ShotManager.Instance.ShotResolved -= OnShotResolved;
+        if (subscribeRoutine != null)
+        {
+            StopCoroutine(subscribeRoutine);
+            subscribeRoutine = null;
+        }
+
+        Unsubscribe();
+    }
+
+    private IEnumerator WaitAndSubscribe()
+    {
+        while (ShotManager.Instance == null)
+            yield return null;
+
+        TrySubscribe();
+        subscribeRoutine = null;
+    }
+
+    private void TrySubscribe()
+    {
+        var sm = ShotManager.Instance;
+        if (sm == null || subscribed) return;
+
+        sm.ShotResolved += OnShotResolved;
+        subscribed = true;
+    }
+
+    private void Unsubscribe()
+    {
+        var sm = ShotManager.Instance;
+        if (sm == null || !subscribed) { subscribed = false; return; }
+
+        sm.ShotResolved -= OnShotResolved;
+        subscribed = false;
     }
 
     private void OnShotResolved(ShotSummary s)
     {
         if (battle == null || battle.CurrentEnemy == null) return;
-        var enemyTf = battle.CurrentEnemy.transform;
 
         int damage = s.PredictedDamage;
-        Spawn(enemyTf.position, damage);
+        Spawn(battle.CurrentEnemy.transform.position, damage);
     }
 
     private void Spawn(Vector3 worldPos, int damage)
@@ -50,12 +92,11 @@ public class DamagePopupSpawner : MonoBehaviour
         DamagePopup p = pool.Count > 0 ? pool.Dequeue() : CreatePopup();
         p.gameObject.SetActive(true);
 
-        // Convertir posición del mundo a posición en canvas
         Vector3 screenPos = worldCamera.WorldToScreenPoint(worldPos);
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
             canvasRoot,
             screenPos,
-            null, // overlay
+            null, // Canvas overlay
             out var localPoint
         );
 
@@ -65,12 +106,10 @@ public class DamagePopupSpawner : MonoBehaviour
 
         p.Show(damage);
 
-        // Cuando se desactiva, vuelve al pool (polling simple)
-        // (lo hago con un watcher liviano)
         StartCoroutine(ReturnWhenHidden(p));
     }
 
-    private System.Collections.IEnumerator ReturnWhenHidden(DamagePopup p)
+    private IEnumerator ReturnWhenHidden(DamagePopup p)
     {
         while (p.gameObject.activeSelf) yield return null;
         pool.Enqueue(p);

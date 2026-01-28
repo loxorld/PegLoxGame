@@ -1,4 +1,4 @@
-using System;
+Ôªøusing System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -17,7 +17,7 @@ public class BoardManager : MonoBehaviour
     [SerializeField] private BoardConfig config;
 
     [Header("Anti-Overlap")]
-    [SerializeField] private LayerMask pegOverlapMask;          // capa donde est·n los Pegs
+    [SerializeField] private LayerMask pegOverlapMask;          // capa donde est√°n los Pegs
     [SerializeField, Min(1)] private int maxTriesPerCell = 10;
     [SerializeField, Min(0f)] private float extraSeparation = 0.02f;
 
@@ -86,21 +86,37 @@ public class BoardManager : MonoBehaviour
             cols = layout.cols;
         }
 
-        // ¡rea jugable en world (por viewport) + margen
-        Vector2 minW = cam.ViewportToWorldPoint(new Vector3(config.viewportMinX, config.viewportMinY, 0f));
-        Vector2 maxW = cam.ViewportToWorldPoint(new Vector3(config.viewportMaxX, config.viewportMaxY, 0f));
-        minW += Vector2.one * config.marginWorld;
-        maxW -= Vector2.one * config.marginWorld;
+        // ============================
+        // ‚úÖ VIEWPORT REAL (cam.rect)
+        // ============================
+        // Mapeamos los min/max del config (0..1) dentro del viewport real de la c√°mara (cam.rect)
+        Rect vr = cam.rect;
+
+        float vMinX = Mathf.Lerp(vr.xMin, vr.xMax, config.viewportMinX);
+        float vMaxX = Mathf.Lerp(vr.xMin, vr.xMax, config.viewportMaxX);
+        float vMinY = Mathf.Lerp(vr.yMin, vr.yMax, config.viewportMinY);
+        float vMaxY = Mathf.Lerp(vr.yMin, vr.yMax, config.viewportMaxY);
+
+        Vector2 minW = cam.ViewportToWorldPoint(new Vector3(vMinX, vMinY, 0f));
+        Vector2 maxW = cam.ViewportToWorldPoint(new Vector3(vMaxX, vMaxY, 0f));
+
+        // Normalizar por si vienen invertidos
+        Vector2 worldMin = new Vector2(Mathf.Min(minW.x, maxW.x), Mathf.Min(minW.y, maxW.y));
+        Vector2 worldMax = new Vector2(Mathf.Max(minW.x, maxW.x), Mathf.Max(minW.y, maxW.y));
+
+        // Margen
+        worldMin += Vector2.one * config.marginWorld;
+        worldMax -= Vector2.one * config.marginWorld;
 
         float gridW = (cols - 1) * config.spacingX;
         float gridH = (rows - 1) * config.spacingY;
 
-        Vector2 center = (minW + maxW) * 0.5f;
+        Vector2 center = (worldMin + worldMax) * 0.5f;
         Vector2 start = new Vector2(center.x - gridW * 0.5f, center.y + gridH * 0.5f);
 
-        // Clamp del origen para que la grilla entre completa
-        start.x = Mathf.Clamp(start.x, minW.x, maxW.x - gridW);
-        start.y = Mathf.Clamp(start.y, minW.y + gridH, maxW.y);
+        // Clamp para asegurar que entre completa dentro del rect
+        start.x = Mathf.Clamp(start.x, worldMin.x, worldMax.x - gridW);
+        start.y = Mathf.Clamp(start.y, worldMin.y + gridH, worldMax.y);
 
         float pegRadius = GetPegWorldRadius();
         float overlapRadius = pegRadius + extraSeparation;
@@ -131,14 +147,13 @@ public class BoardManager : MonoBehaviour
 
                 bool isCrit = rng.NextDouble() < config.criticalChance;
                 PegDefinition def = isCrit ? criticalPegDef : normalPegDef;
-
                 peg.SetDefinition(def);
             }
         }
 
-        // Al terminar, por las dudas de orden de ejecuciÛn, reseteamos estado/visual coherente
         PegManager.Instance?.ResetAllPegs();
     }
+
 
     private BoardLayout PickRandomLayout(System.Random rng)
     {
