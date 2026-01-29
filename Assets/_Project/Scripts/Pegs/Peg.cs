@@ -177,17 +177,6 @@ public class Peg : MonoBehaviour
         Consume();
     }
 
-    public void ReviveInSameEncounter()
-    {
-        consumed = false;
-
-        if (col != null)
-            col.enabled = true;
-
-        if (sr != null)
-            sr.enabled = true;
-
-        ApplyIdleVisual();
-    }
+    
 
 }

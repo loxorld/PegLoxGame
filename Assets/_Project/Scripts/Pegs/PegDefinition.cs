@@ -8,7 +8,7 @@ public class PegDefinition : ScriptableObject
     [Header("Visuals")]
     public Color idleColor = Color.cyan;
 
-    [Tooltip("Color que se usa si querés feedback de 'hit' estándar. (En tu caso el peg se oculta al consumirse).")]
+    [Tooltip("Color que se usa si querés feedback de 'hit' estándar")]
     public Color hitColor = Color.gray;
 
     [Header("Behaviors (data-driven)")]

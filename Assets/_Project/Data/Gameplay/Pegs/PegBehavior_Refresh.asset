@@ -12,3 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 602dbf4fbd862fe439b92af7e8a7497c, type: 3}
   m_Name: PegBehavior_Refresh
   m_EditorClassIdentifier: Assembly-CSharp::PegBehavior_Refresh
+  refreshDefinition: {fileID: 11400000, guid: 06d4b2a7020065c4883d00e5141d2be8, type: 2}
