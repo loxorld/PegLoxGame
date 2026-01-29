@@ -9,9 +9,10 @@ public class PauseMenuUI : MonoBehaviour
 
     [Header("UI")]
     [SerializeField] private GameObject root;   // Panel overlay completo
+    [SerializeField] private OverlayAnimator overlayAnim; // OverlayAnimator en el root
     [SerializeField] private Button resumeButton;
     [SerializeField] private Button restartButton;
-    [SerializeField] private Button menuButton; // Nuevo botón para volver al menú
+    [SerializeField] private Button menuButton; // Nuevo boton para volver al menu
 
     private void Awake()
     {
@@ -40,14 +41,50 @@ public class PauseMenuUI : MonoBehaviour
 
     private void Sync()
     {
-        if (flow == null || root == null) return;
-        root.SetActive(flow.State == GameState.Paused);
+        if (flow == null) return;
+
+        if (flow.State == GameState.Paused)
+            ShowOverlay();
+        else
+            HideOverlayImmediate();
     }
 
     private void OnStateChanged(GameState state)
     {
-        if (root == null) return;
-        root.SetActive(state == GameState.Paused);
+        if (state == GameState.Paused)
+            ShowOverlay();
+        else
+            HideOverlay();
+    }
+
+    private void ShowOverlay()
+    {
+        if (root != null && !root.activeSelf)
+            root.SetActive(true);
+
+        if (overlayAnim != null)
+        {
+            overlayAnim.Show();
+            return;
+        }
+    }
+
+    private void HideOverlay()
+    {
+        if (overlayAnim != null)
+        {
+            overlayAnim.Hide();
+            return;
+        }
+
+        if (root != null)
+            root.SetActive(false);
+    }
+
+    private void HideOverlayImmediate()
+    {
+        if (root != null)
+            root.SetActive(false);
     }
 
     private void OnResume()
@@ -62,16 +99,16 @@ public class PauseMenuUI : MonoBehaviour
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
-    // NUEVO: volver al menú principal
+    // NUEVO: volver al menu principal
     private void OnMenu()
     {
-        // Asegúrate de restaurar la escala de tiempo
+        // Asegurate de restaurar la escala de tiempo
         Time.timeScale = 1f;
 
         // Reanudar por si estaba en estado Paused
         flow?.Resume();
 
-        // Cargar la escena del menú principal en modo Single
+        // Cargar la escena del menu principal en modo Single
         SceneManager.LoadScene("MainMenu", LoadSceneMode.Single);
     }
 }

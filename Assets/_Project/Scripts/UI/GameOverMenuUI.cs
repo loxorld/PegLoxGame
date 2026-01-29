@@ -10,6 +10,7 @@ public class GameOverMenuUI : MonoBehaviour
 
     [Header("UI")]
     [SerializeField] private GameObject root;   // overlay completo
+    [SerializeField] private OverlayAnimator overlayAnim; // OverlayAnimator en el root
     [SerializeField] private Button restartButton;
 
     private void Awake()
@@ -49,13 +50,50 @@ public class GameOverMenuUI : MonoBehaviour
 
     private void OnStateChanged(GameState state)
     {
-        Sync();
+        if (state == GameState.GameOver)
+            ShowOverlay();
+        else
+            HideOverlay();
     }
 
     private void Sync()
     {
-        if (flow == null || root == null) return;
-        root.SetActive(flow.State == GameState.GameOver);
+        if (flow == null) return;
+
+        if (flow.State == GameState.GameOver)
+            ShowOverlay();
+        else
+            HideOverlayImmediate();
+    }
+
+    private void ShowOverlay()
+    {
+        if (root != null && !root.activeSelf)
+            root.SetActive(true);
+
+        if (overlayAnim != null)
+        {
+            overlayAnim.Show();
+            return;
+        }
+    }
+
+    private void HideOverlay()
+    {
+        if (overlayAnim != null)
+        {
+            overlayAnim.Hide();
+            return;
+        }
+
+        if (root != null)
+            root.SetActive(false);
+    }
+
+    private void HideOverlayImmediate()
+    {
+        if (root != null)
+            root.SetActive(false);
     }
 
     private void Restart()
