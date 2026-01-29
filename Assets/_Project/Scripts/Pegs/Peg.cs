@@ -112,8 +112,7 @@ public class Peg : MonoBehaviour
         if (consumed) return;
         if (!collision.gameObject.CompareTag("Ball")) return;
 
-        // 1) Este peg cuenta como hit SIEMPRE (normal o crítico según Definition.type)
-        ShotManager.Instance?.RegisterPegHit(Type);
+        
 
         // 2) Behaviors deciden si se consume o no (durable: no en primer hit)
         bool consumeNow = true;
@@ -133,6 +132,8 @@ public class Peg : MonoBehaviour
                 if (!wantsConsume) consumeNow = false;
             }
         }
+
+        ShotManager.Instance?.RegisterPegHit(Type);
 
         if (consumeNow)
         {

@@ -81,13 +81,12 @@ public class ShotManager : MonoBehaviour
 
         pipeline.Clear();
 
-        // 1) Reliquias persistentes
-        if (relics != null)
-            pipeline.AddRange(relics.ActiveRelics);
-
-        // 2) Efectos del orbe
+        // Orden de efectos: Orbe -> Reliquia
         if (orb != null && orb.orbEffects != null)
-            pipeline.AddRange(orb.orbEffects);
+            pipeline.AddOrbEffects(orb.orbEffects);
+
+        if (relics != null)
+            pipeline.AddRelicEffects(relics.ActiveRelics);
 
         pipeline.OnShotStart(currentShot);
         PublishStats();
@@ -100,6 +99,7 @@ public class ShotManager : MonoBehaviour
         if (!CanProcessCombat()) return;
 
         currentShot.RegisterHit(pegType);
+        // Orden consistente: OrbEffects -> RelicEffects (PegBehaviors se ejecutan en Peg antes de llamar acá).
         pipeline.OnPegHit(currentShot, pegType);
         PublishStats();
     }

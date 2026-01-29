@@ -98,7 +98,7 @@ public class GameOverMenuUI : MonoBehaviour
 
     private void Restart()
     {
-        Time.timeScale = 1f;
+        flow?.SetState(GameState.Combat);
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 }

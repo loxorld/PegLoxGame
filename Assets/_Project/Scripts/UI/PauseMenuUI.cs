@@ -95,15 +95,14 @@ public class PauseMenuUI : MonoBehaviour
     private void OnRestart()
     {
         // Reiniciar la escena actual (MVP)
-        Time.timeScale = 1f; // Por si estaba pausado
+        flow?.SetState(GameState.Combat);
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
     // NUEVO: volver al menu principal
     private void OnMenu()
     {
-        // Asegurate de restaurar la escala de tiempo
-        Time.timeScale = 1f;
+        
 
         // Reanudar por si estaba en estado Paused
         flow?.Resume();
