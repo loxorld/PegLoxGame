@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: DifficultyConfig_
   m_EditorClassIdentifier: Assembly-CSharp::DifficultyConfig
   stages:
-  - enemiesToDefeat: 4
+  - enemiesToDefeat: 1
     enemyHpMultiplier: 1
     enemyDamageMultiplier: 1
     enemyHpBonus: 0

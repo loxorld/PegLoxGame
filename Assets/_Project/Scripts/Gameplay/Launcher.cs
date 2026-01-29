@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 public class Launcher : MonoBehaviour
 {
@@ -75,9 +77,18 @@ public class Launcher : MonoBehaviour
         if (Touchscreen.current != null)
         {
             var touch = Touchscreen.current.primaryTouch;
+            int touchId = touch.touchId.ReadValue();
 
             if (touch.press.wasPressedThisFrame)
             {
+                if (IsPointerOverBlockingUI(touch.position.ReadValue(), touchId))
+                {
+                    isDragging = false;
+                    SetTrajectoryVisible(false);
+                    ClearTrajectory();
+                    return;
+                }
+
                 dragStartScreen = touch.position.ReadValue();
                 dragStartWorld = ScreenToWorld(dragStartScreen);
 
@@ -115,6 +126,14 @@ public class Launcher : MonoBehaviour
 
         if (Mouse.current.leftButton.wasPressedThisFrame)
         {
+            if (IsPointerOverBlockingUI(Mouse.current.position.ReadValue(), null))
+            {
+                isDragging = false;
+                SetTrajectoryVisible(false);
+                ClearTrajectory();
+                return;
+            }
+
             dragStartScreen = Mouse.current.position.ReadValue();
             dragStartWorld = ScreenToWorld(dragStartScreen);
 
@@ -145,6 +164,32 @@ public class Launcher : MonoBehaviour
         }
     }
 
+    private bool IsPointerOverBlockingUI(Vector2 screenPosition, int? pointerId)
+    {
+        if (EventSystem.current == null) return false;
+        if (pointerId.HasValue && !EventSystem.current.IsPointerOverGameObject(pointerId.Value)) return false;
+        if (!pointerId.HasValue && !EventSystem.current.IsPointerOverGameObject()) return false;
+
+        var eventData = new PointerEventData(EventSystem.current)
+        {
+            position = screenPosition
+        };
+
+        var results = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(eventData, results);
+
+        foreach (var result in results)
+        {
+            if (result.gameObject == null) continue;
+            var selectable = result.gameObject.GetComponentInParent<Selectable>();
+            if (selectable != null && selectable.IsInteractable())
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
     private void HandleOrbSelectionLegacy()
     {
         if (Keyboard.current == null || orbs == null || orbs.Length == 0) return;

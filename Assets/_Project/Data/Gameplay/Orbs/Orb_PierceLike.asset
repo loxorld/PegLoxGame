@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Orb_PierceLike
   m_EditorClassIdentifier: Assembly-CSharp::OrbData
   orbName: Pierce
+  icon: {fileID: 0}
+  description: "Orbe est\xE1ndar y balanceado."
   damagePerHit: 2
   bounciness: 0.95
   linearDrag: 0

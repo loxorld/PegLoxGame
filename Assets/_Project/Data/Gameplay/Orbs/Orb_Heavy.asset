@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Orb_Heavy
   m_EditorClassIdentifier: Assembly-CSharp::OrbData
   orbName: Heavy
+  icon: {fileID: 0}
+  description: "Orbe est\xE1ndar y balanceado."
   damagePerHit: 3
   bounciness: 0.6
   linearDrag: 0.2

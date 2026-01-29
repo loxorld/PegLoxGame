@@ -12,4 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3cd0b98ed1997314291223dd63a5d909, type: 3}
   m_Name: Relic_BonusDamagePerHit
   m_EditorClassIdentifier: Assembly-CSharp::RelicBonusDamagePerHit
+  displayName: bonus
+  icon: {fileID: 0}
+  description: asdasdasd
   bonus: 1

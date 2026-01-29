@@ -12,4 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ebd8b4915f130b6479652c845a98a3e0, type: 3}
   m_Name: Relic_CritBoostMultiplier
   m_EditorClassIdentifier: Assembly-CSharp::Relic_CritBoostMultiplier
+  displayName: multi
+  icon: {fileID: 0}
+  description: asdasdasd
   extraPerCrit: 1

@@ -3,6 +3,36 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+public enum RewardKind
+{
+    Orb,
+    Relic
+}
+
+[Serializable]
+public struct RewardOption
+{
+    public RewardKind kind;
+    public OrbData orb;
+    public ShotEffectBase relic;
+
+    public bool IsValid =>
+        (kind == RewardKind.Orb && orb != null) ||
+        (kind == RewardKind.Relic && relic != null);
+
+    public string DisplayName =>
+        kind == RewardKind.Orb ? (orb != null ? orb.orbName : "-") :
+        (relic != null ? relic.DisplayName : "-");
+
+    public Sprite DisplayIcon =>
+        kind == RewardKind.Orb ? (orb != null ? orb.icon : null) :
+        (relic != null ? relic.Icon : null);
+
+    public string DisplayDescription =>
+        kind == RewardKind.Orb ? (orb != null ? orb.description : "") :
+        (relic != null ? relic.Description : "");
+}
+
 public class RewardManager : MonoBehaviour
 {
     [SerializeField] private BattleManager battle;
@@ -16,17 +46,22 @@ public class RewardManager : MonoBehaviour
     [SerializeField] private OrbData[] orbPool;
 
     [Header("Rules")]
-    [SerializeField, Range(0f, 1f)] private float chanceOrb = 0.5f; // 50/50
+    [SerializeField, Range(0f, 1f)] private float chanceOrb = 0.5f; // probabilidad por slot
+    [SerializeField] private bool avoidDuplicatesInSameRoll = true;
+
+    [Header("Debug / PC Fallback")]
+    [SerializeField] private bool enableKeyboardFallback = true;
 
     // UI/event consumers
-    public event Action<OrbData[]> OrbChoicesPresented;
+    public event Action<RewardOption[]> RewardChoicesPresented;
     public event Action RewardResolved;
 
     public bool IsAwaitingChoice => awaitingChoice;
-    public IReadOnlyList<OrbData> CurrentChoices => pendingOrbs;
+    public IReadOnlyList<RewardOption> CurrentChoices => pendingChoices;
 
-    private OrbData[] pendingOrbs;
+    private RewardOption[] pendingChoices;
     private bool awaitingChoice;
+    private bool selectionLocked;
 
     private void Start()
     {
@@ -42,68 +77,85 @@ public class RewardManager : MonoBehaviour
 
     private void Update()
     {
-        // Fallback para Editor/PC (podés desactivarlo cuando UI esté OK)
+        if (!enableKeyboardFallback) return;
         if (!awaitingChoice) return;
         if (Keyboard.current == null) return;
 
-        if (Keyboard.current.digit1Key.wasPressedThisFrame) ChooseOrb(1);
-        else if (Keyboard.current.digit2Key.wasPressedThisFrame) ChooseOrb(2);
-        else if (Keyboard.current.digit3Key.wasPressedThisFrame) ChooseOrb(3);
+        if (Keyboard.current.digit1Key.wasPressedThisFrame) Choose(1);
+        else if (Keyboard.current.digit2Key.wasPressedThisFrame) Choose(2);
+        else if (Keyboard.current.digit3Key.wasPressedThisFrame) Choose(3);
     }
 
     private void OnEncounterCompleted()
     {
-        bool giveOrb = UnityEngine.Random.value < chanceOrb;
+        // Generar 3 opciones mixtas (Orb/Relic)
+        pendingChoices = GenerateMixedChoices(3);
 
-        if (giveOrb && orbs != null && orbPool != null && orbPool.Length > 0)
+        // Si no pudimos generar nada válido, resolvemos y continuamos
+        if (pendingChoices == null || pendingChoices.Length == 0)
         {
-            pendingOrbs = GetRandomUniqueOrbs(3);
-            awaitingChoice = true;
-
-            GameFlowManager.Instance?.SetState(GameState.RewardChoice);
-
-            Debug.Log("[Reward] Choose an orb: 1/2/3");
-            for (int i = 0; i < pendingOrbs.Length; i++)
-                Debug.Log($"  [{i + 1}] {pendingOrbs[i].orbName}");
-
-            // Avisar a UI
-            OrbChoicesPresented?.Invoke(pendingOrbs);
-
-            return;
-        }
-
-        // Si no hay orbe, damos reliquia (si hay pool)
-        if (relics != null && relicPool != null && relicPool.Length > 0)
-        {
-            ShotEffectBase chosen = relicPool[UnityEngine.Random.Range(0, relicPool.Length)];
-            relics.AddRelic(chosen);
-            Debug.Log($"[Reward] Relic reward: {chosen.name}");
-        }
-
-        ResolveRewardAndContinue();
-    }
-
-    public void ChooseOrb(int choiceIndex)
-    {
-        if (!awaitingChoice || pendingOrbs == null) return;
-
-        int i = choiceIndex - 1;
-        if (i < 0 || i >= pendingOrbs.Length) return;
-
-        OrbData chosen = pendingOrbs[i];
-
-        awaitingChoice = false;
-        pendingOrbs = null;
-
-        if (orbs == null)
-        {
-            Debug.LogError("[Reward] OrbManager reference missing.");
+            Debug.LogWarning("[Reward] No valid rewards available. Continuing.");
             ResolveRewardAndContinue();
             return;
         }
 
-        orbs.AddOrb(chosen);
-        Debug.Log($"[Reward] Chosen orb: {chosen.orbName}");
+        awaitingChoice = true;
+        selectionLocked = false;
+
+        GameFlowManager.Instance?.SetState(GameState.RewardChoice);
+
+        Debug.Log("[Reward] Choose a reward: 1/2/3");
+        for (int i = 0; i < pendingChoices.Length; i++)
+            Debug.Log($"  [{i + 1}] {pendingChoices[i].kind} - {pendingChoices[i].DisplayName}");
+
+        RewardChoicesPresented?.Invoke(pendingChoices);
+    }
+
+    public void Choose(int choiceIndex)
+    {
+        if (!awaitingChoice) return;
+        if (selectionLocked) return;
+
+        if (pendingChoices == null || pendingChoices.Length == 0) return;
+
+        int i = choiceIndex - 1;
+        if (i < 0 || i >= pendingChoices.Length) return;
+
+        RewardOption chosen = pendingChoices[i];
+        if (!chosen.IsValid) return;
+
+        // lock EXACTLY-ONCE
+        selectionLocked = true;
+        awaitingChoice = false;
+
+        // Limpiamos primero para evitar dobles aplicaciones por eventos
+        pendingChoices = null;
+
+        // Aplicar recompensa
+        if (chosen.kind == RewardKind.Orb)
+        {
+            if (orbs == null)
+            {
+                Debug.LogError("[Reward] OrbManager reference missing.");
+                ResolveRewardAndContinue();
+                return;
+            }
+
+            orbs.AddOrb(chosen.orb);
+            Debug.Log($"[Reward] Chosen ORB: {chosen.orb.orbName}");
+        }
+        else // Relic
+        {
+            if (relics == null)
+            {
+                Debug.LogError("[Reward] RelicManager reference missing.");
+                ResolveRewardAndContinue();
+                return;
+            }
+
+            relics.AddRelic(chosen.relic);
+            Debug.Log($"[Reward] Chosen RELIC: {chosen.relic.name}");
+        }
 
         ResolveRewardAndContinue();
     }
@@ -118,25 +170,62 @@ public class RewardManager : MonoBehaviour
             battle.ContinueAfterRewards();
     }
 
-    private OrbData[] GetRandomUniqueOrbs(int count)
+    private RewardOption[] GenerateMixedChoices(int count)
     {
-        count = Mathf.Clamp(count, 1, orbPool.Length);
+        count = Mathf.Clamp(count, 1, 3);
 
-        var used = new System.Collections.Generic.HashSet<OrbData>();
+        var result = new List<RewardOption>(count);
+
+        // Para evitar duplicados dentro del mismo roll
+        var usedOrbs = new HashSet<OrbData>();
+        var usedRelics = new HashSet<ShotEffectBase>();
 
         int guard = 0;
-        while (used.Count < count && guard < 200)
+        while (result.Count < count && guard < 200)
         {
             guard++;
-            OrbData candidate = orbPool[UnityEngine.Random.Range(0, orbPool.Length)];
-            if (candidate != null) used.Add(candidate);
+
+            bool wantOrb = UnityEngine.Random.value < chanceOrb;
+
+            // Si el pool del tipo elegido está vacío, intentamos el otro
+            if (wantOrb && (orbPool == null || orbPool.Length == 0)) wantOrb = false;
+            if (!wantOrb && (relicPool == null || relicPool.Length == 0)) wantOrb = true;
+
+            if (wantOrb)
+            {
+                OrbData o = orbPool[UnityEngine.Random.Range(0, orbPool.Length)];
+                if (o == null) continue;
+
+                if (avoidDuplicatesInSameRoll && usedOrbs.Contains(o)) continue;
+
+                usedOrbs.Add(o);
+                result.Add(new RewardOption
+                {
+                    kind = RewardKind.Orb,
+                    orb = o,
+                    relic = null
+                });
+            }
+            else
+            {
+                ShotEffectBase r = relicPool[UnityEngine.Random.Range(0, relicPool.Length)];
+                if (r == null) continue;
+
+                if (avoidDuplicatesInSameRoll && usedRelics.Contains(r)) continue;
+
+                usedRelics.Add(r);
+                result.Add(new RewardOption
+                {
+                    kind = RewardKind.Relic,
+                    orb = null,
+                    relic = r
+                });
+            }
         }
 
-        OrbData[] result = new OrbData[used.Count];
-        int idx = 0;
-        foreach (var o in used)
-            result[idx++] = o;
+        // Filtrar inválidos por si algo raro pasó
+        result.RemoveAll(x => !x.IsValid);
 
-        return result;
+        return result.ToArray();
     }
 }

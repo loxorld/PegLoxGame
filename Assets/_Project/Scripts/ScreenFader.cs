@@ -35,10 +35,13 @@ public class ScreenFader : MonoBehaviour
 
     private void OnStateChanged(GameState state)
     {
-        // Ejecuta el fade al cambiar de estado
-        if (isActiveAndEnabled)
-            StartCoroutine(FadeRoutine());
+        if (state == GameState.RewardChoice) return;
+        if (state == GameState.Paused) return;
+
+        StartCoroutine(FadeRoutine());
     }
+
+
 
     private IEnumerator FadeRoutine()
     {

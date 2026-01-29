@@ -13,7 +13,10 @@ MonoBehaviour:
   m_Name: Orb_Basic
   m_EditorClassIdentifier: Assembly-CSharp::OrbData
   orbName: Basic
+  icon: {fileID: 0}
+  description: "Orbe est\xE1ndar y balanceado."
   damagePerHit: 2
   bounciness: 0.9
   linearDrag: 0
   color: {r: 1, g: 1, b: 1, a: 1}
+  orbEffects: []
