@@ -14,16 +14,23 @@ public class PauseMenuUI : MonoBehaviour
     [SerializeField] private Button restartButton;
     [SerializeField] private Button menuButton; // Nuevo boton para volver al menu
 
-    private void ResolveFlow()
+    private void RefreshFlowSubscription()
     {
-        if (flow == null)
-            flow = GameFlowManager.Instance ?? FindObjectOfType<GameFlowManager>(true);
+        GameFlowManager current = GameFlowManager.Instance ?? FindObjectOfType<GameFlowManager>(true);
+
+        if (current == flow) return;
+
+        if (flow != null)
+            flow.OnStateChanged -= OnStateChanged;
+
+        flow = current;
+
+        if (flow != null)
+            flow.OnStateChanged += OnStateChanged;
     }
 
     private void Awake()
     {
-        ResolveFlow();
-
         if (root != null) root.SetActive(false);
 
         if (resumeButton != null) resumeButton.onClick.AddListener(OnResume);
@@ -33,10 +40,7 @@ public class PauseMenuUI : MonoBehaviour
 
     private void OnEnable()
     {
-        ResolveFlow();
-        if (flow != null)
-            flow.OnStateChanged += OnStateChanged;
-
+        RefreshFlowSubscription();
         Sync();
     }
 
@@ -48,7 +52,7 @@ public class PauseMenuUI : MonoBehaviour
 
     private void Sync()
     {
-        ResolveFlow();
+        RefreshFlowSubscription();
         if (flow == null) return;
 
         if (flow.State == GameState.Paused)
@@ -97,12 +101,14 @@ public class PauseMenuUI : MonoBehaviour
 
     private void OnResume()
     {
+        RefreshFlowSubscription();
         flow?.Resume();
     }
 
     private void OnRestart()
     {
         // Reiniciar la escena actual (MVP)
+        RefreshFlowSubscription();
         flow?.ResetRunState();
         flow?.SetState(GameState.Combat);
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
@@ -114,6 +120,7 @@ public class PauseMenuUI : MonoBehaviour
 
 
         // Reanudar por si estaba en estado Paused
+        RefreshFlowSubscription();
         flow?.Resume();
 
         // Cargar la escena del menu principal en modo Single
