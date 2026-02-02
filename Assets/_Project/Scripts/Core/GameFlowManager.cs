@@ -8,6 +8,7 @@ public class GameFlowManager : MonoBehaviour
     public GameState State { get; private set; } = GameState.Combat;
     public event Action<GameState> OnStateChanged;
     public MapNodeData SavedMapNode { get; private set; }
+    public int NodesVisited { get; private set; }
 
     //  solo en Combat se juega
     public bool CanShoot => State == GameState.Combat;
@@ -38,14 +39,14 @@ public class GameFlowManager : MonoBehaviour
         OnStateChanged?.Invoke(State);
         Debug.Log($"[GameFlow] State -> {State}");
 
-        // Inicializa el mapa si estamos entrando en navegación
+        // Inicializa el mapa si estamos entrando en navegacin
         if (State == GameState.MapNavigation)
         {
             MapManager mapManager = FindObjectOfType<MapManager>();
             if (mapManager != null)
                 mapManager.StartStage(mapManager.CurrentMapStage);
             else
-                Debug.LogError("[GameFlow] No se encontró MapManager.");
+                Debug.LogError("[GameFlow] No se encontr MapManager.");
         }
     }
 
@@ -55,10 +56,20 @@ public class GameFlowManager : MonoBehaviour
         SavedMapNode = node;
     }
 
+    public void IncrementNodesVisited()
+    {
+        NodesVisited++;
+    }
+
+    public void ResetNodesVisited()
+    {
+        NodesVisited = 0;
+    }
+
 
     public void Pause()
     {
-        // No pausamos si ya está game over o en rewards
+        // No pausamos si ya est game over o en rewards
         if (State == GameState.GameOver) return;
         if (State == GameState.RewardChoice) return;
 

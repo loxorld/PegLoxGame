@@ -5,4 +5,6 @@ public class MapStage : ScriptableObject
 {
     public string stageName;
     public MapNodeData startingNode;
+    public MapNodeData bossNode;
+    public int bossAfterNodes = 10;
 }

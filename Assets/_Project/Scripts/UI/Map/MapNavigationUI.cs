@@ -24,6 +24,15 @@ public class MapNavigationUI : MonoBehaviour
             return;
         }
 
+        MapManager mapManager = FindObjectOfType<MapManager>();
+        if (mapManager != null && mapManager.ShouldForceBossNode(out MapNodeData bossNode) && bossNode != null)
+        {
+            var bossObj = Instantiate(nodePrefab, nodeContainer);
+            var bossUI = bossObj.GetComponent<MapNodeUI>();
+            bossUI.Setup(bossNode, OnNodeSelected);
+            return;
+        }
+
         if (node.nextNodes == null || node.nextNodes.Length == 0)
         {
             Debug.LogWarning("[MapNavigationUI] El nodo no tiene conexiones disponibles.");

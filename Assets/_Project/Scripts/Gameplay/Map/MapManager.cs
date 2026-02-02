@@ -17,6 +17,9 @@ public class MapManager : MonoBehaviour
         currentMapStage = stage;
 
         GameFlowManager flow = ResolveGameFlowManager();
+        if (flow != null && (flow.SavedMapNode == null || !HasConnections(flow.SavedMapNode)))
+            flow.ResetNodesVisited();
+
         if (flow != null && flow.SavedMapNode != null && HasConnections(flow.SavedMapNode))
             currentNode = flow.SavedMapNode;
         else
@@ -45,7 +48,7 @@ public class MapManager : MonoBehaviour
         GameFlowManager flow = ResolveGameFlowManager();
         if (flow == null)
         {
-            Debug.LogWarning("[MapManager] No se encontró GameFlowManager en la escena.");
+            Debug.LogWarning("[MapManager] No se encontr GameFlowManager en la escena.");
             return;
         }
 
@@ -66,9 +69,12 @@ public class MapManager : MonoBehaviour
     {
         GameFlowManager flow = ResolveGameFlowManager();
         if (flow != null)
+        {
             flow.SaveMapNode(nextNode);
+            flow.IncrementNodesVisited();
+        }
         else
-            Debug.LogWarning("[MapManager] No se encontró GameFlowManager al guardar MapNode.");
+            Debug.LogWarning("[MapManager] No se encontr GameFlowManager al guardar MapNode.");
 
         OpenNode(nextNode);
     }
@@ -85,7 +91,7 @@ public class MapManager : MonoBehaviour
                 GameFlowManager flow = ResolveGameFlowManager();
                 if (flow == null)
                 {
-                    Debug.LogWarning("[MapManager] No se encontró GameFlowManager en la escena.");
+                    Debug.LogWarning("[MapManager] No se encontr GameFlowManager en la escena.");
                     return;
                 }
 
@@ -121,7 +127,32 @@ public class MapManager : MonoBehaviour
         return gameFlowManager;
     }
 
-    public MapStage CurrentMapStage => currentMapStage; // NUEVO: getter público
+    public MapStage CurrentMapStage => currentMapStage; // NUEVO: getter pblico
+
+    public bool ShouldForceBossNode(out MapNodeData bossNode)
+    {
+        bossNode = null;
+        if (currentMapStage == null || currentMapStage.bossNode == null)
+            return false;
+
+        GameFlowManager flow = ResolveGameFlowManager();
+        if (flow == null)
+            return false;
+
+        if (currentMapStage.bossAfterNodes <= 0)
+        {
+            bossNode = currentMapStage.bossNode;
+            return true;
+        }
+
+        if (flow.NodesVisited >= currentMapStage.bossAfterNodes)
+        {
+            bossNode = currentMapStage.bossNode;
+            return true;
+        }
+
+        return false;
+    }
 
     private static bool HasConnections(MapNodeData node)
     {
