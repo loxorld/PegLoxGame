@@ -40,7 +40,8 @@ public class MainMenuController : MonoBehaviour
     /// </summary>
     public void OnPlayButton()
     {
-        SceneManager.LoadScene("SampleScene", LoadSceneMode.Single);
+        SceneManager.LoadScene("MapScene", LoadSceneMode.Single);
+
     }
 
     /// <summary>

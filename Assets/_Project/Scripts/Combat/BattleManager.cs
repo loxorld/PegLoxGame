@@ -52,10 +52,8 @@ public class BattleManager : MonoBehaviour
         }
 
         enemy.Defeated += OnEnemyDefeated;
-
-        // primer encounter
-        StartNewEncounter();
     }
+
 
     private void OnDestroy()
     {
@@ -125,5 +123,10 @@ public class BattleManager : MonoBehaviour
 
             enemy.ApplyDifficulty(scaledHp, scaledDmg);
         }
+    }
+
+    public void StartEncounterFromMap()
+    {
+        StartNewEncounter();
     }
 }

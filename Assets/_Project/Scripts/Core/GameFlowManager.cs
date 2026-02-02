@@ -23,7 +23,6 @@ public class GameFlowManager : MonoBehaviour
 
         State = newState;
 
-        // TimeScale: solo pausamos en Paused/GameOver (RewardChoice NO pausa el tiempo)
         if (State == GameState.Paused || State == GameState.GameOver)
             Time.timeScale = 0f;
         else
@@ -31,7 +30,19 @@ public class GameFlowManager : MonoBehaviour
 
         OnStateChanged?.Invoke(State);
         Debug.Log($"[GameFlow] State -> {State}");
+
+        // Inicializa el mapa si estamos entrando en navegación
+        if (State == GameState.MapNavigation)
+        {
+            MapManager mapManager = FindObjectOfType<MapManager>();
+            if (mapManager != null)
+                mapManager.StartStage(mapManager.CurrentMapStage);
+            else
+                Debug.LogError("[GameFlow] No se encontró MapManager.");
+        }
     }
+
+
 
     public void Pause()
     {
