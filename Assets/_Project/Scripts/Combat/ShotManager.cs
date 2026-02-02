@@ -32,12 +32,28 @@ public class ShotManager : MonoBehaviour
         }
         Instance = this;
 
+        ResolveReferences();
         ShotInProgress = false;
         IsGameOver = false;
     }
 
+    private void OnEnable()
+    {
+        ResolveReferences();
+    }
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        ResolveReferences();
+    }
+#endif
+
     private void Update()
     {
+        if (relics == null || battle == null || player == null)
+            ResolveReferences();
+
         // Mantener IsGameOver sincronizado con el estado global 
         if (GameFlowManager.Instance != null)
             IsGameOver = GameFlowManager.Instance.State == GameState.GameOver;
@@ -76,6 +92,8 @@ public class ShotManager : MonoBehaviour
         // Solo se puede iniciar tiro en combate
         if (!CanProcessCombat()) return;
 
+        ResolveReferences();
+
         ShotInProgress = true;
         currentShot = new ShotContext(orb);
 
@@ -90,6 +108,18 @@ public class ShotManager : MonoBehaviour
 
         pipeline.OnShotStart(currentShot);
         PublishStats();
+    }
+
+    private void ResolveReferences()
+    {
+        if (battle == null)
+            battle = FindObjectOfType<BattleManager>();
+
+        if (player == null)
+            player = FindObjectOfType<PlayerStats>();
+
+        if (relics == null)
+            relics = RelicManager.Instance ?? FindObjectOfType<RelicManager>(true);
     }
 
     public void RegisterPegHit(PegType pegType)

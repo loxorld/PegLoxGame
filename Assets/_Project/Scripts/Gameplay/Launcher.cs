@@ -50,11 +50,27 @@ public class Launcher : MonoBehaviour
 
     private void Awake()
     {
+        ResolveReferences();
         ballRadiusWorld = GetBallWorldRadius();
     }
 
+    private void OnEnable()
+    {
+        ResolveReferences();
+    }
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        ResolveReferences();
+    }
+#endif
+
     private void Update()
     {
+
+        if (orbManager == null)
+            ResolveReferences();
         HandleOrbSelectionLegacy();
 
         // Cambiar orbe equipado (Editor)
@@ -268,6 +284,7 @@ public class Launcher : MonoBehaviour
         if (ShotManager.Instance != null && ShotManager.Instance.ShotInProgress)
             return;
 
+        ResolveReferences();
         OrbData orb = (orbManager != null) ? orbManager.CurrentOrb : null;
 
         ShotManager.Instance?.OnShotStarted(orb);
@@ -282,6 +299,12 @@ public class Launcher : MonoBehaviour
         ballInstance.linearVelocity = vel;
     }
 
+
+    private void ResolveReferences()
+    {
+        if (orbManager == null)
+            orbManager = OrbManager.Instance ?? FindObjectOfType<OrbManager>(true);
+    }
     // ---------------- Trajectory Preview ----------------
 
     private void SetTrajectoryVisible(bool visible)

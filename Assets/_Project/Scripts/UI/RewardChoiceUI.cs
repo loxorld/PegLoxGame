@@ -30,6 +30,8 @@ public class RewardChoiceUI : MonoBehaviour
     [SerializeField] private TMP_Text choice3Title;
     [SerializeField] private TMP_Text choice3Desc;
 
+    private bool flowSubscribed;
+
     private void ResolveReferences()
     {
         if (rewards == null)
@@ -49,9 +51,16 @@ public class RewardChoiceUI : MonoBehaviour
         if (choice3Button != null) choice3Button.onClick.AddListener(() => OnChoose(3));
     }
 
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        ResolveReferences();
+    }
+#endif
     private void Start()
     {
         ResolveReferences();
+        TrySubscribeFlow();
         SyncStateAndChoices();
     }
 
@@ -66,9 +75,20 @@ public class RewardChoiceUI : MonoBehaviour
 
         if (flow != null)
             flow.OnStateChanged += OnStateChanged;
+        TrySubscribeFlow();
 
         SyncStateAndChoices();
     }
+
+    private void Update()
+    {
+        if (flow == null)
+        {
+            ResolveReferences();
+            TrySubscribeFlow();
+        }
+    }
+
 
     private void OnDisable()
     {
@@ -78,12 +98,17 @@ public class RewardChoiceUI : MonoBehaviour
             rewards.RewardResolved -= OnRewardResolved;
         }
 
-        if (flow != null)
+        if (flow != null && flowSubscribed)
+        {
             flow.OnStateChanged -= OnStateChanged;
+            flowSubscribed = false;
+        }
     }
+
 
     private void SyncStateAndChoices()
     {
+        ResolveReferences();
         bool shouldBeVisible = (flow != null && flow.State == GameState.RewardChoice);
 
         if (shouldBeVisible)
@@ -189,4 +214,14 @@ public class RewardChoiceUI : MonoBehaviour
         if (root != null)
             root.SetActive(false);
     }
+
+    private void TrySubscribeFlow()
+    {
+        if (flow != null && !flowSubscribed)
+        {
+            flow.OnStateChanged += OnStateChanged;
+            flowSubscribed = true;
+        }
+    }
+
 }
