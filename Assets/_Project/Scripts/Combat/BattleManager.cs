@@ -73,6 +73,8 @@ public class BattleManager : MonoBehaviour
         defeatedCount = 0;
         waitingForRewards = false;
 
+        SyncEncounterIndexFromFlow();
+
         stage = (difficulty != null) ? difficulty.GetStage(encounterIndex) : DifficultyStage.Default;
         enemiesToDefeat = (difficulty != null) ? stage.enemiesToDefeat : enemiesToDefeatFallback;
 
@@ -103,7 +105,11 @@ public class BattleManager : MonoBehaviour
         if (!waitingForRewards) return;
 
         // Subimos dificultad para el próximo encounter
-        encounterIndex++;
+        GameFlowManager flow = GameFlowManager.Instance;
+        if (flow != null)
+            flow.AdvanceEncounter();
+        else
+            encounterIndex++;
 
         Invoke(nameof(StartNewEncounter), respawnDelay);
     }
@@ -148,6 +154,13 @@ public class BattleManager : MonoBehaviour
     {
         yield return null; // Espera un frame
         StartNewEncounter();
+    }
+
+    private void SyncEncounterIndexFromFlow()
+    {
+        GameFlowManager flow = GameFlowManager.Instance;
+        if (flow != null)
+            encounterIndex = flow.EncounterIndex;
     }
 
 }

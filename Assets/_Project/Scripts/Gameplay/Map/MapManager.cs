@@ -18,7 +18,7 @@ public class MapManager : MonoBehaviour
 
         GameFlowManager flow = ResolveGameFlowManager();
         if (flow != null && (flow.SavedMapNode == null || !HasConnections(flow.SavedMapNode)))
-            flow.ResetNodesVisited();
+            flow.ResetRunState();
 
         if (flow != null && flow.SavedMapNode != null && HasConnections(flow.SavedMapNode))
             currentNode = flow.SavedMapNode;

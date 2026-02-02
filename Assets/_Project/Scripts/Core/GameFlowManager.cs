@@ -9,6 +9,10 @@ public class GameFlowManager : MonoBehaviour
     public event Action<GameState> OnStateChanged;
     public MapNodeData SavedMapNode { get; private set; }
     public int NodesVisited { get; private set; }
+    public int EncounterIndex { get; private set; }
+
+    public bool HasSavedPlayerHP { get; private set; }
+    public int SavedPlayerHP { get; private set; }
 
     //  solo en Combat se juega
     public bool CanShoot => State == GameState.Combat;
@@ -64,6 +68,31 @@ public class GameFlowManager : MonoBehaviour
     public void ResetNodesVisited()
     {
         NodesVisited = 0;
+    }
+
+    public void AdvanceEncounter()
+    {
+        EncounterIndex++;
+    }
+
+    public void SavePlayerHP(int currentHP)
+    {
+        SavedPlayerHP = Mathf.Max(currentHP, 0);
+        HasSavedPlayerHP = true;
+    }
+
+    public void ClearSavedPlayerHP()
+    {
+        SavedPlayerHP = 0;
+        HasSavedPlayerHP = false;
+    }
+
+    public void ResetRunState()
+    {
+        SavedMapNode = null;
+        NodesVisited = 0;
+        EncounterIndex = 0;
+        ClearSavedPlayerHP();
     }
 
 

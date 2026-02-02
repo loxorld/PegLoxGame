@@ -194,7 +194,10 @@ public class RewardManager : MonoBehaviour
 
         GameFlowManager flow = GameFlowManager.Instance;
         if (flow != null)
+        {
+            flow.AdvanceEncounter();
             flow.StartCoroutine(WaitForMapManagerAndSetState(flow));
+        }
 
         SceneManager.LoadScene("MapScene", LoadSceneMode.Single);
     }

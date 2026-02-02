@@ -98,6 +98,7 @@ public class GameOverMenuUI : MonoBehaviour
 
     private void Restart()
     {
+        flow?.ResetRunState();
         flow?.SetState(GameState.Combat);
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }

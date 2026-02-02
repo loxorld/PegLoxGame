@@ -14,7 +14,13 @@ public class PlayerStats : MonoBehaviour
 
     private void Awake()
     {
-        CurrentHP = maxHP;
+        GameFlowManager flow = GameFlowManager.Instance;
+        if (flow != null && flow.HasSavedPlayerHP)
+            CurrentHP = Mathf.Clamp(flow.SavedPlayerHP, 0, maxHP);
+        else
+            CurrentHP = maxHP;
+
+        flow?.SavePlayerHP(CurrentHP);
         isDead = false;
         Debug.Log($"Player HP: {CurrentHP}/{maxHP}");
     }
@@ -26,6 +32,7 @@ public class PlayerStats : MonoBehaviour
 
         CurrentHP -= damage;
         CurrentHP = Mathf.Max(CurrentHP, 0);
+        GameFlowManager.Instance?.SavePlayerHP(CurrentHP);
 
         Debug.Log($"Player took {damage} damage. HP: {CurrentHP}/{maxHP}");
 
