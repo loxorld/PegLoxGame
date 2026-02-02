@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using System.Collections;
 
 public class BattleManager : MonoBehaviour
 {
@@ -70,6 +71,8 @@ public class BattleManager : MonoBehaviour
         enemiesToDefeat = (difficulty != null) ? stage.enemiesToDefeat : enemiesToDefeatFallback;
 
         EncounterStarted?.Invoke();
+        Debug.Log("[BattleManager] Evento EncounterStarted disparado");
+
         SpawnRandomEnemy();
     }
 
@@ -127,6 +130,15 @@ public class BattleManager : MonoBehaviour
 
     public void StartEncounterFromMap()
     {
+        Debug.Log("[BattleManager] StartEncounterFromMap llamado");
+        // Esperar un frame para asegurar que otros componentes se hayan suscrito a los eventos
+        StartCoroutine(DelayedStartEncounter());
+    }
+
+    private IEnumerator DelayedStartEncounter()
+    {
+        yield return null; // Espera un frame
         StartNewEncounter();
     }
+
 }

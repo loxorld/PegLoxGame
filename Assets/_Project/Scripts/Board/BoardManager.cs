@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+
+[DefaultExecutionOrder(-100)]
 public class BoardManager : MonoBehaviour
 {
     [Header("References")]
@@ -54,6 +56,7 @@ public class BoardManager : MonoBehaviour
 
     private void OnEncounterStarted()
     {
+        Debug.Log("[BoardManager] OnEncounterStarted invocado, generando tablero...");
         GenerateBoard();
     }
 

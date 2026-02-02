@@ -7,7 +7,12 @@ public class MapNavigationUI : MonoBehaviour
     [SerializeField] private Transform nodeContainer;
     [SerializeField] private GameObject nodePrefab;
 
-    private void Awake() => Instance = this;
+    private void Awake()
+    {
+        Instance = this;
+        Debug.Log("[MapNavigationUI] Awake ejecutado. Instancia seteada.");
+    }
+
 
     public void ShowNode(MapNodeData node)
     {
@@ -25,7 +30,11 @@ public class MapNavigationUI : MonoBehaviour
     {
         MapManager mapManager = FindObjectOfType<MapManager>();
         mapManager.SelectPath(next);
+
+        
+        mapManager.ConfirmNode();
     }
+
 
     void ClearNodes()
     {

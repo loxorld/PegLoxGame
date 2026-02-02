@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c5c33ba73120f4544bf92e41adb69ecd, type: 3}
   m_Name: EventoRuinas
   m_EditorClassIdentifier: Assembly-CSharp::MapNodeData
-  nodeType: 2
+  nodeType: 0
   title: Ruinas
   description: 'Llegaste a unas ruinas
 
