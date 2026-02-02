@@ -14,7 +14,7 @@ public class GameFlowManager : MonoBehaviour
     public bool HasSavedPlayerHP { get; private set; }
     public int SavedPlayerHP { get; private set; }
     public int Coins { get; private set; }
-    public int PlayerMaxHP { get; private set; } = 30;
+    public int PlayerMaxHP { get; private set; }
 
     public bool HasBossEncounter => bossEncounterActive;
     public EnemyData BossEnemy => bossEnemy;
@@ -28,7 +28,7 @@ public class GameFlowManager : MonoBehaviour
 
     [Header("Run Defaults")]
     [SerializeField, Min(0)] private int startingCoins = 0;
-
+    [SerializeField, Min(1)] private int startingPlayerMaxHP = 100;
     private bool bossEncounterActive;
     private EnemyData bossEnemy;
     private float bossHpMultiplier = 2f;
@@ -47,6 +47,7 @@ public class GameFlowManager : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
+        PlayerMaxHP = Mathf.Max(1, startingPlayerMaxHP);
         Coins = startingCoins;
     }
 
@@ -141,6 +142,7 @@ public class GameFlowManager : MonoBehaviour
         NodesVisited = 0;
         EncounterIndex = 0;
         Coins = startingCoins;
+        PlayerMaxHP = Mathf.Max(1, startingPlayerMaxHP);
         ClearBossEncounter();
         SavedPlayerHP = PlayerMaxHP;
         HasSavedPlayerHP = true;
