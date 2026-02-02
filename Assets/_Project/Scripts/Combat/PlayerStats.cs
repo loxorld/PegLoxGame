@@ -15,6 +15,7 @@ public class PlayerStats : MonoBehaviour
     private void Awake()
     {
         GameFlowManager flow = GameFlowManager.Instance;
+        flow?.SavePlayerMaxHP(maxHP);
         if (flow != null && flow.HasSavedPlayerHP)
             CurrentHP = Mathf.Clamp(flow.SavedPlayerHP, 0, maxHP);
         else

@@ -28,6 +28,7 @@ public class BattleManager : MonoBehaviour
     private int encounterIndex = 0;         // 0,1,2...
     private int enemiesToDefeat = 3;        // se setea por stage actual
     private DifficultyStage stage;          // stage actual cacheado
+    private bool isBossEncounter;
 
     public Enemy CurrentEnemy => enemy;
     public bool WaitingForRewards => waitingForRewards;
@@ -78,6 +79,12 @@ public class BattleManager : MonoBehaviour
         stage = (difficulty != null) ? difficulty.GetStage(encounterIndex) : DifficultyStage.Default;
         enemiesToDefeat = (difficulty != null) ? stage.enemiesToDefeat : enemiesToDefeatFallback;
 
+        GameFlowManager flow = GameFlowManager.Instance;
+        isBossEncounter = flow != null && flow.HasBossEncounter;
+        if (isBossEncounter)
+            enemiesToDefeat = 1;
+
+
         EncounterStarted?.Invoke();
         Debug.Log("[BattleManager] Evento EncounterStarted disparado");
 
@@ -93,6 +100,8 @@ public class BattleManager : MonoBehaviour
         if (defeatedCount >= enemiesToDefeat)
         {
             waitingForRewards = true;
+            if (isBossEncounter)
+                GameFlowManager.Instance?.ClearBossEncounter();
             EncounterCompleted?.Invoke();
             return;
         }
@@ -125,6 +134,13 @@ public class BattleManager : MonoBehaviour
         }
 
         EnemyData chosen = enemiesPool[UnityEngine.Random.Range(0, enemiesPool.Length)];
+        if (isBossEncounter)
+        {
+            EnemyData bossEnemy = GameFlowManager.Instance?.BossEnemy;
+            if (bossEnemy != null)
+                chosen = bossEnemy;
+        }
+
         enemy.SetDataAndReset(chosen);
 
         // Aplicar dificultad (si hay config)
@@ -136,7 +152,27 @@ public class BattleManager : MonoBehaviour
             int scaledHp = Mathf.RoundToInt(baseHp * stage.enemyHpMultiplier) + stage.enemyHpBonus;
             int scaledDmg = Mathf.RoundToInt(baseDmg * stage.enemyDamageMultiplier) + stage.enemyDamageBonus;
 
+            if (isBossEncounter)
+            {
+                GameFlowManager flow = GameFlowManager.Instance;
+                if (flow != null)
+                {
+                    scaledHp = Mathf.RoundToInt(scaledHp * flow.BossHpMultiplier) + flow.BossHpBonus;
+                    scaledDmg = Mathf.RoundToInt(scaledDmg * flow.BossDamageMultiplier) + flow.BossDamageBonus;
+                }
+            }
+
             enemy.ApplyDifficulty(scaledHp, scaledDmg);
+        }
+        else if (isBossEncounter)
+        {
+            GameFlowManager flow = GameFlowManager.Instance;
+            if (flow != null && chosen != null)
+            {
+                int scaledHp = Mathf.RoundToInt(chosen.maxHP * flow.BossHpMultiplier) + flow.BossHpBonus;
+                int scaledDmg = Mathf.RoundToInt(chosen.attackDamage * flow.BossDamageMultiplier) + flow.BossDamageBonus;
+                enemy.ApplyDifficulty(scaledHp, scaledDmg);
+            }
         }
     }
 

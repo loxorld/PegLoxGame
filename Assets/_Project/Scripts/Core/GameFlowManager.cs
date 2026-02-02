@@ -13,9 +13,28 @@ public class GameFlowManager : MonoBehaviour
 
     public bool HasSavedPlayerHP { get; private set; }
     public int SavedPlayerHP { get; private set; }
+    public int Coins { get; private set; }
+    public int PlayerMaxHP { get; private set; } = 30;
+
+    public bool HasBossEncounter => bossEncounterActive;
+    public EnemyData BossEnemy => bossEnemy;
+    public float BossHpMultiplier => bossHpMultiplier;
+    public float BossDamageMultiplier => bossDamageMultiplier;
+    public int BossHpBonus => bossHpBonus;
+    public int BossDamageBonus => bossDamageBonus;
 
     //  solo en Combat se juega
     public bool CanShoot => State == GameState.Combat;
+
+    [Header("Run Defaults")]
+    [SerializeField, Min(0)] private int startingCoins = 0;
+
+    private bool bossEncounterActive;
+    private EnemyData bossEnemy;
+    private float bossHpMultiplier = 2f;
+    private float bossDamageMultiplier = 1.5f;
+    private int bossHpBonus = 0;
+    private int bossDamageBonus = 0;
 
     private void Awake()
     {
@@ -27,6 +46,8 @@ public class GameFlowManager : MonoBehaviour
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
+
+        Coins = startingCoins;
     }
 
     public void SetState(GameState newState)
@@ -81,10 +102,37 @@ public class GameFlowManager : MonoBehaviour
         HasSavedPlayerHP = true;
     }
 
+    public void SavePlayerMaxHP(int maxHP)
+    {
+        PlayerMaxHP = Mathf.Max(1, maxHP);
+    }
+
+    public void ModifySavedHP(int delta)
+    {
+        int baseHp = HasSavedPlayerHP ? SavedPlayerHP : PlayerMaxHP;
+        int nextHp = Mathf.Clamp(baseHp + delta, 0, PlayerMaxHP);
+        SavedPlayerHP = nextHp;
+        HasSavedPlayerHP = true;
+    }
+
+
     public void ClearSavedPlayerHP()
     {
         SavedPlayerHP = 0;
         HasSavedPlayerHP = false;
+    }
+
+    public void AddCoins(int amount)
+    {
+        Coins = Mathf.Max(0, Coins + amount);
+    }
+
+    public bool SpendCoins(int amount)
+    {
+        if (amount <= 0) return true;
+        if (Coins < amount) return false;
+        Coins -= amount;
+        return true;
     }
 
     public void ResetRunState()
@@ -92,7 +140,29 @@ public class GameFlowManager : MonoBehaviour
         SavedMapNode = null;
         NodesVisited = 0;
         EncounterIndex = 0;
+        Coins = startingCoins;
+        ClearBossEncounter();
         ClearSavedPlayerHP();
+    }
+
+    public void SetBossEncounter(EnemyData enemy, float hpMultiplier, float damageMultiplier, int hpBonus, int damageBonus)
+    {
+        bossEncounterActive = true;
+        bossEnemy = enemy;
+        bossHpMultiplier = Mathf.Max(1f, hpMultiplier);
+        bossDamageMultiplier = Mathf.Max(1f, damageMultiplier);
+        bossHpBonus = Mathf.Max(0, hpBonus);
+        bossDamageBonus = Mathf.Max(0, damageBonus);
+    }
+
+    public void ClearBossEncounter()
+    {
+        bossEncounterActive = false;
+        bossEnemy = null;
+        bossHpMultiplier = 2f;
+        bossDamageMultiplier = 1.5f;
+        bossHpBonus = 0;
+        bossDamageBonus = 0;
     }
 
 

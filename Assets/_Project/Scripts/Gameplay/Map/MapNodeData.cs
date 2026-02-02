@@ -8,4 +8,11 @@ public class MapNodeData : ScriptableObject
     [TextArea] public string description;
 
     public MapNodeConnection[] nextNodes;
+
+    [Header("Boss Settings")]
+    public EnemyData bossEnemy;
+    [Min(1f)] public float bossHpMultiplier = 2f;
+    [Min(1f)] public float bossDamageMultiplier = 1.5f;
+    [Min(0)] public int bossHpBonus = 0;
+    [Min(0)] public int bossDamageBonus = 0;
 }

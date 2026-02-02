@@ -62,7 +62,7 @@ public class MapNavigationUI : MonoBehaviour
         mapManager.SelectPath(next);
 
 
-        mapManager.ConfirmNode();
+        
     }
 
 
