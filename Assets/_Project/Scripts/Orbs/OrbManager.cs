@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class OrbManager : MonoBehaviour
 {
+    public static OrbManager Instance { get; private set; }
+
     [Header("Active Orb (current)")]
     [SerializeField] private OrbData currentOrb;
 
@@ -14,6 +16,15 @@ public class OrbManager : MonoBehaviour
 
     private void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+
         // Si currentOrb está seteado, aseguro que exista en ownedOrbs
         if (currentOrb != null && !ownedOrbs.Contains(currentOrb))
             ownedOrbs.Add(currentOrb);

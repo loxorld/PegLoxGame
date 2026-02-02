@@ -17,7 +17,10 @@ public class MapManager : MonoBehaviour
         currentMapStage = stage;
 
         GameFlowManager flow = ResolveGameFlowManager();
-        currentNode = flow != null && flow.SavedMapNode != null ? flow.SavedMapNode : stage.startingNode;
+        if (flow != null && flow.SavedMapNode != null && HasConnections(flow.SavedMapNode))
+            currentNode = flow.SavedMapNode;
+        else
+            currentNode = stage.startingNode;
 
         if (currentNode == null)
         {
@@ -51,7 +54,8 @@ public class MapManager : MonoBehaviour
         // Mostrar UI
         if (MapNavigationUI.Instance == null)
         {
-            Debug.LogWarning("[MapManager] MapNavigationUI.Instance es nulo.");
+            Debug.LogWarning("[MapManager] MapNavigationUI.Instance es nulo. Reintentando...");
+            StartCoroutine(WaitForMapUIAndShow(node));
             return;
         }
 
@@ -118,5 +122,18 @@ public class MapManager : MonoBehaviour
     }
 
     public MapStage CurrentMapStage => currentMapStage; // NUEVO: getter público
+
+    private static bool HasConnections(MapNodeData node)
+    {
+        return node != null && node.nextNodes != null && node.nextNodes.Length > 0;
+    }
+
+    private System.Collections.IEnumerator WaitForMapUIAndShow(MapNodeData node)
+    {
+        while (MapNavigationUI.Instance == null)
+            yield return null;
+
+        MapNavigationUI.Instance.ShowNode(node);
+    }
 
 }

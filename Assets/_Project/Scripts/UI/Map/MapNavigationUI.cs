@@ -18,6 +18,17 @@ public class MapNavigationUI : MonoBehaviour
     public void ShowNode(MapNodeData node)
     {
         ClearNodes();
+        if (node == null)
+        {
+            Debug.LogWarning("[MapNavigationUI] ShowNode llamado con MapNodeData nulo.");
+            return;
+        }
+
+        if (node.nextNodes == null || node.nextNodes.Length == 0)
+        {
+            Debug.LogWarning("[MapNavigationUI] El nodo no tiene conexiones disponibles.");
+            return;
+        }
 
         var connections = new List<MapNodeConnection>(node.nextNodes);
         for (int i = connections.Count - 1; i > 0; i--)
