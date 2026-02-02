@@ -19,9 +19,11 @@ public class BattleManager : MonoBehaviour
 
     [Header("Flow")]
     [SerializeField, Min(0f)] private float respawnDelay = 0.5f;
+    [SerializeField] private bool autoStartOnLoad = true;
 
     private int defeatedCount = 0;
     private bool waitingForRewards = false;
+    private bool hasStartedEncounter = false;
 
     private int encounterIndex = 0;         // 0,1,2...
     private int enemiesToDefeat = 3;        // se setea por stage actual
@@ -53,6 +55,9 @@ public class BattleManager : MonoBehaviour
         }
 
         enemy.Defeated += OnEnemyDefeated;
+
+        if (autoStartOnLoad && !hasStartedEncounter)
+            StartEncounterFromMap();
     }
 
 
@@ -64,6 +69,7 @@ public class BattleManager : MonoBehaviour
 
     private void StartNewEncounter()
     {
+        hasStartedEncounter = true;
         defeatedCount = 0;
         waitingForRewards = false;
 
@@ -130,6 +136,9 @@ public class BattleManager : MonoBehaviour
 
     public void StartEncounterFromMap()
     {
+        if (hasStartedEncounter)
+            return;
+
         Debug.Log("[BattleManager] StartEncounterFromMap llamado");
         // Esperar un frame para asegurar que otros componentes se hayan suscrito a los eventos
         StartCoroutine(DelayedStartEncounter());
