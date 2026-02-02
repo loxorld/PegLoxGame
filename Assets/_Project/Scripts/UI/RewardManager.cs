@@ -65,8 +65,19 @@ public class RewardManager : MonoBehaviour
     private bool awaitingChoice;
     private bool selectionLocked;
 
+    private void Awake()
+    {
+        ResolveReferences();
+    }
+
+    private void OnEnable()
+    {
+        ResolveReferences();
+    }
+
     private void Start()
     {
+        ResolveReferences();
         if (battle != null)
             battle.EncounterCompleted += OnEncounterCompleted;
     }
@@ -90,6 +101,7 @@ public class RewardManager : MonoBehaviour
 
     private void OnEncounterCompleted()
     {
+        ResolveReferences();
         // Generar 3 opciones mixtas (Orb/Relic)
         pendingChoices = GenerateMixedChoices(3);
 
@@ -122,6 +134,8 @@ public class RewardManager : MonoBehaviour
 
         int i = choiceIndex - 1;
         if (i < 0 || i >= pendingChoices.Length) return;
+
+        ResolveReferences();
 
         RewardOption chosen = pendingChoices[i];
         if (!chosen.IsValid) return;
@@ -160,6 +174,18 @@ public class RewardManager : MonoBehaviour
         }
 
         ResolveRewardAndContinue();
+    }
+
+    private void ResolveReferences()
+    {
+        if (battle == null)
+            battle = FindObjectOfType<BattleManager>();
+
+        if (orbs == null)
+            orbs = OrbManager.Instance ?? FindObjectOfType<OrbManager>(true);
+
+        if (relics == null)
+            relics = RelicManager.Instance ?? FindObjectOfType<RelicManager>(true);
     }
 
     private void ResolveRewardAndContinue()

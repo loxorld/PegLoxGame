@@ -26,13 +26,38 @@ public class HUDController : MonoBehaviour
 
     private float timer;
 
+
+
+    private void ResolveReferences()
+    {
+        if (player == null)
+            player = FindObjectOfType<PlayerStats>(true);
+
+        if (battle == null)
+            battle = FindObjectOfType<BattleManager>(true);
+
+        if (orbs == null)
+            orbs = OrbManager.Instance ?? FindObjectOfType<OrbManager>(true);
+
+        if (flow == null)
+            flow = GameFlowManager.Instance ?? FindObjectOfType<GameFlowManager>(true);
+    }
+
     private void Awake()
     {
-        if (flow == null) flow = GameFlowManager.Instance;
+        ResolveReferences();
+    }
+
+    private void OnEnable()
+    {
+        ResolveReferences();
     }
 
     private void Update()
     {
+        if (flow == null || orbs == null || player == null || battle == null)
+            ResolveReferences();
+
         timer += Time.unscaledDeltaTime;
         if (timer < refreshInterval) return;
         timer = 0f;

@@ -388,7 +388,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapManager
   currentMapStage: {fileID: 11400000, guid: 32539d1ecb6fe614bbb2d289e757e143, type: 2}
-  gameFlowManager: {fileID: 0}
+  gameFlowManager: {fileID: 1182409062}
 --- !u!4 &527191937
 Transform:
   m_ObjectHideFlags: 0

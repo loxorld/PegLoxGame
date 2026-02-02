@@ -30,6 +30,15 @@ public class RewardChoiceUI : MonoBehaviour
     [SerializeField] private TMP_Text choice3Title;
     [SerializeField] private TMP_Text choice3Desc;
 
+    private void ResolveReferences()
+    {
+        if (rewards == null)
+            rewards = FindObjectOfType<RewardManager>(true);
+
+        if (flow == null)
+            flow = GameFlowManager.Instance ?? FindObjectOfType<GameFlowManager>(true);
+    }
+
     private void Awake()
     {
         // Estado inicial: oculto
@@ -42,11 +51,13 @@ public class RewardChoiceUI : MonoBehaviour
 
     private void Start()
     {
+        ResolveReferences();
         SyncStateAndChoices();
     }
 
     private void OnEnable()
     {
+        ResolveReferences();
         if (rewards != null)
         {
             rewards.RewardChoicesPresented += OnRewardChoicesPresented;
