@@ -14,9 +14,15 @@ public class PauseMenuUI : MonoBehaviour
     [SerializeField] private Button restartButton;
     [SerializeField] private Button menuButton; // Nuevo boton para volver al menu
 
+    private void ResolveFlow()
+    {
+        if (flow == null)
+            flow = GameFlowManager.Instance ?? FindObjectOfType<GameFlowManager>(true);
+    }
+
     private void Awake()
     {
-        if (flow == null) flow = GameFlowManager.Instance;
+        ResolveFlow();
 
         if (root != null) root.SetActive(false);
 
@@ -27,6 +33,7 @@ public class PauseMenuUI : MonoBehaviour
 
     private void OnEnable()
     {
+        ResolveFlow();
         if (flow != null)
             flow.OnStateChanged += OnStateChanged;
 
@@ -41,6 +48,7 @@ public class PauseMenuUI : MonoBehaviour
 
     private void Sync()
     {
+        ResolveFlow();
         if (flow == null) return;
 
         if (flow.State == GameState.Paused)
@@ -95,6 +103,7 @@ public class PauseMenuUI : MonoBehaviour
     private void OnRestart()
     {
         // Reiniciar la escena actual (MVP)
+        flow?.ResetRunState();
         flow?.SetState(GameState.Combat);
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
@@ -102,7 +111,7 @@ public class PauseMenuUI : MonoBehaviour
     // NUEVO: volver al menu principal
     private void OnMenu()
     {
-        
+
 
         // Reanudar por si estaba en estado Paused
         flow?.Resume();

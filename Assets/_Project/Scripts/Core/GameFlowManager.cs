@@ -142,7 +142,8 @@ public class GameFlowManager : MonoBehaviour
         EncounterIndex = 0;
         Coins = startingCoins;
         ClearBossEncounter();
-        ClearSavedPlayerHP();
+        SavedPlayerHP = PlayerMaxHP;
+        HasSavedPlayerHP = true;
     }
 
     public void SetBossEncounter(EnemyData enemy, float hpMultiplier, float damageMultiplier, int hpBonus, int damageBonus)

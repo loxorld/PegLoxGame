@@ -67,7 +67,7 @@ public class MapNodeModalUI : MonoBehaviour
 
         var titleObj = CreateUIObject("Title", panelObj.transform);
         titleText = titleObj.AddComponent<Text>();
-        titleText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        titleText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         titleText.fontSize = 40;
         titleText.alignment = TextAnchor.UpperCenter;
         titleText.color = Color.white;
@@ -81,7 +81,7 @@ public class MapNodeModalUI : MonoBehaviour
 
         var bodyObj = CreateUIObject("Body", panelObj.transform);
         bodyText = bodyObj.AddComponent<Text>();
-        bodyText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        bodyText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         bodyText.fontSize = 28;
         bodyText.alignment = TextAnchor.UpperLeft;
         bodyText.color = Color.white;
@@ -138,7 +138,7 @@ public class MapNodeModalUI : MonoBehaviour
 
             var textObj = CreateUIObject("Label", buttonObj.transform);
             var text = textObj.AddComponent<Text>();
-            text.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             text.fontSize = 26;
             text.alignment = TextAnchor.MiddleCenter;
             text.color = Color.white;
