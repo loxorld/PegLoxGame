@@ -15,7 +15,9 @@ public class MapManager : MonoBehaviour
         }
 
         currentMapStage = stage;
-        currentNode = stage.startingNode;
+
+        GameFlowManager flow = ResolveGameFlowManager();
+        currentNode = flow != null && flow.SavedMapNode != null ? flow.SavedMapNode : stage.startingNode;
 
         if (currentNode == null)
         {
@@ -58,6 +60,12 @@ public class MapManager : MonoBehaviour
 
     public void SelectPath(MapNodeData nextNode)
     {
+        GameFlowManager flow = ResolveGameFlowManager();
+        if (flow != null)
+            flow.SaveMapNode(nextNode);
+        else
+            Debug.LogWarning("[MapManager] No se encontró GameFlowManager al guardar MapNode.");
+
         OpenNode(nextNode);
     }
 

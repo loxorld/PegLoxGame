@@ -1,7 +1,9 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 public enum RewardKind
 {
@@ -164,10 +166,26 @@ public class RewardManager : MonoBehaviour
     {
         RewardResolved?.Invoke();
 
-        GameFlowManager.Instance?.SetState(GameState.Combat);
+        GameFlowManager flow = GameFlowManager.Instance;
+        if (flow != null)
+            flow.StartCoroutine(WaitForMapManagerAndSetState(flow));
 
-        if (battle != null)
-            battle.ContinueAfterRewards();
+        SceneManager.LoadScene("MapScene", LoadSceneMode.Single);
+    }
+
+    private static IEnumerator WaitForMapManagerAndSetState(GameFlowManager flow)
+    {
+        if (flow == null)
+            yield break;
+
+        MapManager mapManager = null;
+        while (mapManager == null)
+        {
+            mapManager = FindObjectOfType<MapManager>();
+            yield return null;
+        }
+
+        flow.SetState(GameState.MapNavigation);
     }
 
     private RewardOption[] GenerateMixedChoices(int count)

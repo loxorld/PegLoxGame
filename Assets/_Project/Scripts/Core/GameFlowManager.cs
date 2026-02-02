@@ -7,6 +7,7 @@ public class GameFlowManager : MonoBehaviour
 
     public GameState State { get; private set; } = GameState.Combat;
     public event Action<GameState> OnStateChanged;
+    public MapNodeData SavedMapNode { get; private set; }
 
     //  solo en Combat se juega
     public bool CanShoot => State == GameState.Combat;
@@ -48,6 +49,11 @@ public class GameFlowManager : MonoBehaviour
         }
     }
 
+
+    public void SaveMapNode(MapNodeData node)
+    {
+        SavedMapNode = node;
+    }
 
 
     public void Pause()
