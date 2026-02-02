@@ -12,7 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c5c33ba73120f4544bf92e41adb69ecd, type: 3}
   m_Name: Tienda
   m_EditorClassIdentifier: Assembly-CSharp::MapNodeData
-  nodeType: 0
-  title: 
-  description: 
-  nextNodes: []
+  nodeType: 1
+  title: Tienda
+  description: Tienda
+  nextNodes:
+  - label: Camino A
+    targetNode: {fileID: 11400000, guid: 40fd2f38b86854e44a73565df3ed0d11, type: 2}
+  bossEnemy: {fileID: 0}
+  bossHpMultiplier: 2
+  bossDamageMultiplier: 1.5
+  bossHpBonus: 0
+  bossDamageBonus: 0
