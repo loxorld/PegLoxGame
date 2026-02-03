@@ -220,7 +220,7 @@ public class RewardManager : MonoBehaviour
             flow.StartCoroutine(WaitForMapManagerAndSetState(flow));
         }
 
-        SceneManager.LoadScene("MapScene", LoadSceneMode.Single);
+        SceneManager.LoadScene(SceneCatalog.Load().MapScene, LoadSceneMode.Single);
     }
 
     private static IEnumerator WaitForMapManagerAndSetState(GameFlowManager flow)

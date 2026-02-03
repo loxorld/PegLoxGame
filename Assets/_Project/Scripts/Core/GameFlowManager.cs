@@ -162,7 +162,7 @@ public class GameFlowManager : MonoBehaviour
         ResetPersistentManagers();
         SetState(GameState.Combat);
         Time.timeScale = 1f;
-        SceneManager.LoadScene("MapScene", LoadSceneMode.Single);
+        SceneManager.LoadScene(SceneCatalog.Load().MapScene, LoadSceneMode.Single);
     }
 
     private void ResetPersistentManagers()

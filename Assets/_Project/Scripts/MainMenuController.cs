@@ -47,7 +47,7 @@ public class MainMenuController : MonoBehaviour
             return;
         }
 
-        SceneManager.LoadScene("MapScene", LoadSceneMode.Single);
+        SceneManager.LoadScene(SceneCatalog.Load().MapScene, LoadSceneMode.Single);
     }
 
     /// <summary>
@@ -59,11 +59,11 @@ public class MainMenuController : MonoBehaviour
         if (flow != null && flow.SavedMapNode != null)
         {
             flow.SetState(GameState.Combat);
-            SceneManager.LoadScene("SampleScene", LoadSceneMode.Single);
+            SceneManager.LoadScene(SceneCatalog.Load().CombatScene, LoadSceneMode.Single);
             return;
         }
 
-        SceneManager.LoadScene("MapScene", LoadSceneMode.Single);
+        SceneManager.LoadScene(SceneCatalog.Load().MapScene, LoadSceneMode.Single);
     }
 
     /// <summary>

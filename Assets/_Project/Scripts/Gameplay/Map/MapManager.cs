@@ -113,7 +113,7 @@ public class MapManager : MonoBehaviour
                 flow.SetState(GameState.Combat);
 
                 // Cargar la escena de combate
-                UnityEngine.SceneManagement.SceneManager.LoadScene("SampleScene", UnityEngine.SceneManagement.LoadSceneMode.Single);
+                UnityEngine.SceneManagement.SceneManager.LoadScene(SceneCatalog.Load().CombatScene, UnityEngine.SceneManagement.LoadSceneMode.Single);
                 break;
 
             case NodeType.Event:
@@ -295,7 +295,7 @@ public class MapManager : MonoBehaviour
         }
 
         flow.SetState(GameState.Combat);
-        UnityEngine.SceneManagement.SceneManager.LoadScene("SampleScene", UnityEngine.SceneManagement.LoadSceneMode.Single);
+        UnityEngine.SceneManagement.SceneManager.LoadScene(SceneCatalog.Load().CombatScene, UnityEngine.SceneManagement.LoadSceneMode.Single);
     }
 
 }
