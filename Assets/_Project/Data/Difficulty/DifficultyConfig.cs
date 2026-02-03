@@ -1,3 +1,4 @@
+using System.Globalization;
 using UnityEngine;
 
 [CreateAssetMenu(menuName = "PeglinLike/Run/Difficulty Config", fileName = "DifficultyConfig_")]
@@ -32,6 +33,23 @@ public struct DifficultyStage
 
     [Header("UI")]
     public string stageName;
+
+    public string GetDisplayName(int encounterIndex)
+    {
+        return string.IsNullOrWhiteSpace(stageName) ? $"Stage {encounterIndex + 1}" : stageName;
+    }
+
+    public string GetHudText(int encounterIndex, int enemiesToDefeat)
+    {
+        string hpMultiplier = enemyHpMultiplier.ToString("0.##", CultureInfo.InvariantCulture);
+        string dmgMultiplier = enemyDamageMultiplier.ToString("0.##", CultureInfo.InvariantCulture);
+        return $"{GetDisplayName(encounterIndex)} | HP x{hpMultiplier} ({FormatSigned(enemyHpBonus)}) | DMG x{dmgMultiplier} ({FormatSigned(enemyDamageBonus)}) | N={enemiesToDefeat}";
+    }
+
+    private static string FormatSigned(int value)
+    {
+        return value >= 0 ? $"+{value}" : value.ToString(CultureInfo.InvariantCulture);
+    }
 
     public static DifficultyStage Default => new DifficultyStage
     {

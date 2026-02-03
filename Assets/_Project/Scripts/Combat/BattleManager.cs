@@ -44,7 +44,8 @@ public class BattleManager : MonoBehaviour
     public int EnemyDamageBonus => stage.enemyDamageBonus;
     public bool HasDifficultyConfig => difficulty != null;
 
-    public string StageName => string.IsNullOrWhiteSpace(stage.stageName) ? $"Stage {encounterIndex + 1}" : stage.stageName;
+    public string StageName => stage.GetDisplayName(encounterIndex);
+    public string DifficultyHudText => stage.GetHudText(encounterIndex, enemiesToDefeat);
 
 
     private void Start()

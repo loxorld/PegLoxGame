@@ -125,7 +125,7 @@ public class HUDController : MonoBehaviour
             if (battle == null || !battle.HasDifficultyConfig)
                 difficultyText.text = "";
             else
-                difficultyText.text = $"STAGE: {battle.StageName}";
+                difficultyText.text = $"STAGE: {battle.DifficultyHudText}";
         }
     }
 }
