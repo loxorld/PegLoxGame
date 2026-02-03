@@ -121,6 +121,6 @@ public class PauseMenuUI : MonoBehaviour
         flow?.Resume();
 
         // Cargar la escena del menu principal en modo Single
-        SceneManager.LoadScene("MainMenu", LoadSceneMode.Single);
+        SceneManager.LoadScene(SceneCatalog.Load().MainMenuScene, LoadSceneMode.Single);
     }
 }

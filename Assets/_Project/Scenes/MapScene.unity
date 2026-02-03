@@ -389,6 +389,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MapManager
   currentMapStage: {fileID: 11400000, guid: 32539d1ecb6fe614bbb2d289e757e143, type: 2}
   gameFlowManager: {fileID: 1182409062}
+  eventCoinsRewardMin: 5
+  eventCoinsRewardMax: 15
+  eventCoinsPenaltyMin: 3
+  eventCoinsPenaltyMax: 10
+  eventHealMin: 3
+  eventHealMax: 6
+  eventDamageMin: 2
+  eventDamageMax: 5
+  shopHealCost: 10
+  shopHealAmount: 8
 --- !u!4 &527191937
 Transform:
   m_ObjectHideFlags: 0
@@ -433,6 +443,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5400410d2616e2f4494c10fa39d4c204, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameFlowManager
+  startingCoins: 10
+  startingPlayerMaxHP: 100
 --- !u!4 &1182409063
 Transform:
   m_ObjectHideFlags: 0
