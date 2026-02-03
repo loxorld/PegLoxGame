@@ -9,6 +9,7 @@ public struct ShotSummary
     public int TotalHits;
     public int DamagePerHit;
     public int Multiplier;
+    public int BonusDamage;
     public int PredictedDamage;
 
     public ShotSummary(
@@ -16,7 +17,8 @@ public struct ShotSummary
         int normalHits,
         int criticalHits,
         int damagePerHit,
-        int multiplier)
+        int multiplier,
+        int bonusDamage)
     {
         OrbName = orbName;
         NormalHits = normalHits;
@@ -24,6 +26,7 @@ public struct ShotSummary
         TotalHits = normalHits + criticalHits;
         DamagePerHit = damagePerHit;
         Multiplier = multiplier;
-        PredictedDamage = TotalHits * DamagePerHit * Multiplier;
+        BonusDamage = bonusDamage;
+        PredictedDamage = (TotalHits * DamagePerHit * Multiplier) + BonusDamage;
     }
 }

@@ -16,7 +16,7 @@ public class PegBehavior_Durable : PegBehaviorBase
         peg.SetColorToIdle(); // asegura idle al reset
     }
 
-    public override bool OnBallHit(Peg peg)
+    public override bool OnBallHit(Peg peg, Collision2D collision)
     {
         if (peg == null) return true;
 

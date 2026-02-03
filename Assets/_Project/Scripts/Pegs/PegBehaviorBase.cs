@@ -11,5 +11,5 @@ public abstract class PegBehaviorBase : ScriptableObject
     /// Se llama cuando la bola golpea el peg.
     /// Devuelve true si el peg debe consumirse en este hit.
     /// </summary>
-    public abstract bool OnBallHit(Peg peg);
+    public abstract bool OnBallHit(Peg peg, Collision2D collision);
 }

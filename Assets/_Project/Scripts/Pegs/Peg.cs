@@ -128,7 +128,7 @@ public class Peg : MonoBehaviour
                 var b = definition.behaviors[i];
                 if (b == null) continue;
 
-                bool wantsConsume = b.OnBallHit(this);
+                bool wantsConsume = b.OnBallHit(this, collision);
                 if (!wantsConsume) consumeNow = false;
             }
         }

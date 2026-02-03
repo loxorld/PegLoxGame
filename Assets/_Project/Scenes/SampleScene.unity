@@ -5131,6 +5131,7 @@ MonoBehaviour:
   orbs: []
   selectedOrbIndex: 0
   orbManager: {fileID: 1163881908}
+  relicManager: {fileID: 1732774981}
   launchForce: 10
   maxAimMagnitude: 3
   maxDragPixels: 260
@@ -7356,9 +7357,15 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 0a1647e88b2c61449baaefa2a8cc52c7, type: 2}
   - {fileID: 11400000, guid: 0bb46d0004373e24f85800d2a0fd31f7, type: 2}
   - {fileID: 11400000, guid: e6f28d60cbf906f4abe073f95de5e623, type: 2}
+  - {fileID: 11400000, guid: 90e6ecf7f72ae6f449f742eb6104344c, type: 2}
+  - {fileID: 11400000, guid: 9097928b36f336c4c812996e12af0a7f, type: 2}
+  - {fileID: 11400000, guid: 933ad14e520a1674a9f6e60b753fb5c3, type: 2}
   orbPool:
   - {fileID: 11400000, guid: 8a4d91169cd9300448b6dd42ce4cbb4a, type: 2}
   - {fileID: 11400000, guid: c0efe7abdd37a1649ba6f3307a3b1b06, type: 2}
+  - {fileID: 11400000, guid: d8172e3f5d9a7a843a1965ebf4cd45f8, type: 2}
+  - {fileID: 11400000, guid: d4de3080bf156dd4ca6c342e5fd397f6, type: 2}
+  - {fileID: 11400000, guid: 8d22230d6bb821141b5e18c560c744cb, type: 2}
   chanceOrb: 0.5
   avoidDuplicatesInSameRoll: 1
   encounterCoinsMin: 4

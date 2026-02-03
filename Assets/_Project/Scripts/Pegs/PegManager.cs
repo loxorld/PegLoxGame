@@ -98,4 +98,22 @@ public class PegManager : MonoBehaviour
             p.ForceConsumeNoHitCount();
         }
     }
+    public Peg GetRandomActivePeg(Peg exclude = null)
+    {
+        if (pegs.Count == 0) return null;
+
+        int startIndex = Random.Range(0, pegs.Count);
+        for (int i = 0; i < pegs.Count; i++)
+        {
+            int index = (startIndex + i) % pegs.Count;
+            Peg peg = pegs[index];
+            if (peg == null) continue;
+            if (peg == exclude) continue;
+            if (peg.IsConsumed) continue;
+            return peg;
+        }
+
+        return null;
+    }
+
 }

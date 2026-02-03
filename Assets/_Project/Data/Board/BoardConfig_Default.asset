@@ -36,6 +36,15 @@ MonoBehaviour:
   - definition: {fileID: 11400000, guid: b247ae88b1b4856439aff3f65f684458, type: 2}
     weight: 1.2
     maxPerBoard: 3
+  - definition: {fileID: 11400000, guid: 77d3fde54bf6c654eac2ed2531493100, type: 2}
+    weight: 1.2
+    maxPerBoard: 3
+  - definition: {fileID: 11400000, guid: ed2d5ba224d21b14d99b96a568a9e531, type: 2}
+    weight: 1.2
+    maxPerBoard: 3
+  - definition: {fileID: 11400000, guid: 20228edb3670e2c4088f1a60e6bad84d, type: 2}
+    weight: 1.2
+    maxPerBoard: 3
   layouts:
   - {fileID: 11400000, guid: 0e60b14eedfb9e54588f9ec73e1bd81f, type: 2}
   - {fileID: 11400000, guid: e3a523c1a5a464846bc32ef22cfa42e2, type: 2}

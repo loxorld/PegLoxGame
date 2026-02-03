@@ -1,4 +1,4 @@
-public class ShotContext
+ï»¿public class ShotContext
 {
     public OrbData Orb { get; private set; }
 
@@ -12,7 +12,10 @@ public class ShotContext
 
     public int Multiplier { get; set; } = 1;       // puede ser modificado por efectos
 
-    public int HitsAppliedForThisShot { get; set; } // contador genérico para efectos “por primeros N hits”
+    public int BonusDamage { get; set; } = 0;
+    public bool SkipCounterattack { get; set; }
+
+    public int HitsAppliedForThisShot { get; set; } // contador genÃ©rico para efectos Â“por primeros N hitsÂ”
 
     public bool FirstCritBonusApplied { get; set; }
     public int TotalHits => NormalHits + CriticalHits;

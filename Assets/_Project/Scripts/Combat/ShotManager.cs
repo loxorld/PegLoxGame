@@ -79,7 +79,8 @@ public class ShotManager : MonoBehaviour
             normalHits: currentShot.NormalHits,
             criticalHits: currentShot.CriticalHits,
             damagePerHit: currentShot.DamagePerHit,
-            multiplier: mult
+            multiplier: mult,
+            bonusDamage: currentShot.BonusDamage
         );
 
         if (resolved) ShotResolved?.Invoke(summary);
@@ -167,14 +168,15 @@ public class ShotManager : MonoBehaviour
             return;
         }
 
-        int damage = currentShot.TotalHits * currentShot.DamagePerHit * currentShot.Multiplier;
+        int damage = (currentShot.TotalHits * currentShot.DamagePerHit * currentShot.Multiplier) + currentShot.BonusDamage;
 
         ShotResolved?.Invoke(new ShotSummary(
             currentShot.Orb != null ? currentShot.Orb.orbName : "None",
             currentShot.NormalHits,
             currentShot.CriticalHits,
             currentShot.DamagePerHit,
-            currentShot.Multiplier
+            currentShot.Multiplier,
+            currentShot.BonusDamage
         ));
 
         enemy.TakeDamage(damage);
@@ -187,7 +189,8 @@ public class ShotManager : MonoBehaviour
         }
 
         // Contraataque
-        player.TakeDamage(enemy.AttackDamage);
+        if (!currentShot.SkipCounterattack)
+            player.TakeDamage(enemy.AttackDamage);
 
         // GameOver lo dispara PlayerStats.Died -> GameOverMenuUI -> GameFlowManager.SetState(GameOver)
         // ShotManager NO decide GameOver, solo corta.

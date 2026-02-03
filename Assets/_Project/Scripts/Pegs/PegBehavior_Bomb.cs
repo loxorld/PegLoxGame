@@ -9,7 +9,7 @@ public class PegBehavior_Bomb : PegBehaviorBase
     [Tooltip("Capa donde están los pegs (misma que usás para overlap).")]
     [SerializeField] private LayerMask pegMask;
 
-    public override bool OnBallHit(Peg peg)
+    public override bool OnBallHit(Peg peg, Collision2D collision)
     {
         if (peg == null) return true;
 

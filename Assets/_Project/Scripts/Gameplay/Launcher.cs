@@ -16,6 +16,7 @@ public class Launcher : MonoBehaviour
 
     [Header("Managers")]
     [SerializeField] private OrbManager orbManager;
+    [SerializeField] private RelicManager relicManager;
 
     [Header("Launch Settings")]
     [SerializeField] private float launchForce = 10f; // legacy (no se usa para velocidad, lo dejamos por compat)
@@ -69,7 +70,7 @@ public class Launcher : MonoBehaviour
     private void Update()
     {
 
-        if (orbManager == null)
+        if (orbManager == null || relicManager == null)
             ResolveReferences();
         HandleOrbSelectionLegacy();
 
@@ -304,6 +305,24 @@ public class Launcher : MonoBehaviour
     {
         if (orbManager == null)
             orbManager = OrbManager.Instance ?? FindObjectOfType<OrbManager>(true);
+
+        if (relicManager == null)
+            relicManager = RelicManager.Instance ?? FindObjectOfType<RelicManager>(true);
+    }
+
+    private int GetPreviewBounceBonus()
+    {
+        if (relicManager == null) return 0;
+
+        int bonus = 0;
+        var relics = relicManager.ActiveRelics;
+        for (int i = 0; i < relics.Count; i++)
+        {
+            if (relics[i] is IPreviewBounceModifier preview)
+                bonus += Mathf.Max(0, preview.BonusPreviewBounces);
+        }
+
+        return bonus;
     }
     // ---------------- Trajectory Preview ----------------
 
@@ -351,34 +370,41 @@ public class Launcher : MonoBehaviour
 
         float radius = (ballRadiusWorld > 0f) ? ballRadiusWorld : previewBallRadiusFallback;
 
-        RaycastHit2D hit = Physics2D.CircleCast(
-            pos,
-            radius,
-            dir,
-            firstLen,
-            collisionMask
-        );
+ 
 
         List<Vector3> points = new List<Vector3>(4) { pos };
 
-        if (hit.collider == null)
-        {
-            points.Add(pos + dir * firstLen);
-            ApplyLine(points);
-            return;
-        }
+        int previewBounces = Mathf.Max(0, maxBounces + GetPreviewBounceBonus());
+        float minTail = 0.2f;
+        float tailT = Mathf.SmoothStep(0f, 1f, power01);
+        float tailLen = Mathf.Lerp(minTail, bounceTailLength, tailT);
+        float segmentLen = firstLen;
 
-        Vector2 hitPoint = hit.point;
-        points.Add(hitPoint);
-
-        if (maxBounces > 0)
+        for (int bounceIndex = 0; bounceIndex <= previewBounces; bounceIndex++)
         {
-            Vector2 bounceDir = Vector2.Reflect(dir, hit.normal).normalized;
-            Vector2 bounceStart = hitPoint + hit.normal * (radius + 0.01f);
-            float minTail = 0.2f;
-            float tailT = Mathf.SmoothStep(0f, 1f, power01);
-            float tailLen = Mathf.Lerp(minTail, bounceTailLength, tailT);
-            points.Add(bounceStart + bounceDir * tailLen);
+            RaycastHit2D hit = Physics2D.CircleCast(
+                pos,
+                radius,
+                dir,
+                segmentLen,
+                collisionMask
+            );
+
+            if (hit.collider == null)
+            {
+                points.Add(pos + dir * segmentLen);
+                break;
+            }
+
+            Vector2 hitPoint = hit.point;
+            points.Add(hitPoint);
+
+            if (bounceIndex == previewBounces)
+                break;
+
+            dir = Vector2.Reflect(dir, hit.normal).normalized;
+            pos = hitPoint + hit.normal * (radius + 0.01f);
+            segmentLen = tailLen;
         }
 
         ApplyLine(points);

@@ -18,16 +18,16 @@ MonoBehaviour:
     enemyDamageMultiplier: 1
     enemyHpBonus: 0
     enemyDamageBonus: 0
-    stageName: Act 1 - Floor 1
+    stageName: Bosque - Arboleda 1
   - enemiesToDefeat: 2
     enemyHpMultiplier: 2
     enemyDamageMultiplier: 2
     enemyHpBonus: 0
     enemyDamageBonus: 0
-    stageName: Act 1 - Floor 2
+    stageName: Bosque - Arboleda 2
   - enemiesToDefeat: 2
     enemyHpMultiplier: 3
     enemyDamageMultiplier: 3
     enemyHpBonus: 0
     enemyDamageBonus: 0
-    stageName: Act 1 - Floor 3
+    stageName: Bosque - Arboleda 3
