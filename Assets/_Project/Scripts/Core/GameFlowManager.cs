@@ -153,11 +153,16 @@ public class GameFlowManager : MonoBehaviour
 
     public void RestartCombatScene()
     {
+        RestartRunFromMenu();
+    }
+
+    public void RestartRunFromMenu()
+    {
         ResetRunState();
         ResetPersistentManagers();
         SetState(GameState.Combat);
         Time.timeScale = 1f;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        SceneManager.LoadScene("MapScene", LoadSceneMode.Single);
     }
 
     private void ResetPersistentManagers()

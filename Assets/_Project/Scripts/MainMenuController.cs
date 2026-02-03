@@ -40,15 +40,31 @@ public class MainMenuController : MonoBehaviour
     /// </summary>
     public void OnPlayButton()
     {
-        SceneManager.LoadScene("MapScene", LoadSceneMode.Single);
+        GameFlowManager flow = GameFlowManager.Instance ?? FindObjectOfType<GameFlowManager>(true);
+        if (flow != null)
+        {
+            flow.RestartRunFromMenu();
+            return;
+        }
 
+        SceneManager.LoadScene("MapScene", LoadSceneMode.Single);
     }
 
     /// <summary>
-    /// Llamado por el botón Continue. Por ahora hace lo mismo que OnPlayButton()
-    /// hasta que se implemente un sistema de guardado.
+    /// Llamado por el botn Continue. Intenta seguir la corrida activa si existe.
     /// </summary>
-    public void OnContinueButton() => OnPlayButton();
+    public void OnContinueButton()
+    {
+        GameFlowManager flow = GameFlowManager.Instance ?? FindObjectOfType<GameFlowManager>(true);
+        if (flow != null && flow.SavedMapNode != null)
+        {
+            flow.SetState(GameState.Combat);
+            SceneManager.LoadScene("SampleScene", LoadSceneMode.Single);
+            return;
+        }
+
+        SceneManager.LoadScene("MapScene", LoadSceneMode.Single);
+    }
 
     /// <summary>
     /// Llamado por el botón New Run. Por ahora hace lo mismo que OnPlayButton().
