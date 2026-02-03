@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 59738c505df84354b9dd197345427941, type: 3}
   m_Name: PegBehavior_Enfriado
   m_EditorClassIdentifier: Assembly-CSharp::PegBehavior_Enfriado
-  speedMultiplier: 0.586
+  speedMultiplier: 0.252

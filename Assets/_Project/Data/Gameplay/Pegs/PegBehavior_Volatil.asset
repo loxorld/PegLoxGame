@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: PegBehavior_Volatil
   m_EditorClassIdentifier: Assembly-CSharp::PegBehavior_Volatil
   doubleHitChance: 0.25
-  surviveChance: 0.15
+  surviveChance: 0.24
