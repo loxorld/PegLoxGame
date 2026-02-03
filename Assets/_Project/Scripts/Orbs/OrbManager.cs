@@ -11,6 +11,7 @@ public class OrbManager : MonoBehaviour
     [Header("Owned Orbs (optional, for future UI)")]
     [SerializeField] private List<OrbData> ownedOrbs = new List<OrbData>();
 
+    private OrbData defaultOrb;
 
     public OrbData CurrentOrb => currentOrb;
 
@@ -24,6 +25,8 @@ public class OrbManager : MonoBehaviour
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
+
+        defaultOrb = currentOrb;
 
         // Si currentOrb está seteado, aseguro que exista en ownedOrbs
         if (currentOrb != null && !ownedOrbs.Contains(currentOrb))
@@ -90,6 +93,22 @@ public class OrbManager : MonoBehaviour
         SetCurrentOrb(ownedOrbs[currentIndex]);
 
         Debug.Log($"[OrbManager] Switched to prev orb: {currentOrb.orbName}");
+    }
+
+    public void ResetToDefaults()
+    {
+        ownedOrbs.Clear();
+        if (defaultOrb != null)
+        {
+            ownedOrbs.Add(defaultOrb);
+            currentOrb = defaultOrb;
+            currentIndex = 0;
+        }
+        else
+        {
+            currentOrb = null;
+            currentIndex = 0;
+        }
     }
 
 

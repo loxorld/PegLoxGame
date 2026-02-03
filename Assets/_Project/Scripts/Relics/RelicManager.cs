@@ -28,5 +28,10 @@ public class RelicManager : MonoBehaviour
             activeRelics.Add(relic);
     }
 
+    public void ResetToDefaults()
+    {
+        activeRelics.Clear();
+    }
+
     // MVP: se editan por Inspector. Más adelante: drop/tienda.
 }

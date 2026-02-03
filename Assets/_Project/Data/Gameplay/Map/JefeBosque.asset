@@ -17,7 +17,7 @@ MonoBehaviour:
   description: Jefe final del bosque
   nextNodes: []
   bossEnemy: {fileID: 11400000, guid: 4beab10c2fa6dac4a97716ff0d5ef953, type: 2}
-  bossHpMultiplier: 2
+  bossHpMultiplier: 5
   bossDamageMultiplier: 1.5
   bossHpBonus: 0
   bossDamageBonus: 0

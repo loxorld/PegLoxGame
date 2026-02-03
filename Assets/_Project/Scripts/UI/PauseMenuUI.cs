@@ -1,6 +1,6 @@
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class PauseMenuUI : MonoBehaviour
 {
@@ -107,11 +107,8 @@ public class PauseMenuUI : MonoBehaviour
 
     private void OnRestart()
     {
-        // Reiniciar la escena actual (MVP)
         RefreshFlowSubscription();
-        flow?.ResetRunState();
-        flow?.SetState(GameState.Combat);
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        flow?.RestartCombatScene();
     }
 
     // NUEVO: volver al menu principal

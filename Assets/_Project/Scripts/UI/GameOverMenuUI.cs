@@ -1,5 +1,5 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
+
 using UnityEngine.UI;
 
 public class GameOverMenuUI : MonoBehaviour
@@ -99,8 +99,6 @@ public class GameOverMenuUI : MonoBehaviour
     private void Restart()
     {
         if (flow == null) flow = GameFlowManager.Instance;
-        flow?.ResetRunState();
-        flow?.SetState(GameState.Combat);
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        flow?.RestartCombatScene();
     }
 }

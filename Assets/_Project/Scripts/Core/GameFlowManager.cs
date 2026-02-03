@@ -1,5 +1,8 @@
 using System;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+
+
 
 public class GameFlowManager : MonoBehaviour
 {
@@ -146,6 +149,21 @@ public class GameFlowManager : MonoBehaviour
         ClearBossEncounter();
         SavedPlayerHP = PlayerMaxHP;
         HasSavedPlayerHP = true;
+    }
+
+    public void RestartCombatScene()
+    {
+        ResetRunState();
+        ResetPersistentManagers();
+        SetState(GameState.Combat);
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+    private void ResetPersistentManagers()
+    {
+        OrbManager.Instance?.ResetToDefaults();
+        RelicManager.Instance?.ResetToDefaults();
     }
 
     public void SetBossEncounter(EnemyData enemy, float hpMultiplier, float damageMultiplier, int hpBonus, int damageBonus)

@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class PlayerStats : MonoBehaviour
 {
-    [SerializeField] private int maxHP = 30;
+    [SerializeField] private int maxHP = 100;
     public int MaxHP => maxHP;
 
     public int CurrentHP { get; private set; }
