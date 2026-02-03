@@ -51,6 +51,10 @@ public class RewardManager : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float chanceOrb = 0.5f; // probabilidad por slot
     [SerializeField] private bool avoidDuplicatesInSameRoll = true;
 
+    [Header("Coins Reward")]
+    [SerializeField, Min(0)] private int encounterCoinsMin = 4;
+    [SerializeField, Min(0)] private int encounterCoinsMax = 8;
+
     [Header("Debug / PC Fallback")]
     [SerializeField] private bool enableKeyboardFallback = true;
 
@@ -102,6 +106,7 @@ public class RewardManager : MonoBehaviour
     private void OnEncounterCompleted()
     {
         ResolveReferences();
+        GrantEncounterCoins();
         // Generar 3 opciones mixtas (Orb/Relic)
         pendingChoices = GenerateMixedChoices(3);
 
@@ -176,6 +181,22 @@ public class RewardManager : MonoBehaviour
         ResolveRewardAndContinue();
     }
 
+
+    private void GrantEncounterCoins()
+    {
+        GameFlowManager flow = GameFlowManager.Instance;
+        if (flow == null)
+            return;
+
+        int min = Mathf.Max(0, encounterCoinsMin);
+        int max = Mathf.Max(min, encounterCoinsMax);
+        if (max <= 0)
+            return;
+
+        int reward = UnityEngine.Random.Range(min, max + 1);
+        if (reward > 0)
+            flow.AddCoins(reward);
+    }
     private void ResolveReferences()
     {
         if (battle == null)

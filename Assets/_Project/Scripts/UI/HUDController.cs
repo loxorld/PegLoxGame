@@ -16,6 +16,7 @@ public class HUDController : MonoBehaviour
     [Header("Encounter / Difficulty (optional)")]
     [SerializeField] private TMP_Text encounterText;   // "ENCOUNTER: 1"
     [SerializeField] private TMP_Text difficultyText;  // "HP x1.2 (+0) | DMG x1.1 (+0) | N=3"
+    [SerializeField] private TMP_Text coinsText;
 
     [Header("Bars")]
     [SerializeField] private HealthBarUI playerBar;
@@ -102,6 +103,13 @@ public class HUDController : MonoBehaviour
                 GameState.GameOver => "GAME OVER",
                 _ => s.ToString()
             };
+        }
+
+        // Coins text
+        if (coinsText != null)
+        {
+            int coins = flow != null ? flow.Coins : 0;
+            coinsText.text = $"Monedas: {coins}";
         }
 
         // Encounter text

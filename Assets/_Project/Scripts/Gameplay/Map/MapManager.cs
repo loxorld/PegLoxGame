@@ -229,6 +229,11 @@ public class MapManager : MonoBehaviour
 
     private void HandleShopNode()
     {
+        ShowShopModal(null);
+    }
+
+    private void ShowShopModal(string extraMessage)
+    {
         GameFlowManager flow = ResolveGameFlowManager();
         if (flow == null)
         {
@@ -237,9 +242,12 @@ public class MapManager : MonoBehaviour
         }
 
         string description = $"{currentNode?.description}\n\nMonedas: {flow.Coins}";
+        if (!string.IsNullOrWhiteSpace(extraMessage))
+            description += $"\n{extraMessage}";
 
         var options = new System.Collections.Generic.List<MapNodeModalUI.Option>();
-        if (flow.Coins >= shopHealCost)
+        bool canAfford = flow.Coins >= shopHealCost;
+        if (canAfford)
         {
             options.Add(new MapNodeModalUI.Option(
                 $"Curar +{shopHealAmount} HP ({shopHealCost} monedas)",
@@ -249,6 +257,13 @@ public class MapManager : MonoBehaviour
                         flow.ModifySavedHP(shopHealAmount);
                     OpenNode(currentNode);
                 }));
+        }
+        else
+        {
+            int missingCoins = Mathf.Max(0, shopHealCost - flow.Coins);
+            options.Add(new MapNodeModalUI.Option(
+                $"Curar +{shopHealAmount} HP (faltan {missingCoins} monedas)",
+                () => ShowShopModal("No alcanzan las monedas para curar.")));
         }
 
         options.Add(new MapNodeModalUI.Option("Salir", () => OpenNode(currentNode)));

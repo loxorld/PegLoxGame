@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Combate_1
   m_EditorClassIdentifier: Assembly-CSharp::MapNodeData
   nodeType: 0
-  title: Encuentro 1
+  title: Combatir
   description: Enemigos del bosque
   nextNodes:
   - label: Camino A
