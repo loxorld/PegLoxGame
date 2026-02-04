@@ -15,6 +15,9 @@ public class MapManager : MonoBehaviour
     [SerializeField, Min(0)] private int eventDamageMin = 2;
     [SerializeField, Min(0)] private int eventDamageMax = 5;
 
+    [Header("Modal UI")]
+    [SerializeField] private MonoBehaviour mapNodeModalView;
+
     [Header("Shop Settings")]
     [SerializeField, Min(0)] private int shopHealCost = 10;
     [SerializeField, Min(1)] private int shopHealAmount = 8;
@@ -224,10 +227,22 @@ public class MapManager : MonoBehaviour
         if (hpDelta != 0)
             flow.ModifySavedHP(hpDelta);
 
-        MapNodeModalUI.Show(
+        IMapNodeModalView modalView = ResolveMapNodeModalView();
+        if (modalView == null)
+        {
+            Debug.LogWarning("[MapManager] No se encontr IMapNodeModalView en la escena.");
+            return;
+        }
+
+        var options = new List<MapNodeModalOption>
+        {
+            new MapNodeModalOption("Continuar", () => OpenNode(currentNode))
+        };
+
+        modalView.ShowEvent(
             currentNode != null ? currentNode.title : "Evento",
             $"{currentNode?.description}\n\n{outcome}",
-            new MapNodeModalUI.Option("Continuar", () => OpenNode(currentNode))
+            options
         );
     }
 
@@ -262,17 +277,24 @@ public class MapManager : MonoBehaviour
             ShowShopModal,
             () => OpenNode(currentNode));
 
-        var options = new System.Collections.Generic.List<MapNodeModalUI.Option>();
+        var options = new List<MapNodeModalOption>();
         for (int i = 0; i < shopOptions.Count; i++)
         {
             ShopService.ShopOptionData option = shopOptions[i];
-            options.Add(new MapNodeModalUI.Option(option.Label, option.OnSelect));
+            options.Add(new MapNodeModalOption(option.Label, option.OnSelect));
         }
 
-        MapNodeModalUI.Show(
+        IMapNodeModalView modalView = ResolveMapNodeModalView();
+        if (modalView == null)
+        {
+            Debug.LogWarning("[MapManager] No se encontr IMapNodeModalView en la escena.");
+            return;
+        }
+
+        modalView.ShowShop(
             currentNode != null ? currentNode.title : "Tienda",
             description,
-            options.ToArray()
+            options
         );
     }
 
@@ -297,6 +319,24 @@ public class MapManager : MonoBehaviour
 
         flow.SetState(GameState.Combat);
         UnityEngine.SceneManagement.SceneManager.LoadScene(SceneCatalog.Load().CombatScene, UnityEngine.SceneManagement.LoadSceneMode.Single);
+    }
+
+    private IMapNodeModalView ResolveMapNodeModalView()
+    {
+        if (mapNodeModalView != null && mapNodeModalView is IMapNodeModalView view)
+            return view;
+
+        MonoBehaviour[] behaviours = FindObjectsOfType<MonoBehaviour>(true);
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            if (behaviours[i] is IMapNodeModalView candidate)
+            {
+                mapNodeModalView = behaviours[i];
+                return candidate;
+            }
+        }
+
+        return null;
     }
 
 }

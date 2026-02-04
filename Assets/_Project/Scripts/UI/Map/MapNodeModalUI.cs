@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class MapNodeModalUI : MonoBehaviour
+public class MapNodeModalUI : MonoBehaviour, IMapNodeModalView
 {
     public struct Option
     {
@@ -23,6 +23,8 @@ public class MapNodeModalUI : MonoBehaviour
     private Text bodyText;
     private readonly List<Button> buttons = new();
 
+    public static MapNodeModalUI Instance => instance;
+
     public static void Show(string title, string body, params Option[] options)
     {
         if (instance == null || instance.Equals(null))
@@ -35,6 +37,20 @@ public class MapNodeModalUI : MonoBehaviour
         instance.SetupButtons(options);
     }
 
+    public void ShowEvent(string title, string description, IReadOnlyList<MapNodeModalOption> options)
+    {
+        Show(title, description, ConvertOptions(options));
+    }
+
+    public void ShowShop(string title, string description, IReadOnlyList<MapNodeModalOption> options)
+    {
+        Show(title, description, ConvertOptions(options));
+    }
+
+    public void ShowGeneric(string title, string description, IReadOnlyList<MapNodeModalOption> options)
+    {
+        Show(title, description, ConvertOptions(options));
+    }
     private static MapNodeModalUI CreateModal()
     {
         var root = new GameObject("MapNodeModalUI");
@@ -173,5 +189,15 @@ public class MapNodeModalUI : MonoBehaviour
     {
         if (instance == this)
             instance = null;
+    }
+    private static Option[] ConvertOptions(IReadOnlyList<MapNodeModalOption> options)
+    {
+        if (options == null || options.Count == 0)
+            return Array.Empty<Option>();
+
+        var converted = new Option[options.Count];
+        for (int i = 0; i < options.Count; i++)
+            converted[i] = new Option(options[i].Label, options[i].OnSelect);
+        return converted;
     }
 }
