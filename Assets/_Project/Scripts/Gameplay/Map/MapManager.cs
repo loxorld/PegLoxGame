@@ -19,6 +19,8 @@ public class MapManager : MonoBehaviour
     [SerializeField, Min(0)] private int shopHealCost = 10;
     [SerializeField, Min(1)] private int shopHealAmount = 8;
     [SerializeField, Min(0)] private int shopOrbUpgradeCost = 15;
+    [SerializeField] private ShopService shopService;
+
 
     private MapNodeData currentNode;
 
@@ -242,6 +244,8 @@ public class MapManager : MonoBehaviour
             Debug.LogWarning("[MapManager] No se encontr GameFlowManager en la escena.");
             return;
         }
+        if (shopService == null)
+            shopService = new ShopService();
 
         OrbManager orbManager = OrbManager.Instance ?? FindObjectOfType<OrbManager>(true);
 
@@ -249,89 +253,21 @@ public class MapManager : MonoBehaviour
         if (!string.IsNullOrWhiteSpace(extraMessage))
             description += $"\n{extraMessage}";
 
+        List<ShopService.ShopOptionData> shopOptions = shopService.GetShopOptions(
+            flow,
+            orbManager,
+            shopHealCost,
+            shopHealAmount,
+            shopOrbUpgradeCost,
+            ShowShopModal,
+            () => OpenNode(currentNode));
+
         var options = new System.Collections.Generic.List<MapNodeModalUI.Option>();
-        bool canAfford = flow.Coins >= shopHealCost;
-        if (canAfford)
+        for (int i = 0; i < shopOptions.Count; i++)
         {
-            options.Add(new MapNodeModalUI.Option(
-                $"Curar +{shopHealAmount} HP ({shopHealCost} monedas)",
-                () =>
-                {
-                    if (flow.SpendCoins(shopHealCost))
-                        flow.ModifySavedHP(shopHealAmount);
-                    ShowShopModal($"Te curaste +{shopHealAmount} HP.");
-                }));
+            ShopService.ShopOptionData option = shopOptions[i];
+            options.Add(new MapNodeModalUI.Option(option.Label, option.OnSelect));
         }
-        else
-        {
-            int missingCoins = Mathf.Max(0, shopHealCost - flow.Coins);
-            options.Add(new MapNodeModalUI.Option(
-                $"Curar +{shopHealAmount} HP (faltan {missingCoins} monedas)",
-                () => ShowShopModal("No alcanzan las monedas para curar.")));
-        }
-
-        IReadOnlyList<OrbInstance> ownedOrbs = orbManager != null ? orbManager.OwnedOrbInstances : null;
-        bool hasOrbs = ownedOrbs != null && ownedOrbs.Count > 0;
-        var upgradableOrbs = new System.Collections.Generic.List<OrbInstance>();
-        if (hasOrbs)
-        {
-            for (int i = 0; i < ownedOrbs.Count; i++)
-            {
-                OrbInstance orb = ownedOrbs[i];
-                if (orb != null && orb.CanLevelUp)
-                    upgradableOrbs.Add(orb);
-            }
-        }
-
-        if (!hasOrbs)
-        {
-            options.Add(new MapNodeModalUI.Option(
-                "Mejora de Orbe (sin orbes disponibles)",
-                () => ShowShopModal("No hay orbes para mejorar.")));
-        }
-        else if (upgradableOrbs.Count == 0)
-        {
-            options.Add(new MapNodeModalUI.Option(
-                "Mejora de Orbe (orbes al mximo)",
-                () => ShowShopModal("Todos los orbes ya estn al mximo.")));
-        }
-        else
-        {
-            bool canAffordUpgrade = flow.Coins >= shopOrbUpgradeCost;
-            if (canAffordUpgrade)
-            {
-                options.Add(new MapNodeModalUI.Option(
-                    $"Mejora de Orbe (+1 nivel, {shopOrbUpgradeCost} monedas)",
-                    () =>
-                    {
-                        if (!flow.SpendCoins(shopOrbUpgradeCost))
-                        {
-                            ShowShopModal("No alcanzan las monedas para mejorar un orbe.");
-                            return;
-                        }
-
-                        int randomIndex = Random.Range(0, upgradableOrbs.Count);
-                        OrbInstance chosenOrb = upgradableOrbs[randomIndex];
-                        int previousLevel = chosenOrb.Level;
-                        chosenOrb.LevelUp();
-
-                        string result = chosenOrb.Level > previousLevel
-                            ? $"Mejoraste {chosenOrb.OrbName} a nivel {chosenOrb.Level}."
-                            : $"{chosenOrb.OrbName} ya est al mximo.";
-
-                        ShowShopModal(result);
-                    }));
-            }
-            else
-            {
-                int missingCoins = Mathf.Max(0, shopOrbUpgradeCost - flow.Coins);
-                options.Add(new MapNodeModalUI.Option(
-                    $"Mejora de Orbe (+1 nivel, faltan {missingCoins} monedas)",
-                    () => ShowShopModal("No alcanzan las monedas para mejorar un orbe.")));
-            }
-        }
-
-        options.Add(new MapNodeModalUI.Option("Salir", () => OpenNode(currentNode)));
 
         MapNodeModalUI.Show(
             currentNode != null ? currentNode.title : "Tienda",
