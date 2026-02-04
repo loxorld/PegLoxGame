@@ -11,9 +11,11 @@ public class OrbManager : MonoBehaviour
     [Header("Owned Orbs (optional, for future UI)")]
     [SerializeField] private List<OrbData> ownedOrbs = new List<OrbData>();
 
+    private readonly List<OrbInstance> ownedOrbInstances = new List<OrbInstance>();
+    private OrbInstance currentOrbInstance;
     private OrbData defaultOrb;
 
-    public OrbData CurrentOrb => currentOrb;
+    public OrbInstance CurrentOrb => currentOrbInstance;
 
     private void Awake()
     {
@@ -31,6 +33,8 @@ public class OrbManager : MonoBehaviour
         // Si currentOrb está seteado, aseguro que exista en ownedOrbs
         if (currentOrb != null && !ownedOrbs.Contains(currentOrb))
             ownedOrbs.Add(currentOrb);
+
+        BuildInstancesFromOwnedOrbs();
     }
 
     public void SetCurrentOrb(OrbData orb)
@@ -41,13 +45,22 @@ public class OrbManager : MonoBehaviour
         if (!ownedOrbs.Contains(orb))
             ownedOrbs.Add(orb);
 
-        currentOrb = orb;
+        OrbInstance instance = GetOrCreateInstance(orb);
+        SetCurrentOrb(instance);
+    }
+
+    public void SetCurrentOrb(OrbInstance orb)
+    {
+        if (orb == null) return;
+
+        currentOrbInstance = orb;
+        currentOrb = orb.BaseData;
 
         // Mantener índice alineado al orbe actual
-        currentIndex = ownedOrbs.IndexOf(currentOrb);
+        currentIndex = ownedOrbInstances.IndexOf(currentOrbInstance);
         if (currentIndex < 0) currentIndex = 0;
 
-        Debug.Log($"[OrbManager] Current orb set to: {orb.orbName}");
+        Debug.Log($"[OrbManager] Current orb set to: {orb.OrbName}");
     }
 
     public void AddOrb(OrbData orb)
@@ -57,8 +70,10 @@ public class OrbManager : MonoBehaviour
         if (!ownedOrbs.Contains(orb))
             ownedOrbs.Add(orb);
 
+        OrbInstance instance = GetOrCreateInstance(orb);
+
         // MVP automático: cuando ganás un orbe, lo equipás
-        SetCurrentOrb(orb);
+        SetCurrentOrb(instance);
 
         Debug.Log($"[OrbManager] Orb gained: {orb.orbName}");
     }
@@ -69,48 +84,91 @@ public class OrbManager : MonoBehaviour
     {
         // Asegura índice consistente si ya hay currentOrb seteado
         if (currentOrb != null)
-        {
-            currentIndex = ownedOrbs.IndexOf(currentOrb);
-            if (currentIndex < 0) currentIndex = 0;
-        }
+            SyncCurrentIndexFromInstance();
     }
 
     public void NextOrb()
     {
-        if (ownedOrbs == null || ownedOrbs.Count == 0) return;
+        if (ownedOrbInstances == null || ownedOrbInstances.Count == 0) return;
 
-        currentIndex = (currentIndex + 1) % ownedOrbs.Count;
-        SetCurrentOrb(ownedOrbs[currentIndex]);
+        currentIndex = (currentIndex + 1) % ownedOrbInstances.Count;
+        SetCurrentOrb(ownedOrbInstances[currentIndex]);
 
-        Debug.Log($"[OrbManager] Switched to next orb: {currentOrb.orbName}");
+        Debug.Log($"[OrbManager] Switched to next orb: {currentOrbInstance.OrbName}");
     }
 
     public void PrevOrb()
     {
-        if (ownedOrbs == null || ownedOrbs.Count == 0) return;
+        if (ownedOrbInstances == null || ownedOrbInstances.Count == 0) return;
 
-        currentIndex = (currentIndex - 1 + ownedOrbs.Count) % ownedOrbs.Count;
-        SetCurrentOrb(ownedOrbs[currentIndex]);
+        currentIndex = (currentIndex - 1 + ownedOrbInstances.Count) % ownedOrbInstances.Count;
+        SetCurrentOrb(ownedOrbInstances[currentIndex]);
 
-        Debug.Log($"[OrbManager] Switched to prev orb: {currentOrb.orbName}");
+        Debug.Log($"[OrbManager] Switched to prev orb: {currentOrbInstance.OrbName}");
     }
 
     public void ResetToDefaults()
     {
         ownedOrbs.Clear();
+        ownedOrbInstances.Clear();
+
         if (defaultOrb != null)
-        {
             ownedOrbs.Add(defaultOrb);
-            currentOrb = defaultOrb;
-            currentIndex = 0;
-        }
-        else
-        {
-            currentOrb = null;
-            currentIndex = 0;
-        }
+
+        BuildInstancesFromOwnedOrbs();
     }
 
+    private void BuildInstancesFromOwnedOrbs()
+    {
+        ownedOrbInstances.Clear();
 
+        if (ownedOrbs != null)
+        {
+            for (int i = 0; i < ownedOrbs.Count; i++)
+            {
+                OrbData orb = ownedOrbs[i];
+                if (orb == null) continue;
+                ownedOrbInstances.Add(new OrbInstance(orb));
+            }
+        }
 
+        if (currentOrb != null)
+            currentOrbInstance = GetOrCreateInstance(currentOrb);
+
+        if (currentOrbInstance == null && ownedOrbInstances.Count > 0)
+            currentOrbInstance = ownedOrbInstances[0];
+
+        if (currentOrbInstance != null)
+            currentOrb = currentOrbInstance.BaseData;
+
+        SyncCurrentIndexFromInstance();
+    }
+
+    private OrbInstance GetOrCreateInstance(OrbData orb)
+    {
+        if (orb == null) return null;
+
+        for (int i = 0; i < ownedOrbInstances.Count; i++)
+        {
+            OrbInstance instance = ownedOrbInstances[i];
+            if (instance != null && instance.BaseData == orb)
+                return instance;
+        }
+
+        OrbInstance newInstance = new OrbInstance(orb);
+        ownedOrbInstances.Add(newInstance);
+        return newInstance;
+    }
+
+    private void SyncCurrentIndexFromInstance()
+    {
+        if (currentOrbInstance == null)
+        {
+            currentIndex = 0;
+            return;
+        }
+
+        currentIndex = ownedOrbInstances.IndexOf(currentOrbInstance);
+        if (currentIndex < 0) currentIndex = 0;
+    }
 }

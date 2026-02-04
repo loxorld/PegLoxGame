@@ -17,7 +17,9 @@ MonoBehaviour:
   description: Tienda
   nextNodes:
   - label: Camino A
-    targetNode: {fileID: 11400000, guid: 40fd2f38b86854e44a73565df3ed0d11, type: 2}
+    targetNode: {fileID: 11400000, guid: 719fb8b56bfa6fd4b94b1f6c901d60b8, type: 2}
+  - label: Camino B
+    targetNode: {fileID: 11400000, guid: c7d040dffc229ef4089239a016c52137, type: 2}
   bossEnemy: {fileID: 0}
   bossHpMultiplier: 2
   bossDamageMultiplier: 1.5

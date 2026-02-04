@@ -15,4 +15,4 @@ MonoBehaviour:
   stageName: Bosque
   startingNode: {fileID: 11400000, guid: 40fd2f38b86854e44a73565df3ed0d11, type: 2}
   bossNode: {fileID: 11400000, guid: 5013d33e605832a4d9114fcbcf7040aa, type: 2}
-  bossAfterNodes: 4
+  bossAfterNodes: 6

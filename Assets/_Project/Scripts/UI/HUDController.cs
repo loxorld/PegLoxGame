@@ -87,8 +87,8 @@ public class HUDController : MonoBehaviour
         // Orb text
         if (orbNameText != null)
         {
-            OrbData orb = (orbs != null) ? orbs.CurrentOrb : null;
-            orbNameText.text = orb != null ? $"Orb: {orb.orbName}" : "Orb: -";
+            OrbInstance orb = (orbs != null) ? orbs.CurrentOrb : null;
+            orbNameText.text = orb != null ? $"Orb: {orb.OrbName}" : "Orb: -";
         }
 
         // State text

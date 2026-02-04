@@ -75,7 +75,7 @@ public class ShotManager : MonoBehaviour
         if (mult <= 0) mult = 1 + currentShot.CriticalHits;
 
         var summary = new ShotSummary(
-            orbName: currentShot.Orb != null ? currentShot.Orb.orbName : "None",
+            orbName: currentShot.Orb != null ? currentShot.Orb.OrbName : "None",
             normalHits: currentShot.NormalHits,
             criticalHits: currentShot.CriticalHits,
             damagePerHit: currentShot.DamagePerHit,
@@ -88,7 +88,7 @@ public class ShotManager : MonoBehaviour
     }
 
 
-    public void OnShotStarted(OrbData orb)
+    public void OnShotStarted(OrbInstance orb)
     {
         // Solo se puede iniciar tiro en combate
         if (!CanProcessCombat()) return;
@@ -101,8 +101,8 @@ public class ShotManager : MonoBehaviour
         pipeline.Clear();
 
         // Orden de efectos: Orbe -> Reliquia
-        if (orb != null && orb.orbEffects != null)
-            pipeline.AddOrbEffects(orb.orbEffects);
+        if (orb != null && orb.OrbEffects != null)
+            pipeline.AddOrbEffects(orb.OrbEffects);
 
         if (relics != null)
             pipeline.AddRelicEffects(relics.ActiveRelics);
@@ -171,7 +171,7 @@ public class ShotManager : MonoBehaviour
         int damage = (currentShot.TotalHits * currentShot.DamagePerHit * currentShot.Multiplier) + currentShot.BonusDamage;
 
         ShotResolved?.Invoke(new ShotSummary(
-            currentShot.Orb != null ? currentShot.Orb.orbName : "None",
+            currentShot.Orb != null ? currentShot.Orb.OrbName : "None",
             currentShot.NormalHits,
             currentShot.CriticalHits,
             currentShot.DamagePerHit,
@@ -202,5 +202,5 @@ public class ShotManager : MonoBehaviour
     public int HudCriticalHits => currentShot?.CriticalHits ?? 0;
     public int HudTotalHits => currentShot != null ? currentShot.TotalHits : 0;
     public int HudMultiplier => currentShot != null ? (1 + currentShot.CriticalHits) : 1;
-    public string HudOrbName => currentShot?.Orb != null ? currentShot.Orb.orbName : "None";
+    public string HudOrbName => currentShot?.Orb != null ? currentShot.Orb.OrbName : "None";
 }

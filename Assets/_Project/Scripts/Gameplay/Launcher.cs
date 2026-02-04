@@ -286,7 +286,7 @@ public class Launcher : MonoBehaviour
             return;
 
         ResolveReferences();
-        OrbData orb = (orbManager != null) ? orbManager.CurrentOrb : null;
+        OrbInstance orb = (orbManager != null) ? orbManager.CurrentOrb : null;
 
         ShotManager.Instance?.OnShotStarted(orb);
 

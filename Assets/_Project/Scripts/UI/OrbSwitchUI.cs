@@ -67,7 +67,7 @@ public class OrbSwitchUI : MonoBehaviour
     {
         if (orbNameLabel != null)
         {
-            orbNameLabel.text = orbManager != null ? (orbManager.CurrentOrb?.name ?? "Orb") : "Orb";
+            orbNameLabel.text = orbManager != null ? (orbManager.CurrentOrb?.OrbName ?? "Orb") : "Orb";
         }
     }
 }

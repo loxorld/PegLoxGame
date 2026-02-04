@@ -5,7 +5,7 @@ using UnityEngine;
 [RequireComponent(typeof(SpriteRenderer))]
 public class BallController : MonoBehaviour
 {
-    public OrbData Orb { get; private set; }
+    public OrbInstance Orb { get; private set; }
 
     private Rigidbody2D rb;
     private Collider2D col;
@@ -18,7 +18,7 @@ public class BallController : MonoBehaviour
         sr = GetComponent<SpriteRenderer>();
     }
 
-    public void Init(OrbData orb)
+    public void Init(OrbInstance orb)
     {
         Orb = orb;
 
@@ -26,15 +26,15 @@ public class BallController : MonoBehaviour
             return;
 
         // Visual MVP
-        sr.color = Orb.color;
+        sr.color = Orb.Color;
 
         // Physics
-        rb.linearDamping = Orb.linearDrag;
+        rb.linearDamping = Orb.LinearDrag;
 
         // Bounciness via PhysicsMaterial2D
         var mat = new PhysicsMaterial2D("BallMat_Runtime")
         {
-            bounciness = Orb.bounciness,
+            bounciness = Orb.Bounciness,
             friction = 0f
         };
         col.sharedMaterial = mat;

@@ -1,6 +1,6 @@
 ﻿public class ShotContext
 {
-    public OrbData Orb { get; private set; }
+    public OrbInstance Orb { get; private set; }
 
 
 
@@ -20,13 +20,13 @@
     public bool FirstCritBonusApplied { get; set; }
     public int TotalHits => NormalHits + CriticalHits;
 
-    public ShotContext(OrbData orb)
+    public ShotContext(OrbInstance orb)
     {
         Orb = orb;
         if (orb != null)
         {
-            BaseDamagePerHit = orb.damagePerHit;
-            DamagePerHit = orb.damagePerHit;
+            BaseDamagePerHit = orb.DamagePerHit;
+            DamagePerHit = orb.DamagePerHit;
         }
     }
 
