@@ -15,6 +15,7 @@ public class OrbInstance
     public float Bounciness => BaseData != null ? BaseData.bounciness : 0.9f;
     public float LinearDrag => BaseData != null ? BaseData.linearDrag : 0f;
     public IReadOnlyList<ShotEffectBase> OrbEffects => BaseData != null ? BaseData.orbEffects : null;
+    public bool CanLevelUp => BaseData != null && (BaseData.maxLevel <= 0 || Level < BaseData.maxLevel);
 
     public OrbInstance(OrbData baseData, int level = 1)
     {
@@ -27,6 +28,12 @@ public class OrbInstance
     {
         Level = Mathf.Max(1, level);
         RecalculateDamage();
+    }
+
+    public void LevelUp()
+    {
+        if (!CanLevelUp) return;
+        SetLevel(Level + 1);
     }
 
     public void RecalculateDamage()

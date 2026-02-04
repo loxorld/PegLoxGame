@@ -8,6 +8,7 @@ using UnityEngine.SceneManagement;
 public enum RewardKind
 {
     Orb,
+    OrbUpgrade,
     Relic
 }
 
@@ -16,22 +17,27 @@ public struct RewardOption
 {
     public RewardKind kind;
     public OrbData orb;
+    public OrbInstance orbInstance;
     public ShotEffectBase relic;
 
     public bool IsValid =>
         (kind == RewardKind.Orb && orb != null) ||
+        (kind == RewardKind.OrbUpgrade && orbInstance != null && orbInstance.CanLevelUp) ||
         (kind == RewardKind.Relic && relic != null);
 
     public string DisplayName =>
         kind == RewardKind.Orb ? (orb != null ? orb.orbName : "-") :
+        kind == RewardKind.OrbUpgrade ? (orbInstance != null ? orbInstance.OrbName : "-") :
         (relic != null ? relic.DisplayName : "-");
 
     public Sprite DisplayIcon =>
         kind == RewardKind.Orb ? (orb != null ? orb.icon : null) :
+        kind == RewardKind.OrbUpgrade ? (orbInstance != null ? orbInstance.Icon : null) :
         (relic != null ? relic.Icon : null);
 
     public string DisplayDescription =>
         kind == RewardKind.Orb ? (orb != null ? orb.description : "") :
+        kind == RewardKind.OrbUpgrade ? (orbInstance != null ? orbInstance.Description : "") :
         (relic != null ? relic.Description : "");
 }
 
@@ -49,6 +55,8 @@ public class RewardManager : MonoBehaviour
 
     [Header("Rules")]
     [SerializeField, Range(0f, 1f)] private float chanceOrb = 0.5f; // probabilidad por slot
+    [SerializeField] private bool allowOrbUpgrade = true;
+    [SerializeField, Range(0f, 1f)] private float chanceOrbUpgrade = 0.2f;
     [SerializeField] private bool avoidDuplicatesInSameRoll = true;
 
     [Header("Coins Reward")]
@@ -165,6 +173,33 @@ public class RewardManager : MonoBehaviour
             orbs.AddOrb(chosen.orb);
             Debug.Log($"[Reward] Chosen ORB: {chosen.orb.orbName}");
         }
+        else if (chosen.kind == RewardKind.OrbUpgrade)
+        {
+            if (orbs == null)
+            {
+                Debug.LogError("[Reward] OrbManager reference missing.");
+                ResolveRewardAndContinue();
+                return;
+            }
+
+            List<OrbInstance> upgradeableOrbs = GetUpgradeableOrbs();
+            if (upgradeableOrbs.Count == 0)
+            {
+                Debug.LogWarning("[Reward] No upgradeable orbs available.");
+                ResolveRewardAndContinue();
+                return;
+            }
+
+            OrbInstance target = null;
+            if (chosen.orbInstance != null && chosen.orbInstance.CanLevelUp && upgradeableOrbs.Contains(chosen.orbInstance))
+                target = chosen.orbInstance;
+            else
+                target = upgradeableOrbs[UnityEngine.Random.Range(0, upgradeableOrbs.Count)];
+
+            int previousLevel = target.Level;
+            target.LevelUp();
+            Debug.Log($"[Reward] Orb upgraded: {target.OrbName} ({previousLevel} -> {target.Level})");
+        }
         else // Relic
         {
             if (relics == null)
@@ -238,6 +273,24 @@ public class RewardManager : MonoBehaviour
         flow.SetState(GameState.MapNavigation);
     }
 
+    private List<OrbInstance> GetUpgradeableOrbs()
+    {
+        var upgradeable = new List<OrbInstance>();
+
+        if (orbs == null || orbs.OwnedOrbInstances == null)
+            return upgradeable;
+
+        IReadOnlyList<OrbInstance> owned = orbs.OwnedOrbInstances;
+        for (int i = 0; i < owned.Count; i++)
+        {
+            OrbInstance orb = owned[i];
+            if (orb != null && orb.CanLevelUp)
+                upgradeable.Add(orb);
+        }
+
+        return upgradeable;
+    }
+
     private RewardOption[] GenerateMixedChoices(int count)
     {
         count = Mathf.Clamp(count, 1, 3);
@@ -247,11 +300,47 @@ public class RewardManager : MonoBehaviour
         // Para evitar duplicados dentro del mismo roll
         var usedOrbs = new HashSet<OrbData>();
         var usedRelics = new HashSet<ShotEffectBase>();
+        var usedUpgradeOrbs = new HashSet<OrbInstance>();
 
+        List<OrbInstance> upgradeableOrbs = allowOrbUpgrade ? GetUpgradeableOrbs() : new List<OrbInstance>();
+        bool hasUpgradeableOrbs = upgradeableOrbs.Count > 0;
         int guard = 0;
         while (result.Count < count && guard < 200)
         {
             guard++;
+
+            bool wantUpgrade = allowOrbUpgrade && hasUpgradeableOrbs && UnityEngine.Random.value < chanceOrbUpgrade;
+
+            if (wantUpgrade)
+            {
+                List<OrbInstance> availableUpgrades = upgradeableOrbs;
+                if (avoidDuplicatesInSameRoll && usedUpgradeOrbs.Count > 0)
+                {
+                    availableUpgrades = new List<OrbInstance>();
+                    for (int i = 0; i < upgradeableOrbs.Count; i++)
+                    {
+                        OrbInstance orb = upgradeableOrbs[i];
+                        if (orb != null && !usedUpgradeOrbs.Contains(orb))
+                            availableUpgrades.Add(orb);
+                    }
+                }
+
+                if (availableUpgrades.Count > 0)
+                {
+                    OrbInstance target = availableUpgrades[UnityEngine.Random.Range(0, availableUpgrades.Count)];
+                    usedUpgradeOrbs.Add(target);
+                    result.Add(new RewardOption
+                    {
+                        kind = RewardKind.OrbUpgrade,
+                        orb = null,
+                        orbInstance = target,
+                        relic = null
+                    });
+                    continue;
+                }
+
+                wantUpgrade = false;
+            }
 
             bool wantOrb = UnityEngine.Random.value < chanceOrb;
 
@@ -271,6 +360,7 @@ public class RewardManager : MonoBehaviour
                 {
                     kind = RewardKind.Orb,
                     orb = o,
+                    orbInstance = null,
                     relic = null
                 });
             }
@@ -286,6 +376,7 @@ public class RewardManager : MonoBehaviour
                 {
                     kind = RewardKind.Relic,
                     orb = null,
+                    orbInstance = null,
                     relic = r
                 });
             }

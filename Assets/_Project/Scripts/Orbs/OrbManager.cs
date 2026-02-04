@@ -16,6 +16,7 @@ public class OrbManager : MonoBehaviour
     private OrbData defaultOrb;
 
     public OrbInstance CurrentOrb => currentOrbInstance;
+    public IReadOnlyList<OrbInstance> OwnedOrbInstances => ownedOrbInstances;
 
     private void Awake()
     {

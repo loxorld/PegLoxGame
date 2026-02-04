@@ -16,6 +16,9 @@ public class OrbData : ScriptableObject
 
     [Header("Damage")]
     public int damagePerHit = 2;
+    [Min(0)]
+    [Tooltip("0 = sin tope de nivel.")]
+    public int maxLevel = 0;
 
     [Header("Physics")]
     [Range(0f, 1f)] public float bounciness = 0.9f;

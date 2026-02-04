@@ -166,7 +166,8 @@ public class RewardChoiceUI : MonoBehaviour
         }
 
         var opt = choices[index];
-        string prefix = opt.kind == RewardKind.Orb ? "ORB" : "RELIC";
+        string prefix = opt.kind == RewardKind.OrbUpgrade ? "UPGRADE" :
+            opt.kind == RewardKind.Orb ? "ORB" : "RELIC";
 
         if (title != null)
             title.text = $"{prefix}: {opt.DisplayName}";
