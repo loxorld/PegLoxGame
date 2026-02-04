@@ -37,8 +37,31 @@ public struct RewardOption
 
     public string DisplayDescription =>
         kind == RewardKind.Orb ? (orb != null ? orb.description : "") :
-        kind == RewardKind.OrbUpgrade ? (orbInstance != null ? orbInstance.Description : "") :
+        kind == RewardKind.OrbUpgrade ? BuildOrbUpgradeDescription(orbInstance) :
         (relic != null ? relic.Description : "");
+    private static string BuildOrbUpgradeDescription(OrbInstance orbInstance)
+    {
+        if (orbInstance == null)
+            return "";
+
+        string baseDescription = orbInstance.Description;
+        int currentDamage = orbInstance.DamagePerHit;
+        int nextLevel = orbInstance.Level + 1;
+        int nextDamage = currentDamage;
+
+        if (orbInstance.BaseData != null)
+            nextDamage = orbInstance.BaseData.damagePerHit + Mathf.Max(0, nextLevel - 1);
+
+        int damageDelta = Mathf.Max(0, nextDamage - currentDamage);
+        string upgradeText = damageDelta > 0
+            ? $"Mejora: +{damageDelta} daño (Lv+1)"
+            : "Mejora: Lv+1";
+
+        if (string.IsNullOrWhiteSpace(baseDescription))
+            return upgradeText;
+
+        return $"{baseDescription}\n{upgradeText}";
+    }
 }
 
 public class RewardManager : MonoBehaviour
