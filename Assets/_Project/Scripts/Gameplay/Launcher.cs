@@ -7,9 +7,12 @@ using UnityEngine.UI;
 public class Launcher : MonoBehaviour
 {
     [Header("References")]
-    [SerializeField] private Rigidbody2D ballPrefab;
-    [SerializeField] private Transform launchPoint;
-    [SerializeField] private Camera cachedCamera;
+    [SerializeField, Tooltip("Prefab con Rigidbody2D usado para disparar. Obligatorio.")]
+    private Rigidbody2D ballPrefab;
+    [SerializeField, Tooltip("Punto de salida del disparo. Obligatorio.")]
+    private Transform launchPoint;
+    [SerializeField, Tooltip("Cámara usada para convertir pantalla a mundo. Obligatoria para apuntar.")]
+    private Camera cachedCamera;
 
     [Header("Orbs (legacy / optional)")]
     [SerializeField] private OrbData[] orbs;
