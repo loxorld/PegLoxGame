@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -17,10 +18,15 @@ public class MapNodeModalUI : MonoBehaviour, IMapNodeModalView
         }
     }
 
+    private const string ResourcePath = "MapNodeModalUI";
+
     private static MapNodeModalUI instance;
 
-    private Text titleText;
-    private Text bodyText;
+    [SerializeField] private TMP_Text titleText;
+    [SerializeField] private TMP_Text bodyText;
+    [SerializeField] private Transform buttonsContainer;
+    [SerializeField] private Button buttonTemplate;
+
     private readonly List<Button> buttons = new();
 
     public static MapNodeModalUI Instance => instance;
@@ -29,6 +35,9 @@ public class MapNodeModalUI : MonoBehaviour, IMapNodeModalView
     {
         if (instance == null || instance.Equals(null))
             instance = CreateModal();
+
+        if (instance == null)
+            return;
 
         instance.gameObject.SetActive(true);
         instance.titleText.text = title ?? string.Empty;
@@ -53,77 +62,31 @@ public class MapNodeModalUI : MonoBehaviour, IMapNodeModalView
     }
     private static MapNodeModalUI CreateModal()
     {
-        var root = new GameObject("MapNodeModalUI");
-        var modal = root.AddComponent<MapNodeModalUI>();
-        modal.BuildUI(root);
+        var prefab = Resources.Load<GameObject>(ResourcePath);
+        if (prefab == null)
+        {
+            Debug.LogError($"[MapNodeModalUI] No se encontr el prefab en Resources/{ResourcePath}.");
+            return null;
+        }
+
+        var modal = Instantiate(prefab).GetComponent<MapNodeModalUI>();
+        if (modal == null)
+            Debug.LogError("[MapNodeModalUI] El prefab no tiene el componente MapNodeModalUI.");
         return modal;
     }
 
-    private void BuildUI(GameObject root)
+    private void Awake()
     {
-        var canvas = root.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 1000;
+        if (instance != null && instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
 
-        var scaler = root.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080);
-        root.AddComponent<GraphicRaycaster>();
+        instance = this;
 
-        var panelObj = CreateUIObject("Panel", root.transform);
-        var panelImage = panelObj.AddComponent<Image>();
-        panelImage.color = new Color(0f, 0f, 0f, 0.75f);
-
-        var panelRect = panelObj.GetComponent<RectTransform>();
-        panelRect.anchorMin = new Vector2(0.5f, 0.5f);
-        panelRect.anchorMax = new Vector2(0.5f, 0.5f);
-        panelRect.pivot = new Vector2(0.5f, 0.5f);
-        panelRect.sizeDelta = new Vector2(900f, 520f);
-        panelRect.anchoredPosition = Vector2.zero;
-
-        var titleObj = CreateUIObject("Title", panelObj.transform);
-        titleText = titleObj.AddComponent<Text>();
-        titleText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        titleText.fontSize = 40;
-        titleText.alignment = TextAnchor.UpperCenter;
-        titleText.color = Color.white;
-
-        var titleRect = titleObj.GetComponent<RectTransform>();
-        titleRect.anchorMin = new Vector2(0f, 1f);
-        titleRect.anchorMax = new Vector2(1f, 1f);
-        titleRect.pivot = new Vector2(0.5f, 1f);
-        titleRect.sizeDelta = new Vector2(0f, 80f);
-        titleRect.anchoredPosition = new Vector2(0f, -20f);
-
-        var bodyObj = CreateUIObject("Body", panelObj.transform);
-        bodyText = bodyObj.AddComponent<Text>();
-        bodyText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        bodyText.fontSize = 28;
-        bodyText.alignment = TextAnchor.UpperLeft;
-        bodyText.color = Color.white;
-        bodyText.horizontalOverflow = HorizontalWrapMode.Wrap;
-        bodyText.verticalOverflow = VerticalWrapMode.Overflow;
-
-        var bodyRect = bodyObj.GetComponent<RectTransform>();
-        bodyRect.anchorMin = new Vector2(0.08f, 0.2f);
-        bodyRect.anchorMax = new Vector2(0.92f, 0.78f);
-        bodyRect.pivot = new Vector2(0.5f, 0.5f);
-        bodyRect.anchoredPosition = Vector2.zero;
-
-        var buttonsContainer = CreateUIObject("Buttons", panelObj.transform);
-        var buttonsRect = buttonsContainer.GetComponent<RectTransform>();
-        buttonsRect.anchorMin = new Vector2(0.1f, 0.05f);
-        buttonsRect.anchorMax = new Vector2(0.9f, 0.2f);
-        buttonsRect.pivot = new Vector2(0.5f, 0.5f);
-        buttonsRect.anchoredPosition = Vector2.zero;
-
-        var layout = buttonsContainer.AddComponent<HorizontalLayoutGroup>();
-        layout.spacing = 24f;
-        layout.childAlignment = TextAnchor.MiddleCenter;
-        layout.childControlHeight = true;
-        layout.childControlWidth = true;
-        layout.childForceExpandHeight = true;
-        layout.childForceExpandWidth = true;
+        if (buttonTemplate != null)
+            buttonTemplate.gameObject.SetActive(false);
     }
 
     private void SetupButtons(Option[] options)
@@ -135,50 +98,31 @@ public class MapNodeModalUI : MonoBehaviour, IMapNodeModalView
         if (options == null || options.Length == 0)
             options = new[] { new Option("Continuar", Close) };
 
-        var buttonsContainer = transform.Find("Panel/Buttons");
-        if (buttonsContainer == null)
+        if (buttonsContainer == null || buttonTemplate == null)
+        {
+            Debug.LogWarning("[MapNodeModalUI] Faltan referencias de UI en el prefab.");
             return;
+        }
 
         foreach (var option in options)
         {
-            var buttonObj = CreateUIObject("Button", buttonsContainer);
-            var buttonImage = buttonObj.AddComponent<Image>();
-            buttonImage.color = new Color(0.2f, 0.2f, 0.2f, 0.95f);
-
-            var button = buttonObj.AddComponent<Button>();
+            var button = Instantiate(buttonTemplate, buttonsContainer);
+            button.gameObject.SetActive(true);
+            button.onClick.RemoveAllListeners();
             button.onClick.AddListener(() =>
             {
                 option.Callback?.Invoke();
                 Close();
             });
 
-            var textObj = CreateUIObject("Label", buttonObj.transform);
-            var text = textObj.AddComponent<Text>();
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            text.fontSize = 26;
-            text.alignment = TextAnchor.MiddleCenter;
-            text.color = Color.white;
-            text.text = option.Label;
-
-            var textRect = textObj.GetComponent<RectTransform>();
-            textRect.anchorMin = Vector2.zero;
-            textRect.anchorMax = Vector2.one;
-            textRect.offsetMin = Vector2.zero;
-            textRect.offsetMax = Vector2.zero;
-
-            var buttonRect = buttonObj.GetComponent<RectTransform>();
-            buttonRect.sizeDelta = new Vector2(240f, 60f);
+            var text = button.GetComponentInChildren<TMP_Text>();
+            if (text != null)
+                text.text = option.Label;
 
             buttons.Add(button);
         }
     }
 
-    private static GameObject CreateUIObject(string name, Transform parent)
-    {
-        var obj = new GameObject(name, typeof(RectTransform));
-        obj.transform.SetParent(parent, false);
-        return obj;
-    }
 
     private void Close()
     {

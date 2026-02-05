@@ -18,8 +18,6 @@ MonoBehaviour:
   nextNodes:
   - label: Camino A
     targetNode: {fileID: 11400000, guid: 40fd2f38b86854e44a73565df3ed0d11, type: 2}
-  - label: Camino A
-    targetNode: {fileID: 11400000, guid: 40fd2f38b86854e44a73565df3ed0d11, type: 2}
   - label: Camino B
     targetNode: {fileID: 11400000, guid: 0a859cbb062e5794591c2fc898a5383e, type: 2}
   bossEnemy: {fileID: 0}

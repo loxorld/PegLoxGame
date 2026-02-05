@@ -19,7 +19,7 @@ MonoBehaviour:
   - label: Camino A
     targetNode: {fileID: 11400000, guid: 719fb8b56bfa6fd4b94b1f6c901d60b8, type: 2}
   - label: Camino B
-    targetNode: {fileID: 11400000, guid: c7d040dffc229ef4089239a016c52137, type: 2}
+    targetNode: {fileID: 11400000, guid: 8f2f8289c38663641819f3c51b95de95, type: 2}
   bossEnemy: {fileID: 0}
   bossHpMultiplier: 2
   bossDamageMultiplier: 1.5

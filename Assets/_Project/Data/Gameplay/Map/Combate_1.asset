@@ -13,15 +13,13 @@ MonoBehaviour:
   m_Name: Combate_1
   m_EditorClassIdentifier: Assembly-CSharp::MapNodeData
   nodeType: 0
-  title: Combatir
+  title: Combate
   description: Enemigos del bosque
   nextNodes:
   - label: Camino A
     targetNode: {fileID: 11400000, guid: 719fb8b56bfa6fd4b94b1f6c901d60b8, type: 2}
   - label: Camino B
-    targetNode: {fileID: 11400000, guid: 0a859cbb062e5794591c2fc898a5383e, type: 2}
-  - label: Camino C
-    targetNode: {fileID: 11400000, guid: 8f2f8289c38663641819f3c51b95de95, type: 2}
+    targetNode: {fileID: 11400000, guid: 719fb8b56bfa6fd4b94b1f6c901d60b8, type: 2}
   bossEnemy: {fileID: 0}
   bossHpMultiplier: 2
   bossDamageMultiplier: 1.5
