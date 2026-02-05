@@ -29,6 +29,10 @@ public class Launcher : MonoBehaviour
     [Header("Drag Tuning (screen space)")]
     [SerializeField, Min(10f)] private float maxDragPixels = 220f;
     [SerializeField] private bool useScreenSpaceDragForPower = true;
+    [SerializeField, Tooltip("Normaliza el drag a un DPI de referencia para que la potencia sea consistente entre dispositivos. Si el DPI no es válido se usa el modo actual.")]
+    private bool useDpiNormalization = false;
+    [SerializeField, Min(1f), Tooltip("DPI usado como referencia cuando la normalización está activa.")]
+    private float referenceDpi = 160f;
 
     [Header("Launch Speed Cap")]
     [SerializeField] private float maxLaunchSpeed = 18f;
@@ -62,6 +66,7 @@ public class Launcher : MonoBehaviour
     private void Awake()
     {
         ResolveReferences();
+        ValidateRequiredReferences(nameof(Awake));
         ballRadiusWorld = GetBallWorldRadius();
         ConfigureTrajectoryLine();
     }
@@ -69,6 +74,7 @@ public class Launcher : MonoBehaviour
     private void OnEnable()
     {
         ResolveReferences();
+        ValidateRequiredReferences(nameof(OnEnable));
         ConfigureTrajectoryLine();
     }
 
@@ -120,6 +126,12 @@ public class Launcher : MonoBehaviour
                     return;
                 }
 
+                if (!EnsureCameraAvailable())
+                {
+                    CancelDrag();
+                    return;
+                }
+
                 dragStartScreen = touch.position.ReadValue();
                 dragStartWorld = ScreenToWorld(dragStartScreen);
 
@@ -129,6 +141,12 @@ public class Launcher : MonoBehaviour
 
             if (touch.press.isPressed && isDragging)
             {
+                if (!EnsureCameraAvailable())
+                {
+                    CancelDrag();
+                    return;
+                }
+
                 Vector2 currentScreen = touch.position.ReadValue();
                 Vector2 currentWorld = ScreenToWorld(currentScreen);
                 Vector2 directionWorld = dragStartWorld - currentWorld;
@@ -138,6 +156,12 @@ public class Launcher : MonoBehaviour
 
             if (touch.press.wasReleasedThisFrame && isDragging)
             {
+                if (!EnsureCameraAvailable())
+                {
+                    CancelDrag();
+                    return;
+                }
+
                 Vector2 releaseScreen = touch.position.ReadValue();
                 Vector2 releaseWorld = ScreenToWorld(releaseScreen);
                 Vector2 directionWorld = dragStartWorld - releaseWorld;
@@ -165,6 +189,12 @@ public class Launcher : MonoBehaviour
                 return;
             }
 
+            if (!EnsureCameraAvailable())
+            {
+                CancelDrag();
+                return;
+            }
+
             dragStartScreen = Mouse.current.position.ReadValue();
             dragStartWorld = ScreenToWorld(dragStartScreen);
 
@@ -174,6 +204,12 @@ public class Launcher : MonoBehaviour
 
         if (isDragging && Mouse.current.leftButton.isPressed)
         {
+            if (!EnsureCameraAvailable())
+            {
+                CancelDrag();
+                return;
+            }
+
             Vector2 currentScreen = Mouse.current.position.ReadValue();
             Vector2 currentWorld = ScreenToWorld(currentScreen);
             Vector2 directionWorld = dragStartWorld - currentWorld;
@@ -183,6 +219,12 @@ public class Launcher : MonoBehaviour
 
         if (Mouse.current.leftButton.wasReleasedThisFrame && isDragging)
         {
+            if (!EnsureCameraAvailable())
+            {
+                CancelDrag();
+                return;
+            }
+
             Vector2 releaseScreen = Mouse.current.position.ReadValue();
             Vector2 releaseWorld = ScreenToWorld(releaseScreen);
             Vector2 directionWorld = dragStartWorld - releaseWorld;
@@ -234,16 +276,10 @@ public class Launcher : MonoBehaviour
 
     private Vector2 ScreenToWorld(Vector2 screenPos)
     {
-        if (cachedCamera == null)
-        {
-            if (!hasLoggedMissingCamera)
-            {
-                Debug.LogWarning($"{nameof(Launcher)}: No hay cámara asignada para convertir ScreenToWorld.");
-                hasLoggedMissingCamera = true;
-            }
+        if (!EnsureCameraAvailable())
 
             return Vector2.zero;
-        }
+        
 
         return cachedCamera.ScreenToWorldPoint(screenPos);
     }
@@ -287,6 +323,14 @@ public class Launcher : MonoBehaviour
         if (useScreenSpaceDragForPower)
         {
             float pixels = Vector2.Distance(dragStartScreen, currentScreenPos);
+            if (useDpiNormalization)
+            {
+                float dpi = Screen.dpi;
+                if (dpi > 0f && !float.IsNaN(dpi) && !float.IsInfinity(dpi))
+                {
+                    pixels *= referenceDpi / dpi;
+                }
+            }
             drag01 = Mathf.Clamp01(pixels / maxDragPixels);
         }
         else
@@ -314,6 +358,12 @@ public class Launcher : MonoBehaviour
             return;
 
         ResolveReferences();
+        ValidateRequiredReferences(nameof(LaunchBall));
+        if (ballPrefab == null || launchPoint == null)
+            return;
+
+        if (!EnsureCameraAvailable())
+            return;
         OrbInstance orb = (orbManager != null) ? orbManager.CurrentOrb : null;
 
         ShotManager.Instance?.OnShotStarted(orb);
@@ -340,7 +390,40 @@ public class Launcher : MonoBehaviour
         if (cachedCamera == null)
             cachedCamera = Camera.main;
     }
+    private void ValidateRequiredReferences(string context)
+    {
+        if (ballPrefab == null)
+            Debug.LogWarning($"{nameof(Launcher)} ({gameObject.name}): Falta ballPrefab en {context}.");
 
+        if (launchPoint == null)
+            Debug.LogWarning($"{nameof(Launcher)} ({gameObject.name}): Falta launchPoint en {context}.");
+
+        EnsureCameraAvailable();
+    }
+
+    private bool EnsureCameraAvailable()
+    {
+        if (cachedCamera != null)
+            return true;
+
+        if (!hasLoggedMissingCamera)
+        {
+            Debug.LogWarning($"{nameof(Launcher)} ({gameObject.name}): No hay cámara asignada para apuntar.");
+            hasLoggedMissingCamera = true;
+        }
+
+        return false;
+    }
+
+    private void CancelDrag()
+    {
+        if (!isDragging)
+            return;
+
+        isDragging = false;
+        SetTrajectoryVisible(false);
+        ClearTrajectory();
+    }
     private int GetPreviewBounceBonus()
     {
         if (relicManager == null) return 0;
