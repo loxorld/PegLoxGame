@@ -243,22 +243,8 @@ public class Launcher : MonoBehaviour
     /// </summary>
     private Vector2 ComputeLaunchVelocity(Vector2 rawDirectionWorld, Vector2 currentScreenPos)
     {
-        Vector2 dirWorld = Vector2.ClampMagnitude(rawDirectionWorld, maxAimMagnitude);
-        if (dirWorld.sqrMagnitude < 0.0001f) return Vector2.zero;
-
-        float drag01;
-        if (useScreenSpaceDragForPower)
-        {
-            float pixels = Vector2.Distance(dragStartScreen, currentScreenPos);
-            drag01 = Mathf.Clamp01(pixels / maxDragPixels);
-        }
-        else
-        {
-            drag01 = Mathf.InverseLerp(0f, maxAimMagnitude, dirWorld.magnitude);
-        }
-
-        float power01 = powerCurve != null ? powerCurve.Evaluate(drag01) : drag01;
-        if (clampCurveOutput01) power01 = Mathf.Clamp01(power01);
+        if (!TryComputePowerData(rawDirectionWorld, currentScreenPos, out Vector2 dirWorld, out _, out float power01))
+            return Vector2.zero;
 
         float speed = Mathf.Lerp(minLaunchSpeed, maxLaunchSpeed, power01);
         return dirWorld.normalized * speed;
@@ -266,10 +252,26 @@ public class Launcher : MonoBehaviour
 
     private float ComputePower01(Vector2 rawDirectionWorld, Vector2 currentScreenPos)
     {
-        Vector2 dirWorld = Vector2.ClampMagnitude(rawDirectionWorld, maxAimMagnitude);
-        if (dirWorld.sqrMagnitude < 0.0001f) return 0f;
+        return TryComputePowerData(rawDirectionWorld, currentScreenPos, out _, out _, out float power01)
+            ? power01
+            : 0f;
+    }
 
-        float drag01;
+    private bool TryComputePowerData(
+        Vector2 rawDirectionWorld,
+        Vector2 currentScreenPos,
+        out Vector2 directionWorld,
+        out float drag01,
+        out float power01)
+    {
+        directionWorld = Vector2.ClampMagnitude(rawDirectionWorld, maxAimMagnitude);
+        if (directionWorld.sqrMagnitude < 0.0001f)
+        {
+            drag01 = 0f;
+            power01 = 0f;
+            return false;
+        }
+
         if (useScreenSpaceDragForPower)
         {
             float pixels = Vector2.Distance(dragStartScreen, currentScreenPos);
@@ -277,14 +279,15 @@ public class Launcher : MonoBehaviour
         }
         else
         {
-            drag01 = Mathf.InverseLerp(0f, maxAimMagnitude, dirWorld.magnitude);
+            drag01 = Mathf.InverseLerp(0f, maxAimMagnitude, directionWorld.magnitude);
         }
 
-        float power01 = powerCurve != null ? powerCurve.Evaluate(drag01) : drag01;
+        power01 = powerCurve != null ? powerCurve.Evaluate(drag01) : drag01;
         if (clampCurveOutput01) power01 = Mathf.Clamp01(power01);
 
-        return power01;
+        return true;
     }
+
 
 
     private void LaunchBall(Vector2 directionWorld, Vector2 releaseScreenPos)
