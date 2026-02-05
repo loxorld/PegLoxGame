@@ -48,6 +48,10 @@ public class Launcher : MonoBehaviour
     [SerializeField] private float previewBallRadiusFallback = 0.15f;
     [SerializeField] private float maxPreviewSpeed = 30f;       // recomendado = maxLaunchSpeed
     [SerializeField] private float bounceTailLength = 2.0f;
+    [SerializeField, Min(1)] private int previewSteps = 60;
+    [SerializeField, Min(0.001f)] private float previewTimeStep = 0.03f;
+    [SerializeField, Min(0)] private int previewCornerVertices = 4;
+    [SerializeField, Min(0)] private int previewCapVertices = 4;
 
     private float ballRadiusWorld;
 
@@ -55,19 +59,23 @@ public class Launcher : MonoBehaviour
     {
         ResolveReferences();
         ballRadiusWorld = GetBallWorldRadius();
+        ConfigureTrajectoryLine();
     }
 
     private void OnEnable()
     {
         ResolveReferences();
+        ConfigureTrajectoryLine();
     }
 
 #if UNITY_EDITOR
     private void OnValidate()
     {
         ResolveReferences();
+        ConfigureTrajectoryLine();
     }
 #endif
+
 
     private void Update()
     {
@@ -379,51 +387,73 @@ public class Launcher : MonoBehaviour
             velocity = velocity.normalized * maxPreviewSpeed;
 
         Vector2 pos = launchPoint.position;
-        Vector2 dir = velocity.normalized;
-
-        float power01 = ComputePower01(directionWorld, currentScreenPos);
-
-        float minLen = 0.8f;
-        float firstLen = Mathf.Lerp(minLen, maxDistancePerSegment, power01);
-
-
         float radius = (ballRadiusWorld > 0f) ? ballRadiusWorld : previewBallRadiusFallback;
 
- 
+        List<Vector3> points = new List<Vector3>(previewSteps + 1) { pos };
 
-        List<Vector3> points = new List<Vector3>(4) { pos };
+        float power01 = ComputePower01(directionWorld, currentScreenPos);
+        float minLen = 0.8f;
+        float maxPreviewDistance = Mathf.Lerp(minLen, maxDistancePerSegment, power01);
 
         int previewBounces = Mathf.Max(0, maxBounces + GetPreviewBounceBonus());
-        float minTail = 0.2f;
-        float tailT = Mathf.SmoothStep(0f, 1f, power01);
-        float tailLen = Mathf.Lerp(minTail, bounceTailLength, tailT);
-        float segmentLen = firstLen;
+        int bounces = 0;
+        int steps = Mathf.Max(1, previewSteps);
+        int minSteps = Mathf.Max(1, Mathf.FloorToInt(steps * 0.25f));
+        steps = Mathf.RoundToInt(Mathf.Lerp(minSteps, steps, power01));
+        float timeStep = Mathf.Max(0.001f, previewTimeStep);
+        float gravityScale = ballPrefab != null ? ballPrefab.gravityScale : 1f;
+        float linearDrag = ballPrefab != null ? ballPrefab.linearDamping : 0f;
+        Vector2 gravity = Physics2D.gravity * gravityScale;
+        float remainingDistance = maxPreviewDistance;
 
-        for (int bounceIndex = 0; bounceIndex <= previewBounces; bounceIndex++)
+        for (int step = 0; step < steps; step++)
         {
+            velocity += gravity * timeStep;
+            if (linearDrag > 0f)
+                velocity *= 1f / (1f + linearDrag * timeStep);
+
+            Vector2 displacement = velocity * timeStep;
+            float distance = displacement.magnitude;
+            if (distance <= Mathf.Epsilon)
+            {
+                points.Add(pos);
+                continue;
+            }
+
+            if (distance > remainingDistance)
+            {
+                displacement = displacement.normalized * remainingDistance;
+                distance = remainingDistance;
+            }
+
+            Vector2 direction = displacement / distance;
             RaycastHit2D hit = Physics2D.CircleCast(
                 pos,
                 radius,
-                dir,
-                segmentLen,
+                direction,
+                distance,
                 collisionMask
             );
 
             if (hit.collider == null)
             {
-                points.Add(pos + dir * segmentLen);
-                break;
+                pos += displacement;
+                points.Add(pos);
+                remainingDistance -= distance;
+                if (remainingDistance <= Mathf.Epsilon)
+                    break;
+                continue;
             }
 
-            Vector2 hitPoint = hit.point;
-            points.Add(hitPoint);
+            points.Add(hit.point);
 
-            if (bounceIndex == previewBounces)
+            if (bounces >= previewBounces)
                 break;
 
-            dir = Vector2.Reflect(dir, hit.normal).normalized;
-            pos = hitPoint + hit.normal * (radius + 0.01f);
-            segmentLen = tailLen;
+            bounces++;
+            velocity = Vector2.Reflect(velocity, hit.normal);
+            pos = hit.point + hit.normal * (radius + 0.01f);
+            remainingDistance = bounceTailLength;
         }
 
         ApplyLine(points);
@@ -434,6 +464,14 @@ public class Launcher : MonoBehaviour
         trajectoryLine.positionCount = points.Count;
         for (int i = 0; i < points.Count; i++)
             trajectoryLine.SetPosition(i, points[i]);
+    }
+
+    private void ConfigureTrajectoryLine()
+    {
+        if (trajectoryLine == null) return;
+
+        trajectoryLine.numCornerVertices = previewCornerVertices;
+        trajectoryLine.numCapVertices = previewCapVertices;
     }
 
     private float GetBallWorldRadius()
