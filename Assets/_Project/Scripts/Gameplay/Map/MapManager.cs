@@ -236,7 +236,7 @@ public class MapManager : MonoBehaviour
 
         var options = new List<MapNodeModalOption>
         {
-            new MapNodeModalOption("Continuar", () => OpenNode(currentNode))
+            new MapNodeModalOption("Continuar", () => OpenNode(currentNode), true)
         };
 
         modalView.ShowEvent(
@@ -281,7 +281,7 @@ public class MapManager : MonoBehaviour
         for (int i = 0; i < shopOptions.Count; i++)
         {
             ShopService.ShopOptionData option = shopOptions[i];
-            options.Add(new MapNodeModalOption(option.Label, option.OnSelect));
+            options.Add(new MapNodeModalOption(option.Label, option.OnSelect, option.IsEnabled));
         }
 
         IMapNodeModalView modalView = ResolveMapNodeModalView();

@@ -10,11 +10,13 @@ public class MapNodeModalUI : MonoBehaviour, IMapNodeModalView
     {
         public string Label;
         public Action Callback;
+        public bool IsEnabled;
 
-        public Option(string label, Action callback)
+        public Option(string label, Action callback, bool isEnabled)
         {
             Label = label;
             Callback = callback;
+            IsEnabled = isEnabled;
         }
     }
 
@@ -121,7 +123,7 @@ public class MapNodeModalUI : MonoBehaviour, IMapNodeModalView
         buttons.Clear();
 
         if (options == null || options.Length == 0)
-            options = new[] { new Option("Continuar", Close) };
+            options = new[] { new Option("Continuar", Close, true) };
 
         if (buttonsContainer == null || buttonTemplate == null)
         {
@@ -134,6 +136,7 @@ public class MapNodeModalUI : MonoBehaviour, IMapNodeModalView
             var button = Instantiate(buttonTemplate, buttonsContainer);
             button.gameObject.SetActive(true);
             button.onClick.RemoveAllListeners();
+            button.interactable = option.IsEnabled;
             button.onClick.AddListener(() =>
             {
                 option.Callback?.Invoke();
@@ -166,7 +169,7 @@ public class MapNodeModalUI : MonoBehaviour, IMapNodeModalView
 
         var converted = new Option[options.Count];
         for (int i = 0; i < options.Count; i++)
-            converted[i] = new Option(options[i].Label, options[i].OnSelect);
+            converted[i] = new Option(options[i].Label, options[i].OnSelect, options[i].IsEnabled);
         return converted;
     }
 }
