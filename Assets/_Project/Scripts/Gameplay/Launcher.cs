@@ -479,9 +479,22 @@ public class Launcher : MonoBehaviour
         if (ballPrefab == null) return previewBallRadiusFallback;
 
         var circle = ballPrefab.GetComponent<CircleCollider2D>();
-        if (circle == null) return previewBallRadiusFallback;
+        if (circle != null)
+        {
+            Vector3 lossyScale = ballPrefab.transform.lossyScale;
+            float effectiveScale = Mathf.Max(lossyScale.x, lossyScale.y);
+            return circle.radius * effectiveScale;
+        }
 
-        float scale = ballPrefab.transform.localScale.x;
-        return circle.radius * scale;
+        var collider = ballPrefab.GetComponent<Collider2D>();
+        if (collider != null)
+        {
+            Debug.LogWarning(
+                $"Launcher: Ball prefab '{ballPrefab.name}' uses {collider.GetType().Name}. " +
+                "Using fallback radius to avoid incorrect trajectory preview."
+            );
+        }
+
+        return previewBallRadiusFallback;
     }
 }
