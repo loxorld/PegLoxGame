@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using DG.Tweening;
 
 public class HUDController : MonoBehaviour
 {
@@ -25,8 +26,12 @@ public class HUDController : MonoBehaviour
     [Header("Update")]
     [SerializeField, Range(0.05f, 1f)] private float refreshInterval = 0.15f;
 
-    private float timer;
+    [Header("Tween")]
+    [SerializeField] private CanvasGroup canvasGroup;
+    [SerializeField] private RectTransform hudTransform;
 
+    private float timer;
+    private GameState lastState;
 
 
     private void ResolveReferences()
@@ -47,11 +52,31 @@ public class HUDController : MonoBehaviour
     private void Awake()
     {
         ResolveReferences();
+
+        if (canvasGroup == null)
+            canvasGroup = GetComponent<CanvasGroup>();
+
+        if (hudTransform == null)
+            hudTransform = GetComponent<RectTransform>();
+
+        if (canvasGroup != null)
+            canvasGroup.alpha = 0f;
+
+        if (hudTransform != null)
+            hudTransform.localScale = Vector3.one * 0.95f;
+
+        lastState = flow != null ? flow.State : GameState.Combat;
     }
 
     private void OnEnable()
     {
         ResolveReferences();
+
+        if (canvasGroup != null)
+            canvasGroup.DOFade(1f, 0.25f);
+
+        if (hudTransform != null)
+            hudTransform.DOScale(1f, 0.25f).SetEase(Ease.OutBack);
     }
 
     private void Update()
@@ -105,6 +130,11 @@ public class HUDController : MonoBehaviour
                 GameState.GameOver => "GAME OVER",
                 _ => s.ToString()
             };
+
+            if (s != lastState && (s == GameState.Paused || s == GameState.GameOver))
+                stateText.rectTransform.DOShakePosition(0.3f, 6f, 15, 90);
+
+            lastState = s;
         }
 
         // Coins text

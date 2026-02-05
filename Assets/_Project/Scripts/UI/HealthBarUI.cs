@@ -1,6 +1,7 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using DG.Tweening;
 
 public class HealthBarUI : MonoBehaviour
 {
@@ -10,6 +11,8 @@ public class HealthBarUI : MonoBehaviour
 
     [Header("Format")]
     [SerializeField] private string prefix = "HP";
+
+    private int lastValue = -1;
 
     private void Awake()
     {
@@ -26,9 +29,14 @@ public class HealthBarUI : MonoBehaviour
             slider.minValue = 0;
             slider.maxValue = max;
             slider.value = current;
+
+            if (current != lastValue && slider.fillRect != null)
+                slider.fillRect.DOPunchScale(new Vector3(0.05f, 0.05f, 0f), 0.2f);
         }
 
         if (label != null)
             label.text = $"{prefix}: {current}/{max}";
+
+        lastValue = current;
     }
 }
