@@ -54,6 +54,7 @@ public class Launcher : MonoBehaviour
     [SerializeField, Min(0)] private int previewCapVertices = 4;
 
     private float ballRadiusWorld;
+    private readonly List<Vector3> trajectoryPoints = new List<Vector3>(128);
 
     private void Awake()
     {
@@ -389,7 +390,8 @@ public class Launcher : MonoBehaviour
         Vector2 pos = launchPoint.position;
         float radius = (ballRadiusWorld > 0f) ? ballRadiusWorld : previewBallRadiusFallback;
 
-        List<Vector3> points = new List<Vector3>(previewSteps + 1) { pos };
+        trajectoryPoints.Clear();
+        trajectoryPoints.Add(pos);
 
         float power01 = ComputePower01(directionWorld, currentScreenPos);
         float minLen = 0.8f;
@@ -416,7 +418,7 @@ public class Launcher : MonoBehaviour
             float distance = displacement.magnitude;
             if (distance <= Mathf.Epsilon)
             {
-                points.Add(pos);
+                trajectoryPoints.Add(pos);
                 continue;
             }
 
@@ -438,14 +440,14 @@ public class Launcher : MonoBehaviour
             if (hit.collider == null)
             {
                 pos += displacement;
-                points.Add(pos);
+                trajectoryPoints.Add(pos);
                 remainingDistance -= distance;
                 if (remainingDistance <= Mathf.Epsilon)
                     break;
                 continue;
             }
 
-            points.Add(hit.point);
+            trajectoryPoints.Add(hit.point);
 
             if (bounces >= previewBounces)
                 break;
@@ -456,7 +458,7 @@ public class Launcher : MonoBehaviour
             remainingDistance = bounceTailLength;
         }
 
-        ApplyLine(points);
+        ApplyLine(trajectoryPoints);
     }
 
     private void ApplyLine(List<Vector3> points)
