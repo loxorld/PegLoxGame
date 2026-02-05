@@ -59,9 +59,15 @@ public class Launcher : MonoBehaviour
     [SerializeField, Min(0.001f)] private float previewTimeStep = 0.03f;
     [SerializeField, Min(0)] private int previewCornerVertices = 4;
     [SerializeField, Min(0)] private int previewCapVertices = 4;
+    [SerializeField, Tooltip("Gradiente evaluado con power01 para colorear el LineRenderer.")]
+    private Gradient trajectoryPowerGradient;
+    [SerializeField, Tooltip("Curva evaluada con power01 para escalar el ancho del LineRenderer.")]
+    private AnimationCurve trajectoryWidthByPower;
 
     private float ballRadiusWorld;
     private readonly List<Vector3> trajectoryPoints = new List<Vector3>(128);
+    private float baseTrajectoryStartWidth;
+    private float baseTrajectoryEndWidth;
 
     private void Awake()
     {
@@ -480,6 +486,7 @@ public class Launcher : MonoBehaviour
         trajectoryPoints.Add(pos);
 
         float power01 = ComputePower01(directionWorld, currentScreenPos);
+        ApplyTrajectoryPowerStyling(power01);
         float minLen = 0.8f;
         float maxPreviewDistance = Mathf.Lerp(minLen, maxDistancePerSegment, power01);
 
@@ -547,6 +554,24 @@ public class Launcher : MonoBehaviour
         ApplyLine(trajectoryPoints);
     }
 
+    private void ApplyTrajectoryPowerStyling(float power01)
+    {
+        if (trajectoryLine == null) return;
+
+        if (trajectoryPowerGradient != null)
+        {
+            Color powerColor = trajectoryPowerGradient.Evaluate(power01);
+            trajectoryLine.startColor = powerColor;
+            trajectoryLine.endColor = powerColor;
+        }
+
+        if (trajectoryWidthByPower != null)
+        {
+            float widthMultiplier = trajectoryWidthByPower.Evaluate(power01);
+            trajectoryLine.startWidth = baseTrajectoryStartWidth * widthMultiplier;
+            trajectoryLine.endWidth = baseTrajectoryEndWidth * widthMultiplier;
+        }
+    }
     private void ApplyLine(List<Vector3> points)
     {
         trajectoryLine.positionCount = points.Count;
@@ -560,6 +585,8 @@ public class Launcher : MonoBehaviour
 
         trajectoryLine.numCornerVertices = previewCornerVertices;
         trajectoryLine.numCapVertices = previewCapVertices;
+        baseTrajectoryStartWidth = trajectoryLine.startWidth;
+        baseTrajectoryEndWidth = trajectoryLine.endWidth;
     }
 
     private float GetBallWorldRadius()
