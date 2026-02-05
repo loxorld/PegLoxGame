@@ -97,8 +97,11 @@ public class ShopService
                 true,
                 () =>
                 {
-                    TryHeal(flow, healCost, healAmount, out string result);
-                    refreshAction?.Invoke(result);
+                    bool success = TryHeal(flow, healCost, healAmount, out string result);
+                    if (success)
+                        exitAction?.Invoke();
+                    else
+                        refreshAction?.Invoke(result);
                 }));
         }
         else
@@ -138,8 +141,11 @@ public class ShopService
                     true,
                     () =>
                     {
-                        TryUpgradeOrb(flow, orbManager, upgradeCost, out string result);
-                        refreshAction?.Invoke(result);
+                        bool success = TryUpgradeOrb(flow, orbManager, upgradeCost, out string result);
+                        if (success)
+                            exitAction?.Invoke();
+                        else
+                            refreshAction?.Invoke(result);
                     }));
             }
             else
