@@ -335,7 +335,12 @@ public class MapManager : MonoBehaviour
                 return candidate;
             }
         }
-
+        MapNodeModalUI modalUI = MapNodeModalUI.GetOrCreate();
+        if (modalUI != null)
+        {
+            mapNodeModalView = modalUI;
+            return modalUI;
+        }
         return null;
     }
 

@@ -31,6 +31,13 @@ public class MapNodeModalUI : MonoBehaviour, IMapNodeModalView
 
     public static MapNodeModalUI Instance => instance;
 
+    public static MapNodeModalUI GetOrCreate()
+    {
+        if (instance == null || instance.Equals(null))
+            instance = CreateModal();
+
+        return instance;
+    }
     public static void Show(string title, string body, params Option[] options)
     {
         if (instance == null || instance.Equals(null))
@@ -69,7 +76,25 @@ public class MapNodeModalUI : MonoBehaviour, IMapNodeModalView
             return null;
         }
 
-        var modal = Instantiate(prefab).GetComponent<MapNodeModalUI>();
+        var modalInstance = Instantiate(prefab);
+        var modal = modalInstance.GetComponent<MapNodeModalUI>();
+        if (modal == null)
+            Debug.LogError("[MapNodeModalUI] El prefab no tiene el componente MapNodeModalUI.");
+
+        var modalCanvas = modalInstance.GetComponentInChildren<Canvas>(true);
+        var rootCanvas = GameObject.Find("MapCanvas") ?? GameObject.Find("UIRoot");
+        if (modalCanvas == null && rootCanvas != null)
+            modalInstance.transform.SetParent(rootCanvas.transform, false);
+        else
+            modalInstance.transform.SetParent(null, false);
+
+        modalInstance.transform.localScale = Vector3.one;
+        if (modalInstance.transform is RectTransform rectTransform)
+        {
+            rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+            rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            rectTransform.anchoredPosition = Vector2.zero;
+        }
         if (modal == null)
             Debug.LogError("[MapNodeModalUI] El prefab no tiene el componente MapNodeModalUI.");
         return modal;
