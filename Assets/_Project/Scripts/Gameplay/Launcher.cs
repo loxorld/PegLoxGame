@@ -63,11 +63,16 @@ public class Launcher : MonoBehaviour
     private Gradient trajectoryPowerGradient;
     [SerializeField, Tooltip("Curva evaluada con power01 para escalar el ancho del LineRenderer.")]
     private AnimationCurve trajectoryWidthByPower;
+    [SerializeField, Tooltip("Si está activo, se crean valores por defecto para el gradiente/curva cuando no están asignados.")]
+    private bool autoConfigurePowerStyling = true;
 
     private float ballRadiusWorld;
     private readonly List<Vector3> trajectoryPoints = new List<Vector3>(128);
-    private float baseTrajectoryStartWidth;
-    private float baseTrajectoryEndWidth;
+    private Gradient baseTrajectoryGradient;
+    private float baseTrajectoryWidthMultiplier;
+    private readonly Gradient powerPreviewGradient = new Gradient();
+    private readonly GradientColorKey[] powerGradientColorKeys = new GradientColorKey[2];
+    private readonly GradientAlphaKey[] powerGradientAlphaKeys = new GradientAlphaKey[2];
 
     private void Awake()
     {
@@ -561,17 +566,34 @@ public class Launcher : MonoBehaviour
         if (trajectoryPowerGradient != null)
         {
             Color powerColor = trajectoryPowerGradient.Evaluate(power01);
-            trajectoryLine.startColor = powerColor;
-            trajectoryLine.endColor = powerColor;
+            ApplySolidGradient(powerColor);
+            trajectoryLine.colorGradient = powerPreviewGradient;
+        }
+        else if (baseTrajectoryGradient != null)
+        {
+            trajectoryLine.colorGradient = baseTrajectoryGradient;
         }
 
         if (trajectoryWidthByPower != null)
         {
             float widthMultiplier = trajectoryWidthByPower.Evaluate(power01);
-            trajectoryLine.startWidth = baseTrajectoryStartWidth * widthMultiplier;
-            trajectoryLine.endWidth = baseTrajectoryEndWidth * widthMultiplier;
+            trajectoryLine.widthMultiplier = baseTrajectoryWidthMultiplier * widthMultiplier;
+        }
+        else if (baseTrajectoryWidthMultiplier > 0f)
+        {
+            trajectoryLine.widthMultiplier = baseTrajectoryWidthMultiplier;
         }
     }
+
+    private void ApplySolidGradient(Color color)
+    {
+        powerGradientColorKeys[0] = new GradientColorKey(color, 0f);
+        powerGradientColorKeys[1] = new GradientColorKey(color, 1f);
+        powerGradientAlphaKeys[0] = new GradientAlphaKey(color.a, 0f);
+        powerGradientAlphaKeys[1] = new GradientAlphaKey(color.a, 1f);
+        powerPreviewGradient.SetKeys(powerGradientColorKeys, powerGradientAlphaKeys);
+    }
+
     private void ApplyLine(List<Vector3> points)
     {
         trajectoryLine.positionCount = points.Count;
@@ -585,8 +607,41 @@ public class Launcher : MonoBehaviour
 
         trajectoryLine.numCornerVertices = previewCornerVertices;
         trajectoryLine.numCapVertices = previewCapVertices;
-        baseTrajectoryStartWidth = trajectoryLine.startWidth;
-        baseTrajectoryEndWidth = trajectoryLine.endWidth;
+        baseTrajectoryGradient = trajectoryLine.colorGradient;
+        baseTrajectoryWidthMultiplier = trajectoryLine.widthMultiplier;
+        EnsurePowerStylingDefaults();
+    }
+
+    private void EnsurePowerStylingDefaults()
+    {
+        if (!autoConfigurePowerStyling) return;
+
+        if (trajectoryLine != null && trajectoryPowerGradient == null)
+        {
+            Gradient defaultGradient = new Gradient();
+            Color baseColor = trajectoryLine.startColor;
+            Color lowColor = new Color(baseColor.r * 0.5f, baseColor.g * 0.5f, baseColor.b * 0.5f, baseColor.a * 0.75f);
+            GradientColorKey[] colorKeys =
+            {
+                new GradientColorKey(lowColor, 0f),
+                new GradientColorKey(baseColor, 1f)
+            };
+            GradientAlphaKey[] alphaKeys =
+            {
+                new GradientAlphaKey(lowColor.a, 0f),
+                new GradientAlphaKey(baseColor.a, 1f)
+            };
+            defaultGradient.SetKeys(colorKeys, alphaKeys);
+            trajectoryPowerGradient = defaultGradient;
+        }
+
+        if (trajectoryWidthByPower == null)
+        {
+            trajectoryWidthByPower = new AnimationCurve(
+                new Keyframe(0f, 0.8f),
+                new Keyframe(1f, 1.2f)
+            );
+        }
     }
 
     private float GetBallWorldRadius()
