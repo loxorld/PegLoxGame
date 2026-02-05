@@ -9,6 +9,7 @@ public class Launcher : MonoBehaviour
     [Header("References")]
     [SerializeField] private Rigidbody2D ballPrefab;
     [SerializeField] private Transform launchPoint;
+    [SerializeField] private Camera cachedCamera;
 
     [Header("Orbs (legacy / optional)")]
     [SerializeField] private OrbData[] orbs;
@@ -37,6 +38,7 @@ public class Launcher : MonoBehaviour
     private Vector2 dragStartWorld;
     private Vector2 dragStartScreen;
     private bool isDragging;
+    private bool hasLoggedMissingCamera;
 
     [Header("Trajectory Preview")]
     [SerializeField] private LineRenderer trajectoryLine;
@@ -220,7 +222,18 @@ public class Launcher : MonoBehaviour
 
     private Vector2 ScreenToWorld(Vector2 screenPos)
     {
-        return Camera.main.ScreenToWorldPoint(screenPos);
+        if (cachedCamera == null)
+        {
+            if (!hasLoggedMissingCamera)
+            {
+                Debug.LogWarning($"{nameof(Launcher)}: No hay cámara asignada para convertir ScreenToWorld.");
+                hasLoggedMissingCamera = true;
+            }
+
+            return Vector2.zero;
+        }
+
+        return cachedCamera.ScreenToWorldPoint(screenPos);
     }
 
     /// <summary>
@@ -308,6 +321,9 @@ public class Launcher : MonoBehaviour
 
         if (relicManager == null)
             relicManager = RelicManager.Instance ?? FindObjectOfType<RelicManager>(true);
+
+        if (cachedCamera == null)
+            cachedCamera = Camera.main;
     }
 
     private int GetPreviewBounceBonus()
