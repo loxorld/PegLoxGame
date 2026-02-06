@@ -112,6 +112,8 @@ public class OrbManager : MonoBehaviour
     {
         ownedOrbs.Clear();
         ownedOrbInstances.Clear();
+        currentOrb = defaultOrb;
+        currentOrbInstance = null;
 
         if (defaultOrb != null)
             ownedOrbs.Add(defaultOrb);
@@ -134,7 +136,7 @@ public class OrbManager : MonoBehaviour
         }
 
         if (currentOrb != null)
-            currentOrbInstance = GetOrCreateInstance(currentOrb);
+            currentOrbInstance = FindInstanceForOrb(currentOrb);
 
         if (currentOrbInstance == null && ownedOrbInstances.Count > 0)
             currentOrbInstance = ownedOrbInstances[0];
@@ -159,6 +161,20 @@ public class OrbManager : MonoBehaviour
         OrbInstance newInstance = new OrbInstance(orb);
         ownedOrbInstances.Add(newInstance);
         return newInstance;
+    }
+
+    private OrbInstance FindInstanceForOrb(OrbData orb)
+    {
+        if (orb == null) return null;
+
+        for (int i = 0; i < ownedOrbInstances.Count; i++)
+        {
+            OrbInstance instance = ownedOrbInstances[i];
+            if (instance != null && instance.BaseData == orb)
+                return instance;
+        }
+
+        return null;
     }
 
     private void SyncCurrentIndexFromInstance()
