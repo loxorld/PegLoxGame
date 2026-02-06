@@ -56,10 +56,8 @@ public class MainMenuController : MonoBehaviour
     public void OnContinueButton()
     {
         GameFlowManager flow = GameFlowManager.Instance ?? FindObjectOfType<GameFlowManager>(true);
-        if (flow != null && flow.SavedMapNode != null)
+        if (flow != null && flow.ContinueRunFromMenu())
         {
-            flow.SetState(GameState.Combat);
-            SceneManager.LoadScene(SceneCatalog.Load().CombatScene, LoadSceneMode.Single);
             return;
         }
 

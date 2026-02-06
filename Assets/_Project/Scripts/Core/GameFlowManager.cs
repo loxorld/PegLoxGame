@@ -165,6 +165,16 @@ public class GameFlowManager : MonoBehaviour
         SceneManager.LoadScene(SceneCatalog.Load().MapScene, LoadSceneMode.Single);
     }
 
+    public bool ContinueRunFromMenu()
+    {
+        if (SavedMapNode == null)
+            return false;
+
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(SceneCatalog.Load().MapScene, LoadSceneMode.Single);
+        return true;
+    }
+
     private void ResetPersistentManagers()
     {
         OrbManager.Instance?.ResetToDefaults();
