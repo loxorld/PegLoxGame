@@ -9,6 +9,8 @@ public class BallLifecycle : MonoBehaviour
     [SerializeField] private float maxY = 12f;
     [SerializeField] private float minX = -7f;
     [SerializeField] private float maxX = 7f;
+    [SerializeField] private bool despawnOnSideBounds = false;
+    [SerializeField] private float horizontalBoundsPadding = 0.6f;
 
     [Header("Stop detection")]
     [SerializeField] private float minSpeedToConsiderStopped = 0.2f;
@@ -18,14 +20,16 @@ public class BallLifecycle : MonoBehaviour
     [SerializeField, Min(0.1f)] private float maxLifetimeSeconds = 10f;
 
     private Rigidbody2D rb;
+    private Collider2D col;
     private float stoppedTimer;
 
-    private float lifeTimer;     // 👈 NUEVO
+    private float lifeTimer;     
     private bool hasEnded;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        col = GetComponent<Collider2D>();
         if (boundsProvider == null)
             boundsProvider = FindObjectOfType<BoardBoundsProvider>();
     }
@@ -64,7 +68,15 @@ public class BallLifecycle : MonoBehaviour
             currentMaxY = bounds.yMax;
         }
 
-        if (p.y < currentMinY || p.y > currentMaxY || p.x < currentMinX || p.x > currentMaxX)
+        float extraX = 0f;
+        if (despawnOnSideBounds)
+        {
+            extraX = horizontalBoundsPadding;
+            if (col != null)
+                extraX += col.bounds.extents.x;
+        }
+
+        if (p.y < currentMinY || p.y > currentMaxY || (despawnOnSideBounds && (p.x < currentMinX - extraX || p.x > currentMaxX + extraX)))
         {
             EndShot();
             return;
