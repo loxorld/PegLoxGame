@@ -4,6 +4,7 @@
 public class BallLifecycle : MonoBehaviour
 {
     [Header("Out of bounds")]
+    [SerializeField] private BoardBoundsProvider boundsProvider;
     [SerializeField] private float minY = -6f;
     [SerializeField] private float maxY = 12f;
     [SerializeField] private float minX = -7f;
@@ -25,6 +26,8 @@ public class BallLifecycle : MonoBehaviour
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        if (boundsProvider == null)
+            boundsProvider = FindObjectOfType<BoardBoundsProvider>();
     }
 
     private void OnEnable()
@@ -48,7 +51,20 @@ public class BallLifecycle : MonoBehaviour
 
         // 1) Si se fue del tablero
         Vector3 p = transform.position;
-        if (p.y < minY || p.y > maxY || p.x < minX || p.x > maxX)
+        float currentMinY = minY;
+        float currentMaxY = maxY;
+        float currentMinX = minX;
+        float currentMaxX = maxX;
+
+        if (boundsProvider != null && boundsProvider.TryGetBounds(out Rect bounds))
+        {
+            currentMinX = bounds.xMin;
+            currentMaxX = bounds.xMax;
+            currentMinY = bounds.yMin;
+            currentMaxY = bounds.yMax;
+        }
+
+        if (p.y < currentMinY || p.y > currentMaxY || p.x < currentMinX || p.x > currentMaxX)
         {
             EndShot();
             return;

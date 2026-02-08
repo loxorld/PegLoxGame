@@ -27,8 +27,12 @@ public class BoardManager : MonoBehaviour
     [SerializeField, Min(0f)] private float spawnSafeHeight = 1.5f;
 
     [SerializeField] private BattleManager battle;
+    [SerializeField] private BoardBoundsProvider boundsProvider;
 
     private readonly List<GameObject> spawned = new List<GameObject>();
+
+    private Rect playableBounds;
+    private bool hasPlayableBounds;
 
     // Track de cuántos especiales spawneamos este board
     private readonly Dictionary<PegDefinition, int> specialCounts = new Dictionary<PegDefinition, int>();
@@ -37,6 +41,7 @@ public class BoardManager : MonoBehaviour
     {
         if (cam == null) cam = Camera.main;
         if (boardRoot == null) boardRoot = transform;
+        if (boundsProvider == null) boundsProvider = GetComponent<BoardBoundsProvider>();
     }
 
     private void Start()
@@ -94,31 +99,16 @@ public class BoardManager : MonoBehaviour
             cols = layout.cols;
         }
 
-        Rect visibleWorld = CameraWorldRect.GetVisibleWorldRect(cam);
+        Rect bounds = CalculatePlayableBounds();
+        float leftBound = bounds.xMin;
+        float rightBound = bounds.xMax;
+        float topBound = bounds.yMax;
 
-        float minWorldX = Mathf.Lerp(visibleWorld.xMin, visibleWorld.xMax, config.viewportMinX);
-        float maxWorldX = Mathf.Lerp(visibleWorld.xMin, visibleWorld.xMax, config.viewportMaxX);
-        float minWorldY = Mathf.Lerp(visibleWorld.yMin, visibleWorld.yMax, config.viewportMinY);
-        float maxWorldY = Mathf.Lerp(visibleWorld.yMin, visibleWorld.yMax, config.viewportMaxY);
-
-        Vector2 minW = new Vector2(minWorldX, minWorldY);
-        Vector2 maxW = new Vector2(maxWorldX, maxWorldY);
-
-        Vector2 worldMin = new Vector2(Mathf.Min(minW.x, maxW.x), Mathf.Min(minW.y, maxW.y));
-        Vector2 worldMax = new Vector2(Mathf.Max(minW.x, maxW.x), Mathf.Max(minW.y, maxW.y));
-
-        worldMin += Vector2.one * config.marginWorld;
-        worldMax -= Vector2.one * config.marginWorld;
-
-        float leftBound = worldMin.x;
-        float rightBound = worldMax.x;
-        float topBound = worldMax.y;
-
-        float bottomBound = worldMin.y + spawnSafeHeight;
+        float bottomBound = bounds.yMin + spawnSafeHeight;
         if (bottomBound >= topBound)
         {
             Debug.LogWarning("[Board] spawnSafeHeight too large for current playable area. Reducing to fit.");
-            bottomBound = worldMin.y;
+            bottomBound = bounds.yMin;
         }
 
         float spacingX = config.spacingX;
@@ -185,6 +175,12 @@ public class BoardManager : MonoBehaviour
         }
 
         PegManager.Instance?.ResetAllPegsForNewEncounter();
+    }
+
+    public bool TryGetPlayableBounds(out Rect bounds)
+    {
+        bounds = playableBounds;
+        return hasPlayableBounds;
     }
 
     // -------------------- NUEVO: selector data-driven --------------------
@@ -313,5 +309,32 @@ public class BoardManager : MonoBehaviour
             if (spawned[i] != null) Destroy(spawned[i]);
         }
         spawned.Clear();
+    }
+    private Rect CalculatePlayableBounds()
+    {
+        Rect visibleWorld = CameraWorldRect.GetVisibleWorldRect(cam);
+
+        float minWorldX = Mathf.Lerp(visibleWorld.xMin, visibleWorld.xMax, config.viewportMinX);
+        float maxWorldX = Mathf.Lerp(visibleWorld.xMin, visibleWorld.xMax, config.viewportMaxX);
+        float minWorldY = Mathf.Lerp(visibleWorld.yMin, visibleWorld.yMax, config.viewportMinY);
+        float maxWorldY = Mathf.Lerp(visibleWorld.yMin, visibleWorld.yMax, config.viewportMaxY);
+
+        Vector2 minW = new Vector2(minWorldX, minWorldY);
+        Vector2 maxW = new Vector2(maxWorldX, maxWorldY);
+
+        Vector2 worldMin = new Vector2(Mathf.Min(minW.x, maxW.x), Mathf.Min(minW.y, maxW.y));
+        Vector2 worldMax = new Vector2(Mathf.Max(minW.x, maxW.x), Mathf.Max(minW.y, maxW.y));
+
+        worldMin += Vector2.one * config.marginWorld;
+        worldMax -= Vector2.one * config.marginWorld;
+
+        Rect bounds = Rect.MinMaxRect(worldMin.x, worldMin.y, worldMax.x, worldMax.y);
+        playableBounds = bounds;
+        hasPlayableBounds = true;
+
+        if (boundsProvider != null)
+            boundsProvider.SetBounds(bounds);
+
+        return bounds;
     }
 }

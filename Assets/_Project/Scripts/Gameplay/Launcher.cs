@@ -6,6 +6,16 @@ using UnityEngine.UI;
 
 public class Launcher : MonoBehaviour
 {
+    [System.Serializable]
+    public class LaunchSettings
+    {
+        [Min(10f)] public float maxDragPixels = 220f;
+        public AnimationCurve powerCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+        public bool useDpiNormalization = false;
+        public float maxLaunchSpeed = 18f;
+        public float minLaunchSpeed = 3f;
+    }
+
     [Header("References")]
     [SerializeField, Tooltip("Prefab con Rigidbody2D usado para disparar. Obligatorio.")]
     private Rigidbody2D ballPrefab;
@@ -25,21 +35,14 @@ public class Launcher : MonoBehaviour
     [Header("Launch Settings")]
     [SerializeField] private float launchForce = 10f; // legacy (no se usa para velocidad, lo dejamos por compat)
     [SerializeField] private float maxAimMagnitude = 3.0f;
+    [SerializeField] private LaunchSettings launchSettings = new LaunchSettings();
 
     [Header("Drag Tuning (screen space)")]
-    [SerializeField, Min(10f)] private float maxDragPixels = 220f;
     [SerializeField] private bool useScreenSpaceDragForPower = true;
-    [SerializeField, Tooltip("Normaliza el drag a un DPI de referencia para que la potencia sea consistente entre dispositivos. Si el DPI no es válido se usa el modo actual.")]
-    private bool useDpiNormalization = false;
     [SerializeField, Min(1f), Tooltip("DPI usado como referencia cuando la normalización está activa.")]
     private float referenceDpi = 160f;
 
     [Header("Launch Speed Cap")]
-    [SerializeField] private float maxLaunchSpeed = 18f;
-    [SerializeField] private float minLaunchSpeed = 3f;
-
-    [Header("Power Curve")]
-    [SerializeField] private AnimationCurve powerCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
     [SerializeField] private bool clampCurveOutput01 = true;
 
     private Vector2 dragStartWorld;
@@ -73,6 +76,11 @@ public class Launcher : MonoBehaviour
     private readonly Gradient powerPreviewGradient = new Gradient();
     private readonly GradientColorKey[] powerGradientColorKeys = new GradientColorKey[2];
     private readonly GradientAlphaKey[] powerGradientAlphaKeys = new GradientAlphaKey[2];
+    private float effectiveMaxDragPixels;
+    private float effectiveMaxLaunchSpeed;
+    private float effectiveMinLaunchSpeed;
+    private bool effectiveUseDpiNormalization;
+    private AnimationCurve effectivePowerCurve;
 
     private void Awake()
     {
@@ -80,6 +88,7 @@ public class Launcher : MonoBehaviour
         ValidateRequiredReferences(nameof(Awake));
         ballRadiusWorld = GetBallWorldRadius();
         ConfigureTrajectoryLine();
+        ApplyLaunchSettingsFromPrefs();
     }
 
     private void OnEnable()
@@ -87,6 +96,7 @@ public class Launcher : MonoBehaviour
         ResolveReferences();
         ValidateRequiredReferences(nameof(OnEnable));
         ConfigureTrajectoryLine();
+        ApplyLaunchSettingsFromPrefs();
     }
 
 #if UNITY_EDITOR
@@ -96,7 +106,6 @@ public class Launcher : MonoBehaviour
         ConfigureTrajectoryLine();
     }
 #endif
-
 
     private void Update()
     {
@@ -305,7 +314,7 @@ public class Launcher : MonoBehaviour
         if (!TryComputePowerData(rawDirectionWorld, currentScreenPos, out Vector2 dirWorld, out _, out float power01))
             return Vector2.zero;
 
-        float speed = Mathf.Lerp(minLaunchSpeed, maxLaunchSpeed, power01);
+        float speed = Mathf.Lerp(effectiveMinLaunchSpeed, effectiveMaxLaunchSpeed, power01);
         return dirWorld.normalized * speed;
     }
 
@@ -334,7 +343,7 @@ public class Launcher : MonoBehaviour
         if (useScreenSpaceDragForPower)
         {
             float pixels = Vector2.Distance(dragStartScreen, currentScreenPos);
-            if (useDpiNormalization)
+            if (effectiveUseDpiNormalization)
             {
                 float dpi = Screen.dpi;
                 if (dpi > 0f && !float.IsNaN(dpi) && !float.IsInfinity(dpi))
@@ -342,14 +351,14 @@ public class Launcher : MonoBehaviour
                     pixels *= referenceDpi / dpi;
                 }
             }
-            drag01 = Mathf.Clamp01(pixels / maxDragPixels);
+            drag01 = Mathf.Clamp01(pixels / effectiveMaxDragPixels);
         }
         else
         {
             drag01 = Mathf.InverseLerp(0f, maxAimMagnitude, directionWorld.magnitude);
         }
 
-        power01 = powerCurve != null ? powerCurve.Evaluate(drag01) : drag01;
+        power01 = effectivePowerCurve != null ? effectivePowerCurve.Evaluate(drag01) : drag01;
         if (clampCurveOutput01) power01 = Mathf.Clamp01(power01);
 
         return true;
@@ -401,6 +410,22 @@ public class Launcher : MonoBehaviour
         if (cachedCamera == null)
             cachedCamera = Camera.main;
     }
+
+    private void ApplyLaunchSettingsFromPrefs()
+    {
+        float sensitivity = PlayerPrefs.GetFloat(LauncherPreferences.DragSensitivityKey, LauncherPreferences.DefaultDragSensitivity);
+        sensitivity = Mathf.Max(0.1f, sensitivity);
+        effectiveMaxDragPixels = Mathf.Max(1f, launchSettings.maxDragPixels / sensitivity);
+        int dpiNormalization = PlayerPrefs.GetInt(
+            LauncherPreferences.UseDpiNormalizationKey,
+            launchSettings.useDpiNormalization ? 1 : 0
+        );
+        effectiveUseDpiNormalization = dpiNormalization == 1;
+        effectiveMaxLaunchSpeed = Mathf.Max(0f, launchSettings.maxLaunchSpeed);
+        effectiveMinLaunchSpeed = Mathf.Clamp(launchSettings.minLaunchSpeed, 0f, effectiveMaxLaunchSpeed);
+        effectivePowerCurve = launchSettings.powerCurve;
+    }
+
     private void ValidateRequiredReferences(string context)
     {
         if (ballPrefab == null)
