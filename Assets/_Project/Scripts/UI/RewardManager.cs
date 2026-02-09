@@ -138,6 +138,7 @@ public class RewardManager : MonoBehaviour
     {
         ResolveReferences();
         GrantEncounterCoins();
+        GameFlowManager.Instance?.SaveRun();
         // Generar 3 opciones mixtas (Orb/Relic)
         pendingChoices = GenerateMixedChoices(3);
 
@@ -236,6 +237,7 @@ public class RewardManager : MonoBehaviour
             Debug.Log($"[Reward] Chosen RELIC: {chosen.relic.name}");
         }
 
+        GameFlowManager.Instance?.SaveRun();
         ResolveRewardAndContinue();
     }
 

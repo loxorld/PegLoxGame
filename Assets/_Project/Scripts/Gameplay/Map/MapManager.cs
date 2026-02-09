@@ -93,6 +93,7 @@ public class MapManager : MonoBehaviour
         {
             flow.SaveMapNode(nextNode);
             flow.IncrementNodesVisited();
+            flow.SaveRun();
         }
         else
             Debug.LogWarning("[MapManager] No se encontr GameFlowManager al guardar MapNode.");
@@ -226,6 +227,8 @@ public class MapManager : MonoBehaviour
 
         if (hpDelta != 0)
             flow.ModifySavedHP(hpDelta);
+
+        flow.SaveRun();
 
         IMapNodeModalView modalView = ResolveMapNodeModalView();
         if (modalView == null)

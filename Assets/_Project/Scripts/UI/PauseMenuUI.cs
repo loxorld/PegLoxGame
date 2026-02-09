@@ -118,6 +118,11 @@ public class PauseMenuUI : MonoBehaviour
 
         // Reanudar por si estaba en estado Paused
         RefreshFlowSubscription();
+        if (flow != null)
+        {
+            flow.SaveRun();
+            flow.Resume();
+        }
         flow?.Resume();
 
         // Cargar la escena del menu principal en modo Single

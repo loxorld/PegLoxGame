@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -38,6 +39,11 @@ public class GameFlowManager : MonoBehaviour
     private float bossDamageMultiplier = 1.5f;
     private int bossHpBonus = 0;
     private int bossDamageBonus = 0;
+    private bool hasLoadedRun;
+    private GameState pendingLoadedState;
+    private bool pendingStateApply;
+    private RunSaveData pendingRunData;
+    private string pendingMapNodeId;
 
     private void Awake()
     {
@@ -52,7 +58,23 @@ public class GameFlowManager : MonoBehaviour
 
         PlayerMaxHP = Mathf.Max(1, startingPlayerMaxHP);
         Coins = startingCoins;
+
+        LoadRun();
+        SceneManager.sceneLoaded += OnSceneLoaded;
     }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void Start()
+    {
+        if (pendingStateApply)
+            StartCoroutine(ApplyLoadedStateNextFrame());
+    }
+
 
     public void SetState(GameState newState)
     {
@@ -151,6 +173,143 @@ public class GameFlowManager : MonoBehaviour
         HasSavedPlayerHP = true;
     }
 
+    public void SaveRun()
+    {
+        RunSaveData data = new RunSaveData
+        {
+            SavedMapNodeId = SavedMapNode != null ? SavedMapNode.name : null,
+            EncounterIndex = EncounterIndex,
+            NodesVisited = NodesVisited,
+            Coins = Coins,
+            PlayerMaxHP = PlayerMaxHP,
+            SavedPlayerHP = SavedPlayerHP,
+            HasSavedPlayerHP = HasSavedPlayerHP,
+            GameState = (int)State
+        };
+
+        OrbManager orbManager = OrbManager.Instance ?? FindObjectOfType<OrbManager>(true);
+        if (orbManager != null)
+        {
+            data.Orbs = orbManager.SerializeOrbs();
+            data.CurrentOrbId = orbManager.GetCurrentOrbId();
+        }
+
+        RelicManager relicManager = RelicManager.Instance ?? FindObjectOfType<RelicManager>(true);
+        if (relicManager != null)
+            data.Relics = relicManager.SerializeRelics();
+
+        string json = JsonUtility.ToJson(data, true);
+        string path = GetRunSavePath();
+
+        try
+        {
+            File.WriteAllText(path, json);
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[GameFlow] Failed to save run: {ex.Message}");
+        }
+    }
+
+    public bool LoadRun()
+    {
+        string path = GetRunSavePath();
+        if (!File.Exists(path))
+            return false;
+
+        try
+        {
+            string json = File.ReadAllText(path);
+            RunSaveData data = JsonUtility.FromJson<RunSaveData>(json);
+            if (data == null)
+                return false;
+
+            ApplyRunData(data);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[GameFlow] Failed to load run: {ex.Message}");
+            return false;
+        }
+    }
+
+    private void ApplyRunData(RunSaveData data)
+    {
+        pendingMapNodeId = data.SavedMapNodeId;
+        SavedMapNode = ResolveMapNodeById(pendingMapNodeId);
+        EncounterIndex = Mathf.Max(0, data.EncounterIndex);
+        NodesVisited = Mathf.Max(0, data.NodesVisited);
+        Coins = Mathf.Max(0, data.Coins);
+        PlayerMaxHP = Mathf.Max(1, data.PlayerMaxHP);
+        SavedPlayerHP = Mathf.Clamp(data.SavedPlayerHP, 0, PlayerMaxHP);
+        HasSavedPlayerHP = data.HasSavedPlayerHP;
+
+        hasLoadedRun = true;
+        pendingLoadedState = (GameState)Mathf.Clamp(data.GameState, 0, (int)GameState.GameOver);
+        pendingStateApply = true;
+        pendingRunData = data;
+
+        ApplyManagersFromRunData();
+    }
+
+    private void ApplyManagersFromRunData()
+    {
+        if (pendingRunData == null)
+            return;
+
+        OrbManager orbManager = OrbManager.Instance ?? FindObjectOfType<OrbManager>(true);
+        if (orbManager != null)
+            orbManager.DeserializeOrbs(pendingRunData.Orbs, pendingRunData.CurrentOrbId);
+
+        RelicManager relicManager = RelicManager.Instance ?? FindObjectOfType<RelicManager>(true);
+        if (relicManager != null)
+            relicManager.DeserializeRelics(pendingRunData.Relics);
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (!hasLoadedRun || !pendingStateApply)
+            return;
+
+        if (SavedMapNode == null && !string.IsNullOrWhiteSpace(pendingMapNodeId))
+            SavedMapNode = ResolveMapNodeById(pendingMapNodeId);
+
+        StartCoroutine(ApplyLoadedStateNextFrame());
+    }
+
+    private System.Collections.IEnumerator ApplyLoadedStateNextFrame()
+    {
+        yield return null;
+        if (SavedMapNode == null && !string.IsNullOrWhiteSpace(pendingMapNodeId))
+            SavedMapNode = ResolveMapNodeById(pendingMapNodeId);
+        ApplyManagersFromRunData();
+
+        pendingStateApply = false;
+        SetState(pendingLoadedState);
+    }
+
+    private static MapNodeData ResolveMapNodeById(string mapNodeId)
+    {
+        if (string.IsNullOrWhiteSpace(mapNodeId))
+            return null;
+
+        MapNodeData[] candidates = Resources.FindObjectsOfTypeAll<MapNodeData>();
+        for (int i = 0; i < candidates.Length; i++)
+        {
+            MapNodeData node = candidates[i];
+            if (node != null && node.name == mapNodeId)
+                return node;
+        }
+
+        return null;
+    }
+
+    private static string GetRunSavePath()
+    {
+        return Path.Combine(Application.persistentDataPath, "run_save.json");
+    }
+
     public void RestartCombatScene()
     {
         RestartRunFromMenu();
@@ -208,6 +367,7 @@ public class GameFlowManager : MonoBehaviour
         if (State == GameState.GameOver) return;
         if (State == GameState.RewardChoice) return;
 
+        SaveRun();
         SetState(GameState.Paused);
     }
 
@@ -221,5 +381,10 @@ public class GameFlowManager : MonoBehaviour
     {
         if (State == GameState.Paused) Resume();
         else Pause();
+    }
+
+    private void OnApplicationQuit()
+    {
+        SaveRun();
     }
 }

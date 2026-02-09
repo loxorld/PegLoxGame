@@ -33,5 +33,54 @@ public class RelicManager : MonoBehaviour
         activeRelics.Clear();
     }
 
-    // MVP: se editan por Inspector. Más adelante: drop/tienda.
+    public List<string> SerializeRelics()
+    {
+        var result = new List<string>();
+
+        if (activeRelics == null)
+            return result;
+
+        for (int i = 0; i < activeRelics.Count; i++)
+        {
+            ShotEffectBase relic = activeRelics[i];
+            if (relic == null) continue;
+            result.Add(relic.name);
+        }
+
+        return result;
+    }
+
+    public void DeserializeRelics(List<string> relicIds)
+    {
+        activeRelics.Clear();
+
+        if (relicIds == null || relicIds.Count == 0)
+            return;
+
+        for (int i = 0; i < relicIds.Count; i++)
+        {
+            string relicId = relicIds[i];
+            if (string.IsNullOrWhiteSpace(relicId)) continue;
+
+            ShotEffectBase relic = ResolveRelicById(relicId);
+            if (relic != null)
+                activeRelics.Add(relic);
+        }
+    }
+
+    private static ShotEffectBase ResolveRelicById(string relicId)
+    {
+        if (string.IsNullOrWhiteSpace(relicId))
+            return null;
+
+        ShotEffectBase[] candidates = Resources.FindObjectsOfTypeAll<ShotEffectBase>();
+        for (int i = 0; i < candidates.Length; i++)
+        {
+            ShotEffectBase relic = candidates[i];
+            if (relic != null && relic.name == relicId)
+                return relic;
+        }
+
+        return null;
+    }
 }

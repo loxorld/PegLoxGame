@@ -147,6 +147,81 @@ public class OrbManager : MonoBehaviour
         SyncCurrentIndexFromInstance();
     }
 
+    public List<RunSaveData.OrbSaveData> SerializeOrbs()
+    {
+        var result = new List<RunSaveData.OrbSaveData>();
+
+        if (ownedOrbInstances == null || ownedOrbInstances.Count == 0)
+            return result;
+
+        for (int i = 0; i < ownedOrbInstances.Count; i++)
+        {
+            OrbInstance instance = ownedOrbInstances[i];
+            if (instance == null || instance.BaseData == null) continue;
+
+            result.Add(new RunSaveData.OrbSaveData
+            {
+                OrbId = instance.BaseData.name,
+                Level = instance.Level
+            });
+        }
+
+        return result;
+    }
+
+    public string GetCurrentOrbId()
+    {
+        if (currentOrbInstance != null && currentOrbInstance.BaseData != null)
+            return currentOrbInstance.BaseData.name;
+
+        if (currentOrb != null)
+            return currentOrb.name;
+
+        return null;
+    }
+
+    public void DeserializeOrbs(List<RunSaveData.OrbSaveData> savedOrbs, string currentOrbId)
+    {
+        if (savedOrbs == null || savedOrbs.Count == 0)
+        {
+            ResetToDefaults();
+            return;
+        }
+
+        ownedOrbs.Clear();
+        ownedOrbInstances.Clear();
+
+        var seen = new HashSet<string>();
+        for (int i = 0; i < savedOrbs.Count; i++)
+        {
+            RunSaveData.OrbSaveData saved = savedOrbs[i];
+            if (saved == null || string.IsNullOrWhiteSpace(saved.OrbId)) continue;
+            if (!seen.Add(saved.OrbId)) continue;
+
+            OrbData orb = ResolveOrbById(saved.OrbId);
+            if (orb == null) continue;
+
+            ownedOrbs.Add(orb);
+            ownedOrbInstances.Add(new OrbInstance(orb, Mathf.Max(1, saved.Level)));
+        }
+
+        if (ownedOrbInstances.Count == 0)
+        {
+            ResetToDefaults();
+            return;
+        }
+
+        OrbInstance desired = null;
+        if (!string.IsNullOrWhiteSpace(currentOrbId))
+            desired = FindInstanceForOrbId(currentOrbId);
+
+        if (desired == null)
+            desired = ownedOrbInstances[0];
+
+        SetCurrentOrb(desired);
+    }
+
+
     private OrbInstance GetOrCreateInstance(OrbData orb)
     {
         if (orb == null) return null;
@@ -188,4 +263,35 @@ public class OrbManager : MonoBehaviour
         currentIndex = ownedOrbInstances.IndexOf(currentOrbInstance);
         if (currentIndex < 0) currentIndex = 0;
     }
+
+    private OrbInstance FindInstanceForOrbId(string orbId)
+    {
+        if (string.IsNullOrWhiteSpace(orbId)) return null;
+
+        for (int i = 0; i < ownedOrbInstances.Count; i++)
+        {
+            OrbInstance instance = ownedOrbInstances[i];
+            if (instance != null && instance.BaseData != null && instance.BaseData.name == orbId)
+                return instance;
+        }
+
+        return null;
+    }
+
+    private static OrbData ResolveOrbById(string orbId)
+    {
+        if (string.IsNullOrWhiteSpace(orbId))
+            return null;
+
+        OrbData[] candidates = Resources.FindObjectsOfTypeAll<OrbData>();
+        for (int i = 0; i < candidates.Length; i++)
+        {
+            OrbData orb = candidates[i];
+            if (orb != null && orb.name == orbId)
+                return orb;
+        }
+
+        return null;
+    }
 }
+
