@@ -39,15 +39,24 @@ public class Launcher : MonoBehaviour
 
     [Header("Drag Tuning (screen space)")]
     [SerializeField] private bool useScreenSpaceDragForPower = true;
+    [SerializeField, Min(0f), Tooltip("Deadzone en pixeles para ignorar arrastres mínimos.")]
+    private float deadzonePixels = 8f;
     [SerializeField, Min(1f), Tooltip("DPI usado como referencia cuando la normalización está activa.")]
     private float referenceDpi = 160f;
 
     [Header("Launch Speed Cap")]
     [SerializeField] private bool clampCurveOutput01 = true;
 
+    [Header("Cancel Shot")]
+    [SerializeField, Tooltip("RectTransform opcional para cancelar el tiro al soltar dentro de su área.")]
+    private RectTransform cancelShotRect;
+    [SerializeField, Tooltip("Si está activo, cualquier UI bajo el puntero cancela el tiro al soltar.")]
+    private bool cancelShotOnUI = true;
+
     private Vector2 dragStartWorld;
     private Vector2 dragStartScreen;
     private bool isDragging;
+    private bool isDragBeyondDeadzone;
     private bool hasLoggedMissingCamera;
 
     [Header("Trajectory Preview")]
@@ -125,6 +134,7 @@ public class Launcher : MonoBehaviour
         if (!canAim)
         {
             isDragging = false;
+            isDragBeyondDeadzone = false;
             SetTrajectoryVisible(false);
             ClearTrajectory();
             return;
@@ -156,7 +166,9 @@ public class Launcher : MonoBehaviour
                 dragStartWorld = ScreenToWorld(dragStartScreen);
 
                 isDragging = true;
-                SetTrajectoryVisible(true);
+                isDragBeyondDeadzone = false;
+                SetTrajectoryVisible(false);
+                ClearTrajectory();
             }
 
             if (touch.press.isPressed && isDragging)
@@ -168,6 +180,22 @@ public class Launcher : MonoBehaviour
                 }
 
                 Vector2 currentScreen = touch.position.ReadValue();
+                if (IsWithinDeadzone(currentScreen))
+                {
+                    if (isDragBeyondDeadzone)
+                    {
+                        isDragBeyondDeadzone = false;
+                        SetTrajectoryVisible(false);
+                        ClearTrajectory();
+                    }
+                    return;
+                }
+
+                if (!isDragBeyondDeadzone)
+                {
+                    isDragBeyondDeadzone = true;
+                    SetTrajectoryVisible(true);
+                }
                 Vector2 currentWorld = ScreenToWorld(currentScreen);
                 Vector2 directionWorld = dragStartWorld - currentWorld;
 
@@ -183,6 +211,11 @@ public class Launcher : MonoBehaviour
                 }
 
                 Vector2 releaseScreen = touch.position.ReadValue();
+                if (IsCancelShot(releaseScreen, touchId) || IsWithinDeadzone(releaseScreen))
+                {
+                    CancelDrag();
+                    return;
+                }
                 Vector2 releaseWorld = ScreenToWorld(releaseScreen);
                 Vector2 directionWorld = dragStartWorld - releaseWorld;
 
@@ -219,7 +252,9 @@ public class Launcher : MonoBehaviour
             dragStartWorld = ScreenToWorld(dragStartScreen);
 
             isDragging = true;
-            SetTrajectoryVisible(true);
+            isDragBeyondDeadzone = false;
+            SetTrajectoryVisible(false);
+            ClearTrajectory();
         }
 
         if (isDragging && Mouse.current.leftButton.isPressed)
@@ -231,6 +266,22 @@ public class Launcher : MonoBehaviour
             }
 
             Vector2 currentScreen = Mouse.current.position.ReadValue();
+            if (IsWithinDeadzone(currentScreen))
+            {
+                if (isDragBeyondDeadzone)
+                {
+                    isDragBeyondDeadzone = false;
+                    SetTrajectoryVisible(false);
+                    ClearTrajectory();
+                }
+                return;
+            }
+
+            if (!isDragBeyondDeadzone)
+            {
+                isDragBeyondDeadzone = true;
+                SetTrajectoryVisible(true);
+            }
             Vector2 currentWorld = ScreenToWorld(currentScreen);
             Vector2 directionWorld = dragStartWorld - currentWorld;
 
@@ -246,6 +297,11 @@ public class Launcher : MonoBehaviour
             }
 
             Vector2 releaseScreen = Mouse.current.position.ReadValue();
+            if (IsCancelShot(releaseScreen, null) || IsWithinDeadzone(releaseScreen))
+            {
+                CancelDrag();
+                return;
+            }
             Vector2 releaseWorld = ScreenToWorld(releaseScreen);
             Vector2 directionWorld = dragStartWorld - releaseWorld;
 
@@ -282,6 +338,49 @@ public class Launcher : MonoBehaviour
         }
 
         return false;
+    }
+
+    private bool IsPointerOverAnyUI(Vector2 screenPosition)
+    {
+        if (EventSystem.current == null) return false;
+
+        var eventData = new PointerEventData(EventSystem.current)
+        {
+            position = screenPosition
+        };
+
+        var results = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(eventData, results);
+        return results.Count > 0;
+    }
+
+    private bool IsCancelShot(Vector2 screenPosition, int? pointerId)
+    {
+        if (cancelShotRect != null)
+        {
+            Camera uiCamera = cachedCamera != null ? cachedCamera : null;
+            if (RectTransformUtility.RectangleContainsScreenPoint(cancelShotRect, screenPosition, uiCamera))
+                return true;
+        }
+
+        if (!cancelShotOnUI)
+            return false;
+
+        if (EventSystem.current == null)
+            return false;
+
+        if (pointerId.HasValue)
+        {
+            if (!EventSystem.current.IsPointerOverGameObject(pointerId.Value))
+                return false;
+        }
+        else
+        {
+            if (!EventSystem.current.IsPointerOverGameObject())
+                return false;
+        }
+
+        return IsPointerOverAnyUI(screenPosition);
     }
     private void HandleOrbSelectionLegacy()
     {
@@ -457,8 +556,17 @@ public class Launcher : MonoBehaviour
             return;
 
         isDragging = false;
+        isDragBeyondDeadzone = false;
         SetTrajectoryVisible(false);
         ClearTrajectory();
+    }
+
+    private bool IsWithinDeadzone(Vector2 screenPosition)
+    {
+        if (deadzonePixels <= 0f)
+            return false;
+
+        return Vector2.Distance(dragStartScreen, screenPosition) < deadzonePixels;
     }
     private int GetPreviewBounceBonus()
     {

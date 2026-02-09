@@ -10881,8 +10881,11 @@ MonoBehaviour:
     maxLaunchSpeed: 18
     minLaunchSpeed: 3
   useScreenSpaceDragForPower: 1
+  deadzonePixels: 8
   referenceDpi: 160
   clampCurveOutput01: 1
+  cancelShotRect: {fileID: 1181261667}
+  cancelShotOnUI: 0
   trajectoryLine: {fileID: 914327826}
   collisionMask:
     serializedVersion: 2
