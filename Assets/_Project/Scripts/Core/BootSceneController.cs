@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.SceneManagement;
 
 public class BootSceneController : MonoBehaviour
@@ -7,7 +8,8 @@ public class BootSceneController : MonoBehaviour
     [SerializeField] private GameObject[] persistentPrefabs;
 
     [Header("Flow")]
-    [SerializeField] private bool loadMapOnStart = true;
+    [FormerlySerializedAs("loadMapOnStart")]
+    [SerializeField] private bool loadMainMenuOnStart = true;
 
     private void Awake()
     {
@@ -24,10 +26,10 @@ public class BootSceneController : MonoBehaviour
 
     private void Start()
     {
-        if (!loadMapOnStart) return;
+        if (!loadMainMenuOnStart) return;
 
         SceneCatalog catalog = SceneCatalog.Load();
-        if (!string.IsNullOrWhiteSpace(catalog.MapScene))
-            SceneManager.LoadScene(catalog.MapScene, LoadSceneMode.Single);
+        if (!string.IsNullOrWhiteSpace(catalog.MainMenuScene))
+            SceneManager.LoadScene(catalog.MainMenuScene, LoadSceneMode.Single);
     }
 }

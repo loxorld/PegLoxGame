@@ -148,8 +148,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c75e5590cb1150f4fa8f00cc43e896d8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OrbSwitchUI
-  orbManager: {fileID: 1163881908}
-  gameFlowManager: {fileID: 2062319555}
+  orbManager: {fileID: 0}
+  gameFlowManager: {fileID: 0}
   shotManager: {fileID: 1393068993}
   prevButton: {fileID: 110103909}
   nextButton: {fileID: 318442170}
@@ -374,7 +374,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2ec902be4dd88f646aa345e97a5c7a05, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameOverMenuUI
-  flow: {fileID: 2062319555}
+  flow: {fileID: 0}
   player: {fileID: 1008404223}
   root: {fileID: 1817780567}
   overlayAnim: {fileID: 1817780571}
@@ -880,7 +880,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RewardChoiceUI
   rewards: {fileID: 1394260779}
-  flow: {fileID: 2062319555}
+  flow: {fileID: 0}
   root: {fileID: 863466859}
   overlayAnim: {fileID: 863466864}
   choice1Button: {fileID: 609388072}
@@ -2563,8 +2563,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HUDController
   player: {fileID: 1008404223}
   battle: {fileID: 611753838}
-  orbs: {fileID: 1163881908}
-  flow: {fileID: 2062319555}
+  orbs: {fileID: 0}
+  flow: {fileID: 0}
   orbNameText: {fileID: 1788245675}
   stateText: {fileID: 2130375188}
   encounterText: {fileID: 840076810}
@@ -3244,7 +3244,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ScreenFader
   canvasGroup: {fileID: 555338161}
-  flow: {fileID: 2062319555}
+  flow: {fileID: 0}
   fadeDuration: 0.35
   holdDuration: 0.1
 --- !u!225 &555338161
@@ -6343,52 +6343,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1134801952}
   m_CullTransparentMesh: 1
---- !u!1 &1163881907
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1163881909}
-  - component: {fileID: 1163881908}
-  m_Layer: 0
-  m_Name: OrbManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1163881908
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1163881907}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 63ff5c0cb04e9d2419f6694e7908df3d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbManager
-  currentOrb: {fileID: 11400000, guid: 1828639057c111149941a48959fac33d, type: 2}
-  ownedOrbs: []
---- !u!4 &1163881909
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1163881907}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2.36363, y: 1.42265, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1181261666
 GameObject:
   m_ObjectHideFlags: 0
@@ -7287,7 +7241,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ShotManager
   battle: {fileID: 611753838}
   player: {fileID: 1008404223}
-  relics: {fileID: 1732774981}
+  relics: {fileID: 0}
 --- !u!4 &1393068994
 Transform:
   m_ObjectHideFlags: 0
@@ -7349,8 +7303,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RewardManager
   battle: {fileID: 611753838}
   balanceConfig: {fileID: 0}
-  relics: {fileID: 1732774981}
-  orbs: {fileID: 1163881908}
+  relics: {fileID: 0}
+  orbs: {fileID: 0}
   relicPool:
   - {fileID: 11400000, guid: 0a1647e88b2c61449baaefa2a8cc52c7, type: 2}
   - {fileID: 11400000, guid: 0bb46d0004373e24f85800d2a0fd31f7, type: 2}
@@ -8256,7 +8210,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5ec7b953b9f4ce742b0fda1ca016b2aa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PauseMenuUI
-  flow: {fileID: 2062319555}
+  flow: {fileID: 0}
   root: {fileID: 1558473425}
   overlayAnim: {fileID: 1558473429}
   resumeButton: {fileID: 278538048}
@@ -8826,51 +8780,6 @@ RectTransform:
   m_AnchoredPosition: {x: -5, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!1 &1732774980
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1732774982}
-  - component: {fileID: 1732774981}
-  m_Layer: 0
-  m_Name: RelicManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1732774981
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1732774980}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dcc0d912a334b694fa72da85fa17be3f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RelicManager
-  activeRelics: []
---- !u!4 &1732774982
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1732774980}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2.36363, y: 1.42265, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1732847365
 GameObject:
   m_ObjectHideFlags: 0
@@ -9790,7 +9699,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RewardChoiceUI
   rewards: {fileID: 1394260779}
-  flow: {fileID: 2062319555}
+  flow: {fileID: 0}
   root: {fileID: 863466859}
   overlayAnim: {fileID: 863466864}
   choice1Button: {fileID: 609388072}
@@ -10094,52 +10003,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2007345452}
   m_CullTransparentMesh: 1
---- !u!1 &2062319554
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2062319556}
-  - component: {fileID: 2062319555}
-  m_Layer: 0
-  m_Name: GameFlowManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &2062319555
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2062319554}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5400410d2616e2f4494c10fa39d4c204, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GameFlowManager
-  startingCoins: 0
-  startingPlayerMaxHP: 100
---- !u!4 &2062319556
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2062319554}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2100000001
 GameObject:
   m_ObjectHideFlags: 0
@@ -10862,8 +10725,8 @@ MonoBehaviour:
   cachedCamera: {fileID: 519420031}
   orbs: []
   selectedOrbIndex: 0
-  orbManager: {fileID: 1163881908}
-  relicManager: {fileID: 1732774981}
+  orbManager: {fileID: 0}
+  relicManager: {fileID: 0}
   launchForce: 10
   maxAimMagnitude: 3
   launchSettings:
@@ -11155,11 +11018,8 @@ SceneRoots:
   - {fileID: 1478217009}
   - {fileID: 1008404224}
   - {fileID: 611753839}
-  - {fileID: 1732774982}
   - {fileID: 1394260778}
-  - {fileID: 1163881909}
   - {fileID: 914327825}
-  - {fileID: 2062319556}
   - {fileID: 92071026}
   - {fileID: 374347021}
   - {fileID: 1874492231}
