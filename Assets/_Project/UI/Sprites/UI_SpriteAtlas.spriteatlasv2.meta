@@ -1,32 +1,30 @@
 fileFormatVersion: 2
-guid: d406051dd0fb4ec3865540d4fefda457
+guid: f7fe3e4ba53457542a66f7865748a1b5
 SpriteAtlasImporter:
   externalObjects: {}
-  serializedVersion: 2
-  packables:
-  - {fileID: 2800000, guid: 7999cadd24d34a9b9e1263fc5f6a3e27, type: 3}
-  - {fileID: 2800000, guid: 3afefa11d031462287b221914af25014, type: 3}
-  - {fileID: 2800000, guid: fae3cd5550bd4ca4940dfef1fe2908f4, type: 3}
-  - {fileID: 2800000, guid: 9ca6c99a0fe846699481eb87ddfc39dd, type: 3}
-  - {fileID: 2800000, guid: 18129f7e9cae45348b4f52ff659b2f0f, type: 3}
-  - {fileID: 2800000, guid: a6a47287b30c42c6b89120028ce4d2aa, type: 3}
-  packingSettings:
-    serializedVersion: 2
-    padding: 4
-    blockOffset: 1
-    allowRotation: 0
-    allowTightPacking: 0
-    enableAlphaDilation: 1
-    alphaDilation: 1
   textureSettings:
     serializedVersion: 2
     anisoLevel: 1
     compressionQuality: 50
+    maxTextureSize: 2048
+    textureCompression: 0
     filterMode: 1
     generateMipMaps: 0
     readable: 0
+    crunchedCompression: 0
     sRGB: 1
   platformSettings: []
+  packingSettings:
+    serializedVersion: 2
+    padding: 4
+    blockOffset: 1
+    allowAlphaSplitting: 0
+    enableRotation: 1
+    enableTightPacking: 1
+    enableAlphaDilation: 0
+  secondaryTextureSettings: {}
   variantMultiplier: 1
-  bindAsDefault: 0
-  isVariant: 0
+  bindAsDefault: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
