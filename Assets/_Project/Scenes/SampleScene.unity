@@ -2573,8 +2573,8 @@ MonoBehaviour:
   playerBar: {fileID: 1252656913}
   enemyBar: {fileID: 75196908}
   refreshInterval: 0.15
-  canvasGroup: {fileID: 0}
-  hudTransform: {fileID: 0}
+  canvasGroup: {fileID: 1181261671}
+  hudTransform: {fileID: 1181261667}
 --- !u!4 &447421214
 Transform:
   m_ObjectHideFlags: 0
@@ -3660,6 +3660,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: e6b3b83ecfc0281419e9784a8da37203, type: 2}
   - {fileID: 11400000, guid: 78283807042100c47bc28d1f7cee3aee, type: 2}
   difficulty: {fileID: 11400000, guid: 0ef172d8a713b6440bf6359c1a6f4720, type: 2}
+  balanceConfig: {fileID: 0}
   enemiesToDefeatFallback: 3
   respawnDelay: 0.5
   autoStartOnLoad: 1
@@ -6399,6 +6400,7 @@ GameObject:
   - component: {fileID: 1181261667}
   - component: {fileID: 1181261670}
   - component: {fileID: 1181261669}
+  - component: {fileID: 1181261671}
   m_Layer: 5
   m_Name: HUDPanel
   m_TagString: Untagged
@@ -6418,8 +6420,8 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1087146503}
   - {fileID: 2145000001}
+  - {fileID: 1087146503}
   m_Father: {fileID: 1268507884}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
@@ -6465,6 +6467,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1181261666}
   m_CullTransparentMesh: 1
+--- !u!225 &1181261671
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1181261666}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 0
+  m_BlocksRaycasts: 0
+  m_IgnoreParentGroups: 0
 --- !u!1 &1202729097
 GameObject:
   m_ObjectHideFlags: 0
@@ -7334,6 +7348,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RewardManager
   battle: {fileID: 611753838}
+  balanceConfig: {fileID: 0}
   relics: {fileID: 1732774981}
   orbs: {fileID: 1163881908}
   relicPool:
@@ -10678,8 +10693,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 2911ed2aa7bd4fc4a9c416d5e440e97f, type: 3}
-  m_Type: 1
+  m_Sprite: {fileID: 21300000, guid: 18129f7e9cae45348b4f52ff659b2f0f, type: 3}
+  m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 0
   m_FillMethod: 4
