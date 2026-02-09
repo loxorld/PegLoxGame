@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 using DG.Tweening;
 
 public class HUDController : MonoBehaviour
@@ -93,6 +94,8 @@ public class HUDController : MonoBehaviour
 
     private void Refresh()
     {
+        bool layoutDirty = false;
+
         // Player bar
         if (playerBar != null && player != null)
             playerBar.Set(player.CurrentHP, player.MaxHP);
@@ -113,16 +116,21 @@ public class HUDController : MonoBehaviour
         if (orbNameText != null)
         {
             OrbInstance orb = (orbs != null) ? orbs.CurrentOrb : null;
-            orbNameText.text = orb != null
-                ? $"Orb: {orb.OrbName} Lv {orb.Level} | Daño {orb.DamagePerHit}"
+            string nextText = orb != null
+               ? $"Orb: {orb.OrbName} Lv {orb.Level} | Daño {orb.DamagePerHit}"
                 : "Orb: -";
+            if (orbNameText.text != nextText)
+            {
+                orbNameText.text = nextText;
+                layoutDirty = true;
+            }
         }
 
         // State text
         if (stateText != null)
         {
             GameState s = (flow != null) ? flow.State : GameState.Combat;
-            stateText.text = s switch
+            string nextText = s switch
             {
                 GameState.Combat => "",
                 GameState.RewardChoice => "REWARD",
@@ -130,6 +138,11 @@ public class HUDController : MonoBehaviour
                 GameState.GameOver => "GAME OVER",
                 _ => s.ToString()
             };
+            if (stateText.text != nextText)
+            {
+                stateText.text = nextText;
+                layoutDirty = true;
+            }
 
             if (s != lastState && (s == GameState.Paused || s == GameState.GameOver))
                 stateText.rectTransform.DOShakePosition(0.3f, 6f, 15, 90);
@@ -141,25 +154,48 @@ public class HUDController : MonoBehaviour
         if (coinsText != null)
         {
             int coins = flow != null ? flow.Coins : 0;
-            coinsText.text = $"Monedas: {coins}";
+            string nextText = $"Monedas: {coins}";
+            if (coinsText.text != nextText)
+            {
+                coinsText.text = nextText;
+                layoutDirty = true;
+            }
         }
 
         // Encounter text
         if (encounterText != null)
         {
-            if (battle == null) encounterText.text = "";
-            else encounterText.text = $"ENCOUNTER: {battle.EncounterIndex + 1}";
+            string nextText = battle == null ? "" : $"ENCOUNTER: {battle.EncounterIndex + 1}";
+            if (encounterText.text != nextText)
+            {
+                encounterText.text = nextText;
+                layoutDirty = true;
+            }
         }
 
         // Difficulty text
         if (difficultyText != null)
         {
+            string nextText;
             if (battle == null)
-                difficultyText.text = "";
+                nextText = "";
             else if (battle.HasDifficultyConfig)
-                difficultyText.text = $"STAGE: {battle.DifficultyHudText}";
+                nextText = $"STAGE: {battle.DifficultyHudText}";
             else
-                difficultyText.text = $"STAGE: {battle.StageName}";
+                nextText = $"STAGE: {battle.StageName}";
+
+            if (difficultyText.text != nextText)
+            {
+                difficultyText.text = nextText;
+                layoutDirty = true;
+            }
+        }
+
+        if (layoutDirty)
+        {
+            Canvas.ForceUpdateCanvases();
+            if (hudTransform != null)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(hudTransform);
         }
     }
 }

@@ -148,8 +148,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ce842eb74726fe49a1e7cfdad8d8d1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BootSceneController
-  persistentPrefabs: []
-  loadMapOnStart: 1
+  persistentPrefabs:
+  - {fileID: 3232855538373770073, guid: 071a158c084bd704ea57fec7ce438c27, type: 3}
+  - {fileID: 7020423171214184243, guid: 409385ffa663b6d4590e36fed3b98c7e, type: 3}
+  - {fileID: 6706010847968152458, guid: d4746b23932d2e04887baf66e788df01, type: 3}
+  - {fileID: 2737947127766613451, guid: 2cbbd4ca185e0cb45843f4e5e48b4ad8, type: 3}
+  loadMainMenuOnStart: 1
 --- !u!4 &454743972
 Transform:
   m_ObjectHideFlags: 0
