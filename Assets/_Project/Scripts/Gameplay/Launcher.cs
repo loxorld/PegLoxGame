@@ -358,7 +358,7 @@ public class Launcher : MonoBehaviour
     {
         if (cancelShotRect != null)
         {
-            Camera uiCamera = cachedCamera != null ? cachedCamera : null;
+            Camera uiCamera = ResolveUiCamera(cancelShotRect);
             if (RectTransformUtility.RectangleContainsScreenPoint(cancelShotRect, screenPosition, uiCamera))
                 return true;
         }
@@ -381,6 +381,18 @@ public class Launcher : MonoBehaviour
         }
 
         return IsPointerOverAnyUI(screenPosition);
+    }
+    private static Camera ResolveUiCamera(RectTransform rect)
+    {
+        if (rect == null) return null;
+
+        Canvas canvas = rect.GetComponentInParent<Canvas>();
+        if (canvas == null) return null;
+
+        if (canvas.renderMode == RenderMode.ScreenSpaceOverlay)
+            return null;
+
+        return canvas.worldCamera != null ? canvas.worldCamera : Camera.main;
     }
     private void HandleOrbSelectionLegacy()
     {
