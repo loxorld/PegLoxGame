@@ -44,6 +44,8 @@ public class GameFlowManager : MonoBehaviour
     private bool pendingStateApply;
     private RunSaveData pendingRunData;
     private string pendingMapNodeId;
+    private bool pendingOrbApply;
+    private bool pendingRelicApply;
 
     private void Awake()
     {
@@ -73,6 +75,8 @@ public class GameFlowManager : MonoBehaviour
     {
         if (pendingStateApply)
             StartCoroutine(ApplyLoadedStateNextFrame());
+        else if (hasLoadedRun)
+            ApplyManagersFromRunData();
     }
 
 
@@ -249,6 +253,8 @@ public class GameFlowManager : MonoBehaviour
         pendingLoadedState = (GameState)Mathf.Clamp(data.GameState, 0, (int)GameState.GameOver);
         pendingStateApply = true;
         pendingRunData = data;
+        pendingOrbApply = true;
+        pendingRelicApply = true;
 
         ApplyManagersFromRunData();
     }
@@ -259,23 +265,35 @@ public class GameFlowManager : MonoBehaviour
             return;
 
         OrbManager orbManager = OrbManager.Instance ?? FindObjectOfType<OrbManager>(true);
-        if (orbManager != null)
+        if (pendingOrbApply && orbManager != null)
+        {
             orbManager.DeserializeOrbs(pendingRunData.Orbs, pendingRunData.CurrentOrbId);
+            pendingOrbApply = false;
+        }
 
         RelicManager relicManager = RelicManager.Instance ?? FindObjectOfType<RelicManager>(true);
-        if (relicManager != null)
+        if (pendingRelicApply && relicManager != null)
+        {
             relicManager.DeserializeRelics(pendingRunData.Relics);
+            pendingRelicApply = false;
+        }
+
+        if (!pendingOrbApply && !pendingRelicApply)
+            pendingRunData = null;
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        if (!hasLoadedRun || !pendingStateApply)
+        if (!hasLoadedRun)
             return;
 
         if (SavedMapNode == null && !string.IsNullOrWhiteSpace(pendingMapNodeId))
             SavedMapNode = ResolveMapNodeById(pendingMapNodeId);
 
-        StartCoroutine(ApplyLoadedStateNextFrame());
+        if (pendingStateApply)
+            StartCoroutine(ApplyLoadedStateNextFrame());
+        else
+            ApplyManagersFromRunData();
     }
 
     private System.Collections.IEnumerator ApplyLoadedStateNextFrame()
