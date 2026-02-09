@@ -1,13 +1,10 @@
 fileFormatVersion: 2
-guid: e4301ff79c54c4c4b89a32b5aeed00a6
+guid: 0cfd01f79ed0aeb49b4f309f86c82036
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 5879337737871267178
-    second: Handle_Slide_Image_0
-  - first:
-      213: 1018934502786586738
-    second: Handle_Slide_Image_1
+      213: 357336653956465323
+    second: Restore_Button_Image_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -129,13 +126,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Handle_Slide_Image_0
+      name: Restore_Button_Image_0
       rect:
         serializedVersion: 2
-        x: 11
+        x: 0
         y: 0
-        width: 599
-        height: 374
+        width: 1045
+        height: 308
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -144,30 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: a659d54c58a979150800000000000000
-      internalID: 5879337737871267178
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Handle_Slide_Image_1
-      rect:
-        serializedVersion: 2
-        x: 463
-        y: 373
-        width: 43
-        height: 1
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 278dbff188bf32e00800000000000000
-      internalID: 1018934502786586738
+      spriteID: ba24d442bc385f400800000000000000
+      internalID: 357336653956465323
       vertices: []
       indices: 
       edges: []
@@ -176,7 +151,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: c9b31c2e4c5d74e45bb7678bb0bccaad
+    spriteID: 4c705323155eb434eae1f16adf67837e
     internalID: 0
     vertices: []
     indices: 
@@ -186,8 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Handle_Slide_Image_0: 5879337737871267178
-      Handle_Slide_Image_1: 1018934502786586738
+      Restore_Button_Image_0: 357336653956465323
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
