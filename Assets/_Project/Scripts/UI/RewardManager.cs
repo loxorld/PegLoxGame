@@ -67,6 +67,7 @@ public struct RewardOption
 public class RewardManager : MonoBehaviour
 {
     [SerializeField] private BattleManager battle;
+    [SerializeField] private RunBalanceConfig balanceConfig;
 
     [Header("Reward Targets")]
     [SerializeField] private RelicManager relics;
@@ -248,8 +249,12 @@ public class RewardManager : MonoBehaviour
         if (flow == null)
             return;
 
-        int min = Mathf.Max(0, encounterCoinsMin);
-        int max = Mathf.Max(min, encounterCoinsMax);
+        RunBalanceConfig balance = ResolveBalanceConfig();
+        int stageIndex = GetStageIndexForBalance(flow);
+        int min = balance != null ? balance.GetEncounterCoinsMin(stageIndex, encounterCoinsMin) : encounterCoinsMin;
+        int max = balance != null ? balance.GetEncounterCoinsMax(stageIndex, encounterCoinsMax) : encounterCoinsMax;
+        min = Mathf.Max(0, min);
+        max = Mathf.Max(min, max);
         if (max <= 0)
             return;
 
@@ -267,6 +272,14 @@ public class RewardManager : MonoBehaviour
 
         if (relics == null)
             relics = RelicManager.Instance ?? FindObjectOfType<RelicManager>(true);
+    }
+
+    private RunBalanceConfig ResolveBalanceConfig()
+    {
+        if (balanceConfig == null)
+            balanceConfig = RunBalanceConfig.LoadDefault();
+
+        return balanceConfig;
     }
 
     private void ResolveRewardAndContinue()
@@ -321,6 +334,11 @@ public class RewardManager : MonoBehaviour
         count = Mathf.Clamp(count, 1, 3);
 
         var result = new List<RewardOption>(count);
+        GameFlowManager flow = GameFlowManager.Instance;
+        int stageIndex = GetStageIndexForBalance(flow);
+        RunBalanceConfig balance = ResolveBalanceConfig();
+        float stageChanceOrb = balance != null ? balance.GetChanceOrb(stageIndex, chanceOrb) : chanceOrb;
+        float stageChanceUpgrade = balance != null ? balance.GetChanceOrbUpgrade(stageIndex, chanceOrbUpgrade) : chanceOrbUpgrade;
 
         // Para evitar duplicados dentro del mismo roll
         var usedOrbs = new HashSet<OrbData>();
@@ -334,7 +352,7 @@ public class RewardManager : MonoBehaviour
         {
             guard++;
 
-            bool wantUpgrade = allowOrbUpgrade && hasUpgradeableOrbs && UnityEngine.Random.value < chanceOrbUpgrade;
+            bool wantUpgrade = allowOrbUpgrade && hasUpgradeableOrbs && UnityEngine.Random.value < stageChanceUpgrade;
 
             if (wantUpgrade)
             {
@@ -367,7 +385,8 @@ public class RewardManager : MonoBehaviour
                 wantUpgrade = false;
             }
 
-            bool wantOrb = UnityEngine.Random.value < chanceOrb;
+            bool wantOrb = UnityEngine.Random.value < stageChanceOrb;
+
 
             // Si el pool del tipo elegido está vacío, intentamos el otro
             if (wantOrb && (orbPool == null || orbPool.Length == 0)) wantOrb = false;
@@ -411,5 +430,15 @@ public class RewardManager : MonoBehaviour
         result.RemoveAll(x => !x.IsValid);
 
         return result.ToArray();
+    }
+    private int GetStageIndexForBalance(GameFlowManager flow)
+    {
+        if (flow != null)
+            return Mathf.Max(0, flow.EncounterIndex);
+
+        if (battle != null)
+            return Mathf.Max(0, battle.EncounterIndex);
+
+        return 0;
     }
 }

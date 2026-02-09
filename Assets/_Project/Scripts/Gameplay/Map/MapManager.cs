@@ -5,6 +5,7 @@ public class MapManager : MonoBehaviour
 {
     [SerializeField] private MapStage currentMapStage;
     [SerializeField] private GameFlowManager gameFlowManager;
+    [SerializeField] private RunBalanceConfig balanceConfig;
     [Header("Event Settings")]
     [SerializeField, Min(0)] private int eventCoinsRewardMin = 5;
     [SerializeField, Min(0)] private int eventCoinsRewardMax = 15;
@@ -172,13 +173,14 @@ public class MapManager : MonoBehaviour
         if (flow == null)
             return false;
 
-        if (currentMapStage.bossAfterNodes <= 0)
+        int bossAfterNodes = GetBossAfterNodes();
+        if (bossAfterNodes <= 0)
         {
             bossNode = currentMapStage.bossNode;
             return true;
         }
 
-        if (flow.NodesVisited >= currentMapStage.bossAfterNodes)
+        if (flow.NodesVisited >= bossAfterNodes)
         {
             bossNode = currentMapStage.bossNode;
             return true;
@@ -208,15 +210,29 @@ public class MapManager : MonoBehaviour
             Debug.LogWarning("[MapManager] No se encontr GameFlowManager en la escena.");
             return;
         }
+        RunBalanceConfig balance = ResolveBalanceConfig();
+        int stageIndex = GetStageIndexForBalance(flow);
+        float goodEventChance = balance != null
+            ? balance.GetEventPositiveChance(stageIndex, 0.5f)
+            : 0.5f;
+        bool isGoodEvent = Random.value <= goodEventChance;
 
-        bool isGoodEvent = Random.value >= 0.5f;
+        int rewardMin = balance != null ? balance.GetEventCoinsRewardMin(stageIndex, eventCoinsRewardMin) : eventCoinsRewardMin;
+        int rewardMax = balance != null ? balance.GetEventCoinsRewardMax(stageIndex, eventCoinsRewardMax) : eventCoinsRewardMax;
+        int penaltyMin = balance != null ? balance.GetEventCoinsPenaltyMin(stageIndex, eventCoinsPenaltyMin) : eventCoinsPenaltyMin;
+        int penaltyMax = balance != null ? balance.GetEventCoinsPenaltyMax(stageIndex, eventCoinsPenaltyMax) : eventCoinsPenaltyMax;
+        int healMin = balance != null ? balance.GetEventHealMin(stageIndex, eventHealMin) : eventHealMin;
+        int healMax = balance != null ? balance.GetEventHealMax(stageIndex, eventHealMax) : eventHealMax;
+        int damageMin = balance != null ? balance.GetEventDamageMin(stageIndex, eventDamageMin) : eventDamageMin;
+        int damageMax = balance != null ? balance.GetEventDamageMax(stageIndex, eventDamageMax) : eventDamageMax;
+
         int coinDelta = isGoodEvent
-            ? Random.Range(eventCoinsRewardMin, eventCoinsRewardMax + 1)
-            : -Random.Range(eventCoinsPenaltyMin, eventCoinsPenaltyMax + 1);
+            ? Random.Range(Mathf.Min(rewardMin, rewardMax), Mathf.Max(rewardMin, rewardMax) + 1)
+            : -Random.Range(Mathf.Min(penaltyMin, penaltyMax), Mathf.Max(penaltyMin, penaltyMax) + 1);
 
         int hpDelta = isGoodEvent
-            ? Random.Range(eventHealMin, eventHealMax + 1)
-            : -Random.Range(eventDamageMin, eventDamageMax + 1);
+            ? Random.Range(Mathf.Min(healMin, healMax), Mathf.Max(healMin, healMax) + 1)
+            : -Random.Range(Mathf.Min(damageMin, damageMax), Mathf.Max(damageMin, damageMax) + 1);
 
         string outcome = isGoodEvent
             ? $"Encontraste algo útil. +{coinDelta} monedas, +{hpDelta} HP."
@@ -266,6 +282,11 @@ public class MapManager : MonoBehaviour
             shopService = new ShopService();
 
         OrbManager orbManager = OrbManager.Instance ?? FindObjectOfType<OrbManager>(true);
+        RunBalanceConfig balance = ResolveBalanceConfig();
+        int stageIndex = GetStageIndexForBalance(flow);
+        int healCost = balance != null ? balance.GetShopHealCost(stageIndex, shopHealCost) : shopHealCost;
+        int healAmount = balance != null ? balance.GetShopHealAmount(stageIndex, shopHealAmount) : shopHealAmount;
+        int orbUpgradeCost = balance != null ? balance.GetShopOrbUpgradeCost(stageIndex, shopOrbUpgradeCost) : shopOrbUpgradeCost;
 
         string description = $"{currentNode?.description}\n\nMonedas: {flow.Coins}";
         if (!string.IsNullOrWhiteSpace(extraMessage))
@@ -274,9 +295,9 @@ public class MapManager : MonoBehaviour
         List<ShopService.ShopOptionData> shopOptions = shopService.GetShopOptions(
             flow,
             orbManager,
-            shopHealCost,
-            shopHealAmount,
-            shopOrbUpgradeCost,
+            healCost,
+            healAmount,
+            orbUpgradeCost,
             ShowShopModal,
             () => OpenNode(currentNode));
 
@@ -347,4 +368,28 @@ public class MapManager : MonoBehaviour
         return null;
     }
 
+    private int GetStageIndexForBalance(GameFlowManager flow)
+    {
+        if (flow != null)
+            return Mathf.Max(0, flow.EncounterIndex);
+
+        return 0;
+    }
+
+    private RunBalanceConfig ResolveBalanceConfig()
+    {
+        if (balanceConfig == null)
+            balanceConfig = RunBalanceConfig.LoadDefault();
+
+        return balanceConfig;
+    }
+
+    public int GetBossAfterNodes()
+    {
+        GameFlowManager flow = ResolveGameFlowManager();
+        int defaultValue = currentMapStage != null ? currentMapStage.bossAfterNodes : 0;
+        RunBalanceConfig balance = ResolveBalanceConfig();
+        int stageIndex = flow != null ? Mathf.Max(0, flow.EncounterIndex) : 0;
+        return balance != null ? balance.GetBossAfterNodes(stageIndex, defaultValue) : defaultValue;
+    }
 }

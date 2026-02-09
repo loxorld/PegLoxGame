@@ -10,6 +10,7 @@ public class BattleManager : MonoBehaviour
 
     [Header("Difficulty")]
     [SerializeField] private DifficultyConfig difficulty;
+    [SerializeField] private RunBalanceConfig balanceConfig;
 
     public event Action EncounterStarted;
     public event Action EncounterCompleted;
@@ -76,6 +77,7 @@ public class BattleManager : MonoBehaviour
         waitingForRewards = false;
 
         SyncEncounterIndexFromFlow();
+        ResolveBalanceConfig();
 
         stage = (difficulty != null) ? difficulty.GetStage(encounterIndex) : DifficultyStage.Default;
         enemiesToDefeat = (difficulty != null) ? stage.enemiesToDefeat : enemiesToDefeatFallback;
@@ -145,13 +147,17 @@ public class BattleManager : MonoBehaviour
         enemy.SetDataAndReset(chosen);
 
         // Aplicar dificultad (si hay config)
-        if (difficulty != null)
+        bool hasScaling = difficulty != null || balanceConfig != null;
+        if (hasScaling)
         {
             int baseHp = chosen != null ? chosen.maxHP : 50;
             int baseDmg = chosen != null ? chosen.attackDamage : 5;
 
-            int scaledHp = Mathf.RoundToInt(baseHp * stage.enemyHpMultiplier) + stage.enemyHpBonus;
-            int scaledDmg = Mathf.RoundToInt(baseDmg * stage.enemyDamageMultiplier) + stage.enemyDamageBonus;
+            float balanceHpMultiplier = balanceConfig != null ? balanceConfig.GetEnemyHpMultiplier(encounterIndex, 1f) : 1f;
+            float balanceDmgMultiplier = balanceConfig != null ? balanceConfig.GetEnemyDamageMultiplier(encounterIndex, 1f) : 1f;
+
+            int scaledHp = Mathf.RoundToInt(baseHp * stage.enemyHpMultiplier * balanceHpMultiplier) + stage.enemyHpBonus;
+            int scaledDmg = Mathf.RoundToInt(baseDmg * stage.enemyDamageMultiplier * balanceDmgMultiplier) + stage.enemyDamageBonus;
 
             if (isBossEncounter)
             {
@@ -198,6 +204,12 @@ public class BattleManager : MonoBehaviour
         GameFlowManager flow = GameFlowManager.Instance;
         if (flow != null)
             encounterIndex = flow.EncounterIndex;
+    }
+
+    private void ResolveBalanceConfig()
+    {
+        if (balanceConfig == null)
+            balanceConfig = RunBalanceConfig.LoadDefault();
     }
 
 }
