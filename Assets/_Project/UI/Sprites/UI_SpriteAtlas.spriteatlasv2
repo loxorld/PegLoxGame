@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!687078895 &1
+SpriteAtlas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: UI_SpriteAtlas
+  m_EditorData:
+    serializedVersion: 2
+    textureSettings:
+      serializedVersion: 2
+      anisoLevel: 1
+      compressionQuality: 50
+      filterMode: 1
+      generateMipMaps: 0
+      readable: 0
+      sRGB: 1
+    platformSettings: []
+    packingSettings:
+      serializedVersion: 2
+      padding: 4
+      blockOffset: 1
+      allowRotation: 0
+      allowTightPacking: 0
+      enableAlphaDilation: 1
+      alphaDilation: 1
+    variantMultiplier: 1
+    packables:
+    - {fileID: 2800000, guid: 7999cadd24d34a9b9e1263fc5f6a3e27, type: 3}
+    - {fileID: 2800000, guid: 3afefa11d031462287b221914af25014, type: 3}
+    - {fileID: 2800000, guid: fae3cd5550bd4ca4940dfef1fe2908f4, type: 3}
+    - {fileID: 2800000, guid: 9ca6c99a0fe846699481eb87ddfc39dd, type: 3}
+    - {fileID: 2800000, guid: 18129f7e9cae45348b4f52ff659b2f0f, type: 3}
+    - {fileID: 2800000, guid: a6a47287b30c42c6b89120028ce4d2aa, type: 3}
+  m_MasterAtlas: {fileID: 0}
+  m_PackedSprites: []
+  m_PackedSpriteNamesToIndex: []
+  m_RenderDataMap: {}
+  m_Tag: UI
+  m_IsVariant: 0
+  m_AtlasSettings:
+    serializedVersion: 2
+    m_IncludeInBuild: 1
+    m_EnableRotation: 0
+    m_EnableTightPacking: 0
+    m_EnableAlphaDilation: 1
+    m_AlphaDilation: 1
+    m_Padding: 4
+    m_AssetSettings:
+      serializedVersion: 2
+      m_FilterMode: 1
+      m_AnisoLevel: 1
+      m_MipMapMode: 0
+      m_GenerateMipMaps: 0
+      m_Readable: 0
+      m_StreamingMipMaps: 0
+      m_StreamingMipMapsPriority: 0
+      m_SRGB: 1
+      m_AlphaTextureFormat: 1
+      m_AllowAlphaSplitting: 0
+      m_TextureCompression: 1
+      m_CompressionQuality: 50
+      m_CrunchedCompression: 0
+      m_UseCrunchedCompression: 0
+      m_TextureGroup: 0

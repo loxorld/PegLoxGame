@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 1511201668990226265}
   - component: {fileID: 1179750974541351782}
   - component: {fileID: 1310777307819904284}
+  - component: {fileID: 5808069014304189988}
   m_Layer: 5
   m_Name: Text (TMP)
   m_TagString: Untagged
@@ -205,7 +206,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
+  m_Sprite: {fileID: 616219876522134447, guid: 7999cadd24d34a9b9e1263fc5f6a3e27, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -244,10 +245,10 @@ MonoBehaviour:
     m_ColorMultiplier: 1
     m_FadeDuration: 0.1
   m_SpriteState:
-    m_HighlightedSprite: {fileID: 0}
-    m_PressedSprite: {fileID: 0}
-    m_SelectedSprite: {fileID: 0}
-    m_DisabledSprite: {fileID: 0}
+    m_HighlightedSprite: {fileID: 2505805317089656234, guid: 3afefa11d031462287b221914af25014, type: 3}
+    m_PressedSprite: {fileID: 3778331001915969535, guid: fae3cd5550bd4ca4940dfef1fe2908f4, type: 3}
+    m_SelectedSprite: {fileID: 2505805317089656234, guid: 3afefa11d031462287b221914af25014, type: 3}
+    m_DisabledSprite: {fileID: 3105068396331544928, guid: 9ca6c99a0fe846699481eb87ddfc39dd, type: 3}
   m_AnimationTriggers:
     m_NormalTrigger: Normal
     m_HighlightedTrigger: Highlighted
@@ -273,3 +274,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MapNodeUI
   button: {fileID: 8623802701147540586}
   label: {fileID: 1310777307819904284}
+
+--- !u!114 &5808069014304189988
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2478664092124389430}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 306cc8c2b49d7114eaa3623786fc2126, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.LayoutElement
+  m_IgnoreLayout: 0
+  m_MinWidth: -1
+  m_MinHeight: -1
+  m_PreferredWidth: 600
+  m_PreferredHeight: 120
+  m_FlexibleWidth: -1
+  m_FlexibleHeight: -1
+  m_LayoutPriority: 1
