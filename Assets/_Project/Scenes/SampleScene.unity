@@ -3665,7 +3665,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 4beab10c2fa6dac4a97716ff0d5ef953, type: 2}
   - {fileID: 11400000, guid: e6b3b83ecfc0281419e9784a8da37203, type: 2}
   - {fileID: 11400000, guid: 78283807042100c47bc28d1f7cee3aee, type: 2}
-  difficulty: {fileID: 11400000, guid: 0ef172d8a713b6440bf6359c1a6f4720, type: 2}
   balanceConfig: {fileID: 0}
   enemiesToDefeatFallback: 3
   respawnDelay: 0.5

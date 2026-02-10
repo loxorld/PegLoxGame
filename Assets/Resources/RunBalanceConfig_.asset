@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9a6d0ee2569544d1baf0ebdbb83d0174, type: 3}
   m_Name: RunBalanceConfig_
   m_EditorClassIdentifier: Assembly-CSharp::RunBalanceConfig
-  encounterCoinsMinCurve:
+  stageCoinsMinCurve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
@@ -22,7 +22,7 @@ MonoBehaviour:
       outSlope: 0
       tangentMode: 0
     - serializedVersion: 3
-      time: 5
+      time: 2
       value: 8
       inSlope: 0
       outSlope: 0
@@ -30,7 +30,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  encounterCoinsMaxCurve:
+  stageCoinsMaxCurve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
@@ -40,7 +40,7 @@ MonoBehaviour:
       outSlope: 0
       tangentMode: 0
     - serializedVersion: 3
-      time: 5
+      time: 2
       value: 14
       inSlope: 0
       outSlope: 0
@@ -48,7 +48,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  chanceOrbCurve:
+  stageChanceOrbCurve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
@@ -58,7 +58,7 @@ MonoBehaviour:
       outSlope: 0
       tangentMode: 0
     - serializedVersion: 3
-      time: 5
+      time: 2
       value: 0.45
       inSlope: 0
       outSlope: 0
@@ -66,7 +66,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  chanceOrbUpgradeCurve:
+  stageChanceOrbUpgradeCurve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
@@ -76,7 +76,7 @@ MonoBehaviour:
       outSlope: 0
       tangentMode: 0
     - serializedVersion: 3
-      time: 5
+      time: 2
       value: 0.3
       inSlope: 0
       outSlope: 0
@@ -84,7 +84,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  eventGoodChanceCurve:
+  stageEventGoodChanceCurve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
@@ -94,7 +94,7 @@ MonoBehaviour:
       outSlope: 0
       tangentMode: 0
     - serializedVersion: 3
-      time: 5
+      time: 2
       value: 0.45
       inSlope: 0
       outSlope: 0
@@ -102,7 +102,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  eventCoinsRewardMinCurve:
+  stageEventCoinsRewardMinCurve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
@@ -112,7 +112,7 @@ MonoBehaviour:
       outSlope: 0
       tangentMode: 0
     - serializedVersion: 3
-      time: 5
+      time: 2
       value: 9
       inSlope: 0
       outSlope: 0
@@ -120,7 +120,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  eventCoinsRewardMaxCurve:
+  stageEventCoinsRewardMaxCurve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
@@ -130,7 +130,7 @@ MonoBehaviour:
       outSlope: 0
       tangentMode: 0
     - serializedVersion: 3
-      time: 5
+      time: 2
       value: 18
       inSlope: 0
       outSlope: 0
@@ -138,7 +138,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  eventCoinsPenaltyMinCurve:
+  stageEventCoinsPenaltyMinCurve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
@@ -148,7 +148,7 @@ MonoBehaviour:
       outSlope: 0
       tangentMode: 0
     - serializedVersion: 3
-      time: 5
+      time: 2
       value: 6
       inSlope: 0
       outSlope: 0
@@ -156,7 +156,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  eventCoinsPenaltyMaxCurve:
+  stageEventCoinsPenaltyMaxCurve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
@@ -166,7 +166,7 @@ MonoBehaviour:
       outSlope: 0
       tangentMode: 0
     - serializedVersion: 3
-      time: 5
+      time: 2
       value: 12
       inSlope: 0
       outSlope: 0
@@ -174,7 +174,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  eventHealMinCurve:
+  stageEventHealMinCurve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
@@ -184,7 +184,7 @@ MonoBehaviour:
       outSlope: 0
       tangentMode: 0
     - serializedVersion: 3
-      time: 5
+      time: 2
       value: 6
       inSlope: 0
       outSlope: 0
@@ -192,7 +192,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  eventHealMaxCurve:
+  stageEventHealMaxCurve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
@@ -202,7 +202,7 @@ MonoBehaviour:
       outSlope: 0
       tangentMode: 0
     - serializedVersion: 3
-      time: 5
+      time: 2
       value: 10
       inSlope: 0
       outSlope: 0
@@ -210,7 +210,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  eventDamageMinCurve:
+  stageEventDamageMinCurve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
@@ -220,7 +220,7 @@ MonoBehaviour:
       outSlope: 0
       tangentMode: 0
     - serializedVersion: 3
-      time: 5
+      time: 2
       value: 4
       inSlope: 0
       outSlope: 0
@@ -228,7 +228,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  eventDamageMaxCurve:
+  stageEventDamageMaxCurve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
@@ -238,7 +238,7 @@ MonoBehaviour:
       outSlope: 0
       tangentMode: 0
     - serializedVersion: 3
-      time: 5
+      time: 2
       value: 8
       inSlope: 0
       outSlope: 0
@@ -246,7 +246,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  shopHealCostCurve:
+  stageShopHealCostCurve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
@@ -256,7 +256,7 @@ MonoBehaviour:
       outSlope: 0
       tangentMode: 0
     - serializedVersion: 3
-      time: 5
+      time: 2
       value: 18
       inSlope: 0
       outSlope: 0
@@ -264,7 +264,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  shopHealAmountCurve:
+  stageShopHealAmountCurve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
@@ -274,7 +274,7 @@ MonoBehaviour:
       outSlope: 0
       tangentMode: 0
     - serializedVersion: 3
-      time: 5
+      time: 2
       value: 12
       inSlope: 0
       outSlope: 0
@@ -282,7 +282,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  shopOrbUpgradeCostCurve:
+  stageShopOrbUpgradeCostCurve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
@@ -292,7 +292,7 @@ MonoBehaviour:
       outSlope: 0
       tangentMode: 0
     - serializedVersion: 3
-      time: 5
+      time: 2
       value: 25
       inSlope: 0
       outSlope: 0
@@ -300,43 +300,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  enemyHpMultiplierCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-    - serializedVersion: 3
-      time: 5
-      value: 1.2
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  enemyDamageMultiplierCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-    - serializedVersion: 3
-      time: 5
-      value: 1.1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  bossAfterNodesCurve:
+  stageBossAfterNodesCurve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
@@ -346,7 +310,7 @@ MonoBehaviour:
       outSlope: 0
       tangentMode: 0
     - serializedVersion: 3
-      time: 5
+      time: 2
       value: 8
       inSlope: 0
       outSlope: 0
@@ -354,3 +318,232 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  combatStageBalances:
+  - stageName: Bosque
+    enemyHpScaleByStage: 1
+    enemyDamageScaleByStage: 1
+    enemiesToDefeatByStage: 1
+    enemyHpScaleByEncounterCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+      - serializedVersion: 3
+        time: 1
+        value: 1.35
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+      - serializedVersion: 3
+        time: 2
+        value: 1.6
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    enemyDamageScaleByEncounterCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+      - serializedVersion: 3
+        time: 1
+        value: 1.2
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+      - serializedVersion: 3
+        time: 2
+        value: 1.35
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    enemiesToDefeatByEncounterCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+      - serializedVersion: 3
+        time: 1
+        value: 2
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+      - serializedVersion: 3
+        time: 2
+        value: 2
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+  - stageName: Pantano
+    enemyHpScaleByStage: 1.9
+    enemyDamageScaleByStage: 1.5
+    enemiesToDefeatByStage: 2
+    enemyHpScaleByEncounterCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+      - serializedVersion: 3
+        time: 1
+        value: 1.13158
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+      - serializedVersion: 3
+        time: 2
+        value: 1.26316
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    enemyDamageScaleByEncounterCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+      - serializedVersion: 3
+        time: 1
+        value: 1.1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+      - serializedVersion: 3
+        time: 2
+        value: 1.2
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    enemiesToDefeatByEncounterCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+      - serializedVersion: 3
+        time: 1
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+      - serializedVersion: 3
+        time: 2
+        value: 1.5
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+  - stageName: Castillo
+    enemyHpScaleByStage: 2.7
+    enemyDamageScaleByStage: 1.95
+    enemiesToDefeatByStage: 3
+    enemyHpScaleByEncounterCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+      - serializedVersion: 3
+        time: 1
+        value: 1.11111
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+      - serializedVersion: 3
+        time: 2
+        value: 1.24074
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    enemyDamageScaleByEncounterCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+      - serializedVersion: 3
+        time: 1
+        value: 1.07692
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+      - serializedVersion: 3
+        time: 2
+        value: 1.17949
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    enemiesToDefeatByEncounterCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+      - serializedVersion: 3
+        time: 1
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+      - serializedVersion: 3
+        time: 2
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4

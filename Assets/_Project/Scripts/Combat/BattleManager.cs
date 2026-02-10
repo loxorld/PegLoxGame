@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using System.Collections;
+using System.Globalization;
 
 public class BattleManager : MonoBehaviour
 {
@@ -9,14 +10,13 @@ public class BattleManager : MonoBehaviour
     [SerializeField] private Transform enemySpawnPoint;
     [SerializeField] private EnemyData[] enemiesPool;
 
-    [Header("Difficulty")]
-    [SerializeField] private DifficultyConfig difficulty;
+    [Header("Balance")]
     [SerializeField] private RunBalanceConfig balanceConfig;
 
     public event Action EncounterStarted;
     public event Action EncounterCompleted;
 
-    [Header("Encounter (fallback si no hay DifficultyConfig)")]
+    [Header("Encounter Fallback")]
     [SerializeField, Min(1)] private int enemiesToDefeatFallback = 3;
 
     [Header("Flow")]
@@ -27,10 +27,12 @@ public class BattleManager : MonoBehaviour
     private bool waitingForRewards = false;
     private bool hasStartedEncounter = false;
 
-    private int encounterIndex = 0;         // 0,1,2...
-    private int enemiesToDefeat = 3;        // se setea por stage actual
-    private int stageProgressIndex = 0;     // índice que resuelve el tier en DifficultyConfig
-    private DifficultyStage stage;          // stage actual cacheado
+    private int encounterIndex = 0;
+    private int encounterInStageIndex = 0;
+    private int currentStageIndex = 0;
+    private int enemiesToDefeat = 3;
+    private float currentEnemyHpMultiplier = 1f;
+    private float currentEnemyDamageMultiplier = 1f;
     private bool isBossEncounter;
     private bool lastEncounterWasBoss;
 
@@ -39,21 +41,27 @@ public class BattleManager : MonoBehaviour
     public Enemy CurrentEnemy => currentEnemy;
     public bool WaitingForRewards => waitingForRewards;
     public bool LastEncounterWasBoss => lastEncounterWasBoss;
-
-    /// <summary>0-based (el HUD puede mostrar +1).</summary>
     public int EncounterIndex => encounterIndex;
-
-    // --- Datos stage actual (encapsulados) ---
     public int EnemiesToDefeat => enemiesToDefeat;
-    public float EnemyHpMultiplier => stage.enemyHpMultiplier;
-    public float EnemyDamageMultiplier => stage.enemyDamageMultiplier;
-    public int EnemyHpBonus => stage.enemyHpBonus;
-    public int EnemyDamageBonus => stage.enemyDamageBonus;
-    public bool HasDifficultyConfig => difficulty != null;
+    public float EnemyHpMultiplier => currentEnemyHpMultiplier;
+    public float EnemyDamageMultiplier => currentEnemyDamageMultiplier;
+    public int EnemyHpBonus => 0;
+    public int EnemyDamageBonus => 0;
+    public bool HasDifficultyConfig => balanceConfig != null;
 
-    public string StageName => stage.GetDisplayName(stageProgressIndex);
-    public string DifficultyHudText => stage.GetHudText(stageProgressIndex, enemiesToDefeat);
+    public string StageName => balanceConfig != null
+        ? balanceConfig.GetStageDisplayName(currentStageIndex, $"Stage {currentStageIndex + 1}")
+        : $"Stage {currentStageIndex + 1}";
 
+    public string DifficultyHudText
+    {
+        get
+        {
+            string hpMultiplier = currentEnemyHpMultiplier.ToString("0.##", CultureInfo.InvariantCulture);
+            string dmgMultiplier = currentEnemyDamageMultiplier.ToString("0.##", CultureInfo.InvariantCulture);
+            return $"{StageName} | HP x{hpMultiplier} | DMG x{dmgMultiplier} | N={enemiesToDefeat}";
+        }
+    }
 
     private void Start()
     {
@@ -91,8 +99,15 @@ public class BattleManager : MonoBehaviour
         SyncEncounterIndexFromFlow();
         ResolveBalanceConfig();
 
-        stage = (difficulty != null) ? difficulty.GetStage(stageProgressIndex) : DifficultyStage.Default;
-        enemiesToDefeat = (difficulty != null) ? stage.enemiesToDefeat : enemiesToDefeatFallback;
+        currentEnemyHpMultiplier = balanceConfig != null
+            ? balanceConfig.GetEnemyHpMultiplier(currentStageIndex, encounterInStageIndex, 1f)
+            : 1f;
+        currentEnemyDamageMultiplier = balanceConfig != null
+            ? balanceConfig.GetEnemyDamageMultiplier(currentStageIndex, encounterInStageIndex, 1f)
+            : 1f;
+        enemiesToDefeat = balanceConfig != null
+            ? balanceConfig.GetEnemiesToDefeat(currentStageIndex, encounterInStageIndex, enemiesToDefeatFallback)
+            : enemiesToDefeatFallback;
 
         GameFlowManager flow = GameFlowManager.Instance;
         isBossEncounter = flow != null && flow.HasBossEncounter;
@@ -176,18 +191,14 @@ public class BattleManager : MonoBehaviour
 
         currentEnemy.SetDataAndReset(chosen);
 
-        // Aplicar dificultad (si hay config)
-        bool hasScaling = difficulty != null || balanceConfig != null;
+        bool hasScaling = balanceConfig != null;
         if (hasScaling)
         {
             int baseHp = chosen != null ? chosen.maxHP : 50;
             int baseDmg = chosen != null ? chosen.attackDamage : 5;
 
-            float balanceHpMultiplier = balanceConfig != null ? balanceConfig.GetEnemyHpMultiplier(encounterIndex, 1f) : 1f;
-            float balanceDmgMultiplier = balanceConfig != null ? balanceConfig.GetEnemyDamageMultiplier(encounterIndex, 1f) : 1f;
-
-            int scaledHp = Mathf.RoundToInt(baseHp * stage.enemyHpMultiplier * balanceHpMultiplier) + stage.enemyHpBonus;
-            int scaledDmg = Mathf.RoundToInt(baseDmg * stage.enemyDamageMultiplier * balanceDmgMultiplier) + stage.enemyDamageBonus;
+            int scaledHp = Mathf.RoundToInt(baseHp * currentEnemyHpMultiplier);
+            int scaledDmg = Mathf.RoundToInt(baseDmg * currentEnemyDamageMultiplier);
 
             if (isBossEncounter)
             {
@@ -218,13 +229,12 @@ public class BattleManager : MonoBehaviour
             return;
 
         Debug.Log("[BattleManager] StartEncounterFromMap llamado");
-        // Esperar un frame para asegurar que otros componentes se hayan suscrito a los eventos
         StartCoroutine(DelayedStartEncounter());
     }
 
     private IEnumerator DelayedStartEncounter()
     {
-        yield return null; // Espera un frame
+        yield return null;
         StartNewEncounter();
     }
 
@@ -234,7 +244,8 @@ public class BattleManager : MonoBehaviour
         if (flow != null)
         {
             encounterIndex = flow.EncounterIndex;
-            stageProgressIndex = flow.EncounterInStageIndex;
+            encounterInStageIndex = flow.EncounterInStageIndex;
+            currentStageIndex = flow.CurrentStageIndex;
         }
     }
 
