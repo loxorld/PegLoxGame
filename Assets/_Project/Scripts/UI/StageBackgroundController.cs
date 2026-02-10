@@ -43,7 +43,7 @@ public class StageBackgroundController : MonoBehaviour
 
     private void ApplyForCurrentStage()
     {
-        if (backgroundImage == null)
+        if (!IsValidBackgroundImage(backgroundImage))
             backgroundImage = ResolveBackgroundImage();
         if (backgroundImage == null)
             return;
@@ -52,9 +52,27 @@ public class StageBackgroundController : MonoBehaviour
         int stageIndex = flow != null ? Mathf.Max(0, flow.CurrentStageIndex) : 0;
 
         StageBackgroundStyle style = ResolveStyle(stageIndex);
-        backgroundImage.sprite = style.sprite;
+        if (style.sprite != null)
+            backgroundImage.sprite = style.sprite;
         backgroundImage.color = style.tint;
         lastStageIndex = stageIndex;
+    }
+
+    private bool IsValidBackgroundImage(Image img)
+    {
+        if (img == null)
+            return false;
+
+        bool looksLikeBackground = img.name == "Background" || img.name == "BackgroundImage";
+        if (!looksLikeBackground)
+            return false;
+
+        if (img.GetComponentInParent<HealthBarUI>() != null)
+            return false;
+        if (img.GetComponentInParent<Slider>() != null)
+            return false;
+
+        return true;
     }
 
     private StageBackgroundStyle ResolveStyle(int stageIndex)
@@ -78,14 +96,7 @@ public class StageBackgroundController : MonoBehaviour
             if (img == null)
                 continue;
 
-            bool looksLikeBackground = img.name == "Background" || img.name == "BackgroundImage";
-            if (!looksLikeBackground)
-                continue;
-
-            // Evita agarrar backgrounds internos de barras de vida/UI.
-            if (img.GetComponentInParent<HealthBarUI>() != null)
-                continue;
-            if (img.GetComponentInParent<Slider>() != null)
+            if (!IsValidBackgroundImage(img))
                 continue;
 
             RectTransform rect = img.transform as RectTransform;
