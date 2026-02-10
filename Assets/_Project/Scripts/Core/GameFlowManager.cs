@@ -14,6 +14,7 @@ public class GameFlowManager : MonoBehaviour
     public MapNodeData SavedMapNode { get; private set; }
     public int NodesVisited { get; private set; }
     public int EncounterIndex { get; private set; }
+    public int EncounterInStageIndex { get; private set; }
     public int CurrentStageIndex { get; private set; }
 
     public bool HasSavedPlayerHP { get; private set; }
@@ -125,6 +126,12 @@ public class GameFlowManager : MonoBehaviour
     public void AdvanceEncounter()
     {
         EncounterIndex++;
+        EncounterInStageIndex++;
+    }
+
+    public void ResetEncounterProgressInStage()
+    {
+        EncounterInStageIndex = 0;
     }
 
     public void SavePlayerHP(int currentHP)
@@ -171,6 +178,7 @@ public class GameFlowManager : MonoBehaviour
         SavedMapNode = null;
         NodesVisited = 0;
         EncounterIndex = 0;
+        EncounterInStageIndex = 0;
         CurrentStageIndex = 0;
         Coins = startingCoins;
         PlayerMaxHP = Mathf.Max(1, startingPlayerMaxHP);
@@ -185,6 +193,7 @@ public class GameFlowManager : MonoBehaviour
         {
             SavedMapNodeId = SavedMapNode != null ? SavedMapNode.name : null,
             EncounterIndex = EncounterIndex,
+            EncounterInStageIndex = EncounterInStageIndex,
             CurrentStageIndex = CurrentStageIndex,
             NodesVisited = NodesVisited,
             Coins = Coins,
@@ -246,6 +255,7 @@ public class GameFlowManager : MonoBehaviour
         pendingMapNodeId = data.SavedMapNodeId;
         SavedMapNode = ResolveMapNodeById(pendingMapNodeId);
         EncounterIndex = Mathf.Max(0, data.EncounterIndex);
+        EncounterInStageIndex = Mathf.Max(0, data.EncounterInStageIndex);
         CurrentStageIndex = Mathf.Max(0, data.CurrentStageIndex);
         NodesVisited = Mathf.Max(0, data.NodesVisited);
         Coins = Mathf.Max(0, data.Coins);
@@ -348,12 +358,17 @@ public class GameFlowManager : MonoBehaviour
 
     public void SetCurrentStageIndex(int stageIndex)
     {
-        CurrentStageIndex = Mathf.Max(0, stageIndex);
+        int nextStageIndex = Mathf.Max(0, stageIndex);
+        if (CurrentStageIndex != nextStageIndex)
+            ResetEncounterProgressInStage();
+
+        CurrentStageIndex = nextStageIndex;
     }
 
     public void AdvanceStage()
     {
         CurrentStageIndex = Mathf.Max(0, CurrentStageIndex + 1);
+        ResetEncounterProgressInStage();
     }
 
     public bool ContinueRunFromMenu()

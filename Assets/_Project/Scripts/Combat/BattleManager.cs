@@ -29,6 +29,7 @@ public class BattleManager : MonoBehaviour
 
     private int encounterIndex = 0;         // 0,1,2...
     private int enemiesToDefeat = 3;        // se setea por stage actual
+    private int stageProgressIndex = 0;     // índice que resuelve el tier en DifficultyConfig
     private DifficultyStage stage;          // stage actual cacheado
     private bool isBossEncounter;
 
@@ -48,8 +49,8 @@ public class BattleManager : MonoBehaviour
     public int EnemyDamageBonus => stage.enemyDamageBonus;
     public bool HasDifficultyConfig => difficulty != null;
 
-    public string StageName => stage.GetDisplayName(encounterIndex);
-    public string DifficultyHudText => stage.GetHudText(encounterIndex, enemiesToDefeat);
+    public string StageName => stage.GetDisplayName(stageProgressIndex);
+    public string DifficultyHudText => stage.GetHudText(stageProgressIndex, enemiesToDefeat);
 
 
     private void Start()
@@ -87,7 +88,7 @@ public class BattleManager : MonoBehaviour
         SyncEncounterIndexFromFlow();
         ResolveBalanceConfig();
 
-        stage = (difficulty != null) ? difficulty.GetStage(encounterIndex) : DifficultyStage.Default;
+        stage = (difficulty != null) ? difficulty.GetStage(stageProgressIndex) : DifficultyStage.Default;
         enemiesToDefeat = (difficulty != null) ? stage.enemiesToDefeat : enemiesToDefeatFallback;
 
         GameFlowManager flow = GameFlowManager.Instance;
@@ -117,6 +118,7 @@ public class BattleManager : MonoBehaviour
                 if (flow != null)
                 {
                     flow.AdvanceStage();
+                    flow.ResetEncounterProgressInStage();
                     flow.ResetNodesVisited();
                 }
                 GameFlowManager.Instance?.ClearBossEncounter();
@@ -226,7 +228,10 @@ public class BattleManager : MonoBehaviour
     {
         GameFlowManager flow = GameFlowManager.Instance;
         if (flow != null)
+        {
             encounterIndex = flow.EncounterIndex;
+            stageProgressIndex = flow.CurrentStageIndex;
+        }
     }
 
     private void ResolveBalanceConfig()

@@ -13,6 +13,7 @@ public class RunSaveData
 
     public string SavedMapNodeId;
     public int EncounterIndex;
+    public int EncounterInStageIndex;
     public int CurrentStageIndex;
     public int NodesVisited;
     public int Coins;
