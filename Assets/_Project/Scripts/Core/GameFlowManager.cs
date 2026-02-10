@@ -16,6 +16,7 @@ public class GameFlowManager : MonoBehaviour
     public int EncounterIndex { get; private set; }
     public int EncounterInStageIndex { get; private set; }
     public int CurrentStageIndex { get; private set; }
+    public string CurrentStageName { get; private set; }
 
     public bool HasSavedPlayerHP { get; private set; }
     public int SavedPlayerHP { get; private set; }
@@ -180,6 +181,7 @@ public class GameFlowManager : MonoBehaviour
         EncounterIndex = 0;
         EncounterInStageIndex = 0;
         CurrentStageIndex = 0;
+        CurrentStageName = null;
         Coins = startingCoins;
         PlayerMaxHP = Mathf.Max(1, startingPlayerMaxHP);
         ClearBossEncounter();
@@ -195,6 +197,7 @@ public class GameFlowManager : MonoBehaviour
             EncounterIndex = EncounterIndex,
             EncounterInStageIndex = EncounterInStageIndex,
             CurrentStageIndex = CurrentStageIndex,
+            CurrentStageName = CurrentStageName,
             NodesVisited = NodesVisited,
             Coins = Coins,
             PlayerMaxHP = PlayerMaxHP,
@@ -257,6 +260,7 @@ public class GameFlowManager : MonoBehaviour
         EncounterIndex = Mathf.Max(0, data.EncounterIndex);
         EncounterInStageIndex = Mathf.Max(0, data.EncounterInStageIndex);
         CurrentStageIndex = Mathf.Max(0, data.CurrentStageIndex);
+        CurrentStageName = data.CurrentStageName;
         NodesVisited = Mathf.Max(0, data.NodesVisited);
         Coins = Mathf.Max(0, data.Coins);
         PlayerMaxHP = Mathf.Max(1, data.PlayerMaxHP);
@@ -365,9 +369,15 @@ public class GameFlowManager : MonoBehaviour
         CurrentStageIndex = nextStageIndex;
     }
 
+    public void SetCurrentStageName(string stageName)
+    {
+        CurrentStageName = string.IsNullOrWhiteSpace(stageName) ? null : stageName;
+    }
+
     public void AdvanceStage()
     {
         CurrentStageIndex = Mathf.Max(0, CurrentStageIndex + 1);
+        CurrentStageName = null;
         ResetEncounterProgressInStage();
     }
 

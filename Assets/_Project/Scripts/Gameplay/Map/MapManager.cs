@@ -45,6 +45,7 @@ public class MapManager : MonoBehaviour
             int stageIndex = GetStageIndex(stage);
             if (stageIndex >= 0)
                 flow.SetCurrentStageIndex(stageIndex);
+            flow.SetCurrentStageName(stage.stageName);
         }
 
         if (flow != null && IsSavedNodeValidForStage(flow.SavedMapNode, stage))

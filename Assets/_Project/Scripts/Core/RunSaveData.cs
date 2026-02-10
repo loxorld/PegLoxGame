@@ -15,6 +15,7 @@ public class RunSaveData
     public int EncounterIndex;
     public int EncounterInStageIndex;
     public int CurrentStageIndex;
+    public string CurrentStageName;
     public int NodesVisited;
     public int Coins;
     public int PlayerMaxHP;

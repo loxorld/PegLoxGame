@@ -28,7 +28,7 @@ public class BattleManager : MonoBehaviour
     private bool hasStartedEncounter = false;
 
     private int encounterIndex = 0;
-    private int encounterInStageIndex = 0;
+    private int encounterInStage = 0;
     private int currentStageIndex = 0;
     private int enemiesToDefeat = 3;
     private float currentEnemyHpMultiplier = 1f;
@@ -49,9 +49,17 @@ public class BattleManager : MonoBehaviour
     public int EnemyDamageBonus => 0;
     public bool HasDifficultyConfig => balanceConfig != null;
 
-    public string StageName => balanceConfig != null
-        ? balanceConfig.GetStageDisplayName(currentStageIndex, $"Stage {currentStageIndex + 1}")
-        : $"Stage {currentStageIndex + 1}";
+    public string StageName
+    {
+        get
+        {
+            GameFlowManager flow = GameFlowManager.Instance;
+            if (flow != null && !string.IsNullOrWhiteSpace(flow.CurrentStageName))
+                return flow.CurrentStageName;
+
+            return $"Stage {currentStageIndex + 1}";
+        }
+    }
 
     public string DifficultyHudText
     {
@@ -100,13 +108,13 @@ public class BattleManager : MonoBehaviour
         ResolveBalanceConfig();
 
         currentEnemyHpMultiplier = balanceConfig != null
-            ? balanceConfig.GetEnemyHpMultiplier(currentStageIndex, encounterInStageIndex, 1f)
+           ? balanceConfig.GetEnemyHpMultiplier(currentStageIndex, encounterInStage, 1f)
             : 1f;
         currentEnemyDamageMultiplier = balanceConfig != null
-            ? balanceConfig.GetEnemyDamageMultiplier(currentStageIndex, encounterInStageIndex, 1f)
+            ? balanceConfig.GetEnemyDamageMultiplier(currentStageIndex, encounterInStage, 1f)
             : 1f;
         enemiesToDefeat = balanceConfig != null
-            ? balanceConfig.GetEnemiesToDefeat(currentStageIndex, encounterInStageIndex, enemiesToDefeatFallback)
+            ? balanceConfig.GetEnemiesToDefeat(currentStageIndex, encounterInStage, enemiesToDefeatFallback)
             : enemiesToDefeatFallback;
 
         GameFlowManager flow = GameFlowManager.Instance;
@@ -243,9 +251,12 @@ public class BattleManager : MonoBehaviour
         GameFlowManager flow = GameFlowManager.Instance;
         if (flow != null)
         {
-            encounterIndex = flow.EncounterIndex;
-            encounterInStageIndex = flow.EncounterInStageIndex;
+            // Ejes explcitos de escalado: bioma real + encounter dentro de ese bioma.
             currentStageIndex = flow.CurrentStageIndex;
+            encounterInStage = flow.EncounterInStageIndex;
+
+            // EncounterIndex global slo para telemetra/progreso total de la run.
+            encounterIndex = flow.EncounterIndex;
         }
     }
 
