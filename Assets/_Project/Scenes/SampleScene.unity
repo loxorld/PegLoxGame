@@ -3697,8 +3697,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a526585c74b14428a41fc49d4e46e29e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StageBackgroundController
-  backgroundImage: {fileID: 0}
-  applyOnStart: 0
+  backgroundImage: {fileID: 1918352036}
+  applyOnStart: 1
   stageStyles:
   - sprite: {fileID: 4741783903038332501, guid: afa55779e6f7ba54e957401a57941aae, type: 3}
     tint: {r: 0.2, g: 0.35, b: 0.24, a: 1}

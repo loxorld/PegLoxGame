@@ -69,18 +69,42 @@ public class StageBackgroundController : MonoBehaviour
     private Image ResolveBackgroundImage()
     {
         Image[] images = FindObjectsOfType<Image>(true);
+        Image fallback = null;
+        float bestArea = -1f;
+
         for (int i = 0; i < images.Length; i++)
         {
             Image img = images[i];
-            if (img == null || img.name != "Background")
+            if (img == null)
                 continue;
 
-            if (img.GetComponent<HealthBarUI>() != null)
+            bool looksLikeBackground = img.name == "Background" || img.name == "BackgroundImage";
+            if (!looksLikeBackground)
                 continue;
 
-            return img;
+            // Evita agarrar backgrounds internos de barras de vida/UI.
+            if (img.GetComponentInParent<HealthBarUI>() != null)
+                continue;
+            if (img.GetComponentInParent<Slider>() != null)
+                continue;
+
+            RectTransform rect = img.transform as RectTransform;
+            if (rect == null)
+                continue;
+
+            bool fullStretch = rect.anchorMin.x <= 0.001f && rect.anchorMin.y <= 0.001f
+                && rect.anchorMax.x >= 0.999f && rect.anchorMax.y >= 0.999f;
+            if (fullStretch)
+                return img;
+
+            float area = Mathf.Abs(rect.rect.width * rect.rect.height);
+            if (area > bestArea)
+            {
+                bestArea = area;
+                fallback = img;
+            }
         }
 
-        return null;
+        return fallback;
     }
 }
