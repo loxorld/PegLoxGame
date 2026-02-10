@@ -82,6 +82,7 @@ public class Enemy : MonoBehaviour
 
         // Reproducir el feedback visual si existe
         feedback?.Flash();
+        AudioManager.Instance?.PlaySfx(AudioEventId.EnemyHit);
 
         // Si la vida llegó a cero, ejecutar la muerte
         if (currentHP <= 0)
@@ -100,6 +101,7 @@ public class Enemy : MonoBehaviour
 
     private void Die()
     {
+        AudioManager.Instance?.PlaySfx(AudioEventId.EnemyDefeated);
         gameObject.SetActive(false);
         Defeated?.Invoke();
     }

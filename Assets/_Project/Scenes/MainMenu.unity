@@ -1943,8 +1943,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 00334739f9268a84c865920abd9ff807, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AudioManager
-  musicSource: {fileID: 0}
-  sfxSource: {fileID: 0}
+  musicSource: {fileID: 779782346}
+  sfxSource: {fileID: 779782345}
+  sfxEventEntries:
+  - eventId: 0
+    clip: {fileID: 8300000, guid: f080194d01c758e4ba889c93cb3bbc90, type: 3}
+  - eventId: 4
+    clip: {fileID: 8300000, guid: 90571eebfb63d7b41abefd25c37b7196, type: 3}
+  - eventId: 4
+    clip: {fileID: 8300000, guid: 90571eebfb63d7b41abefd25c37b7196, type: 3}
+  menuMusic: {fileID: 8300000, guid: 613e52f5ce291e043a947d1656d9d872, type: 3}
+  combatMusic: {fileID: 0}
 --- !u!4 &779782348
 Transform:
   m_ObjectHideFlags: 0

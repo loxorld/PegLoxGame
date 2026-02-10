@@ -23,6 +23,8 @@ public class MainMenuController : MonoBehaviour
 
     private void Awake()
     {
+        AudioManager.Instance?.PlayMenuMusic();
+
         // Asegura que los paneles correctos estén activos al iniciar.
         if (menuPanel != null) menuPanel.SetActive(true);
         if (optionsPanel != null) optionsPanel.SetActive(false);
@@ -40,6 +42,8 @@ public class MainMenuController : MonoBehaviour
     /// </summary>
     public void OnPlayButton()
     {
+        AudioManager.Instance?.PlaySfx(AudioEventId.UiClick);
+
         GameFlowManager flow = GameFlowManager.Instance ?? FindObjectOfType<GameFlowManager>(true);
         if (flow != null)
         {
@@ -55,6 +59,8 @@ public class MainMenuController : MonoBehaviour
     /// </summary>
     public void OnContinueButton()
     {
+        AudioManager.Instance?.PlaySfx(AudioEventId.UiClick);
+
         GameFlowManager flow = GameFlowManager.Instance ?? FindObjectOfType<GameFlowManager>(true);
         if (flow != null && flow.ContinueRunFromMenu())
         {
@@ -74,6 +80,8 @@ public class MainMenuController : MonoBehaviour
     /// </summary>
     public void OnOptionsButton()
     {
+        AudioManager.Instance?.PlaySfx(AudioEventId.UiOpenPanel);
+
         if (menuPanel != null) menuPanel.SetActive(false);
         if (optionsPanel != null) optionsPanel.SetActive(true);
     }
@@ -83,6 +91,8 @@ public class MainMenuController : MonoBehaviour
     /// </summary>
     public void OnCloseOptionsButton()
     {
+        AudioManager.Instance?.PlaySfx(AudioEventId.UiClosePanel);
+
         if (optionsPanel != null) optionsPanel.SetActive(false);
         if (menuPanel != null) menuPanel.SetActive(true);
     }
@@ -92,6 +102,7 @@ public class MainMenuController : MonoBehaviour
     /// </summary>
     public void OnQuitButton()
     {
+        AudioManager.Instance?.PlaySfx(AudioEventId.UiClick);
         Application.Quit();
     }
 }

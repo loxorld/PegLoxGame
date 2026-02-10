@@ -101,12 +101,14 @@ public class PauseMenuUI : MonoBehaviour
 
     private void OnResume()
     {
+        AudioManager.Instance?.PlaySfx(AudioEventId.UiClick);
         RefreshFlowSubscription();
         flow?.Resume();
     }
 
     private void OnRestart()
     {
+        AudioManager.Instance?.PlaySfx(AudioEventId.UiClick);
         RefreshFlowSubscription();
         flow?.RestartCombatScene();
     }
@@ -114,7 +116,7 @@ public class PauseMenuUI : MonoBehaviour
     // NUEVO: volver al menu principal
     private void OnMenu()
     {
-
+        AudioManager.Instance?.PlaySfx(AudioEventId.UiClick);
 
         // Reanudar por si estaba en estado Paused
         RefreshFlowSubscription();

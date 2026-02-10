@@ -33,7 +33,7 @@ public class Launcher : MonoBehaviour
     [SerializeField] private RelicManager relicManager;
 
     [Header("Launch Settings")]
-    [SerializeField] private float launchForce = 10f; // legacy (no se usa para velocidad, lo dejamos por compat)
+    [SerializeField] private float launchForce = 10f; // legacy 
     [SerializeField] private float maxAimMagnitude = 3.0f;
     [SerializeField] private LaunchSettings launchSettings = new LaunchSettings();
 
@@ -507,6 +507,8 @@ public class Launcher : MonoBehaviour
 
         Vector2 vel = ComputeLaunchVelocity(directionWorld, releaseScreenPos);
         ballInstance.linearVelocity = vel;
+
+        AudioManager.Instance?.PlaySfx(AudioEventId.LaunchBall);
     }
 
 

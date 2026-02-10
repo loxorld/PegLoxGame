@@ -99,6 +99,7 @@ public class BattleManager : MonoBehaviour
 
     private void StartNewEncounter()
     {
+        AudioManager.Instance?.PlayCombatMusic();
         hasStartedEncounter = true;
         defeatedCount = 0;
         waitingForRewards = false;

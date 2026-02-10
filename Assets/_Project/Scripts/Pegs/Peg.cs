@@ -134,6 +134,7 @@ public class Peg : MonoBehaviour
         }
 
         ShotManager.Instance?.RegisterPegHit(Type);
+        AudioManager.Instance?.PlaySfx(AudioEventId.PegHit);
 
         if (consumeNow)
         {

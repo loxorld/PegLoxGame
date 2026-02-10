@@ -1,8 +1,28 @@
-﻿using UnityEngine;
+﻿using System;
+using System.Collections.Generic;
+using UnityEngine;
+
+public enum AudioEventId
+{
+    UiClick,
+    UiOpenPanel,
+    UiClosePanel,
+    LaunchBall,
+    PegHit,
+    EnemyHit,
+    EnemyDefeated,
+}
 
 
 public class AudioManager : MonoBehaviour
 {
+    [Serializable]
+    private class AudioEventEntry
+    {
+        public AudioEventId eventId;
+        public AudioClip clip;
+    }
+
     public static AudioManager Instance { get; private set; }
 
     [Header("Audio Sources")]
@@ -12,8 +32,17 @@ public class AudioManager : MonoBehaviour
     [Tooltip("AudioSource for sound effects.")]
     [SerializeField] private AudioSource sfxSource;
 
+    [Header("SFX Event Library")]
+    [Tooltip("Mapea cada evento de audio a un AudioClip.")]
+    [SerializeField] private AudioEventEntry[] sfxEventEntries;
+
+    [Header("Music Clips")]
+    [SerializeField] private AudioClip menuMusic;
+    [SerializeField] private AudioClip combatMusic;
+
     private const string MusicVolumeKey = "MusicVolume";
     private const string SfxVolumeKey = "SfxVolume";
+    private readonly Dictionary<AudioEventId, AudioClip> sfxByEvent = new Dictionary<AudioEventId, AudioClip>();
 
     private void Awake()
     {
@@ -31,6 +60,12 @@ public class AudioManager : MonoBehaviour
         float savedSfx = PlayerPrefs.GetFloat(SfxVolumeKey, 0.8f);
         SetMusicVolume(savedMusic);
         SetSfxVolume(savedSfx);
+        RebuildSfxMap();
+    }
+
+    private void OnValidate()
+    {
+        RebuildSfxMap();
     }
 
     public void SetMusicVolume(float value)
@@ -53,5 +88,52 @@ public class AudioManager : MonoBehaviour
     {
         if (sfxSource != null && clip != null)
             sfxSource.PlayOneShot(clip);
+    }
+
+    public void PlaySfx(AudioEventId eventId)
+    {
+        if (!sfxByEvent.TryGetValue(eventId, out AudioClip clip) || clip == null)
+            return;
+
+        PlaySfx(clip);
+    }
+
+    public void PlayMusic(AudioClip clip, bool loop = true)
+    {
+        if (musicSource == null || clip == null)
+            return;
+
+        if (musicSource.clip == clip && musicSource.isPlaying)
+            return;
+
+        musicSource.loop = loop;
+        musicSource.clip = clip;
+        musicSource.Play();
+    }
+
+    public void PlayMenuMusic()
+    {
+        PlayMusic(menuMusic, true);
+    }
+
+    public void PlayCombatMusic()
+    {
+        PlayMusic(combatMusic, true);
+    }
+
+    private void RebuildSfxMap()
+    {
+        sfxByEvent.Clear();
+        if (sfxEventEntries == null)
+            return;
+
+        for (int i = 0; i < sfxEventEntries.Length; i++)
+        {
+            AudioEventEntry entry = sfxEventEntries[i];
+            if (entry == null)
+                continue;
+
+            sfxByEvent[entry.eventId] = entry.clip;
+        }
     }
 }
