@@ -25,6 +25,7 @@ public class HUDController : MonoBehaviour
     [SerializeField] private HealthBarUI enemyBar;
 
     [Header("Enemy bar follow")]
+    [SerializeField] private bool followEnemyInWorldSpace = false;
     [SerializeField] private Vector3 enemyHeadOffset = new Vector3(0f, 1.35f, 0f);
     [SerializeField] private Vector2 enemyBarScreenOffset = new Vector2(0f, 28f);
     [SerializeField] private Vector2 enemyBarMinimumSize = new Vector2(280f, 32f);
@@ -69,11 +70,14 @@ public class HUDController : MonoBehaviour
         if (enemyBarRect != null)
         {
             rootCanvas = enemyBarRect.GetComponentInParent<Canvas>();
-            if (rootCanvas != null)
+            if (followEnemyInWorldSpace && rootCanvas != null)
             {
                 originalEnemyBarParent = enemyBarRect.parent;
                 originalEnemyBarSiblingIndex = enemyBarRect.GetSiblingIndex();
                 enemyBarRect.SetParent(rootCanvas.transform, true);
+                enemyBarRect.localScale = Vector3.one;
+                enemyBarRect.anchorMin = enemyBarRect.anchorMax = new Vector2(0.5f, 0.5f);
+                enemyBarRect.pivot = new Vector2(0.5f, 0.5f);
 
                 Vector2 size = enemyBarRect.sizeDelta;
                 enemyBarRect.sizeDelta = new Vector2(
@@ -133,6 +137,9 @@ public class HUDController : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (!followEnemyInWorldSpace)
+            return;
+
         Enemy e = (battle != null) ? battle.CurrentEnemy : null;
         UpdateEnemyBarPosition(e);
     }
@@ -155,7 +162,8 @@ public class HUDController : MonoBehaviour
                 enemyBar.Set(e.CurrentHP, e.MaxHP);
         }
 
-        UpdateEnemyBarPosition(e);
+        if (followEnemyInWorldSpace)
+            UpdateEnemyBarPosition(e);
 
         if (orbNameText != null)
         {
@@ -241,7 +249,7 @@ public class HUDController : MonoBehaviour
 
     private void UpdateEnemyBarPosition(Enemy enemy)
     {
-        if (enemyBarRect == null)
+        if (enemyBarRect == null || !followEnemyInWorldSpace)
             return;
 
         bool enemyVisible = enemy != null && enemy.gameObject.activeInHierarchy;
