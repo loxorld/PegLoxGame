@@ -18,9 +18,9 @@ public class StageBackgroundController : MonoBehaviour
     [SerializeField]
     private StageBackgroundStyle[] stageStyles = new StageBackgroundStyle[]
     {
-        new StageBackgroundStyle { sprite = null, tint = new Color(0.20f, 0.35f, 0.24f, 1f) }, // Bosque
-        new StageBackgroundStyle { sprite = null, tint = new Color(0.23f, 0.33f, 0.26f, 1f) }, // Pantano
-        new StageBackgroundStyle { sprite = null, tint = new Color(0.28f, 0.28f, 0.36f, 1f) }  // Castillo
+        new StageBackgroundStyle { sprite = null, tint = Color.white }, // Bosque
+        new StageBackgroundStyle { sprite = null, tint = Color.white }, // Pantano
+        new StageBackgroundStyle { sprite = null, tint = Color.white }  // Castillo
     };
 
     private int lastStageIndex = -1;
