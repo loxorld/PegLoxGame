@@ -15,3 +15,4 @@ MonoBehaviour:
   enemyName: Glass Cannon
   maxHP: 10
   attackDamage: 10
+  enemyPrefab: {fileID: 7738368802206118143, guid: 13cf66407a909444d9d2e9cb3ab710d4, type: 3}

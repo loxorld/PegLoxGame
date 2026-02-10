@@ -5,7 +5,8 @@ using System.Collections;
 public class BattleManager : MonoBehaviour
 {
     [Header("References")]
-    [SerializeField] private Enemy enemy;
+    [SerializeField] private Enemy fallbackEnemy;
+    [SerializeField] private Transform enemySpawnPoint;
     [SerializeField] private EnemyData[] enemiesPool;
 
     [Header("Difficulty")]
@@ -31,13 +32,15 @@ public class BattleManager : MonoBehaviour
     private DifficultyStage stage;          // stage actual cacheado
     private bool isBossEncounter;
 
-    public Enemy CurrentEnemy => enemy;
+    private Enemy currentEnemy;
+
+    public Enemy CurrentEnemy => currentEnemy;
     public bool WaitingForRewards => waitingForRewards;
 
     /// <summary>0-based (el HUD puede mostrar +1).</summary>
     public int EncounterIndex => encounterIndex;
 
-    // --- Datos “stage actual” (encapsulados) ---
+    // --- Datos stage actual (encapsulados) ---
     public int EnemiesToDefeat => enemiesToDefeat;
     public float EnemyHpMultiplier => stage.enemyHpMultiplier;
     public float EnemyDamageMultiplier => stage.enemyDamageMultiplier;
@@ -51,13 +54,18 @@ public class BattleManager : MonoBehaviour
 
     private void Start()
     {
-        if (enemy == null)
+        if (enemySpawnPoint == null && fallbackEnemy != null)
+            enemySpawnPoint = fallbackEnemy.transform;
+
+        if (fallbackEnemy == null && enemySpawnPoint == null)
         {
-            Debug.LogError("[Battle] Enemy reference missing.");
+            Debug.LogError("[Battle] Enemy spawn point missing.");
             return;
         }
 
-        enemy.Defeated += OnEnemyDefeated;
+        currentEnemy = fallbackEnemy;
+        if (currentEnemy != null)
+            currentEnemy.Defeated += OnEnemyDefeated;
 
         if (autoStartOnLoad && !hasStartedEncounter)
             StartEncounterFromMap();
@@ -66,8 +74,8 @@ public class BattleManager : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (enemy != null)
-            enemy.Defeated -= OnEnemyDefeated;
+        if (currentEnemy != null)
+            currentEnemy.Defeated -= OnEnemyDefeated;
     }
 
     private void StartNewEncounter()
@@ -144,7 +152,15 @@ public class BattleManager : MonoBehaviour
                 chosen = bossEnemy;
         }
 
-        enemy.SetDataAndReset(chosen);
+        Enemy prefab = chosen != null ? chosen.enemyPrefab : null;
+        if (prefab == null)
+            prefab = fallbackEnemy;
+
+        ReplaceEnemy(prefab);
+        if (currentEnemy == null)
+            return;
+
+        currentEnemy.SetDataAndReset(chosen);
 
         // Aplicar dificultad (si hay config)
         bool hasScaling = difficulty != null || balanceConfig != null;
@@ -168,8 +184,7 @@ public class BattleManager : MonoBehaviour
                     scaledDmg = Mathf.RoundToInt(scaledDmg * flow.BossDamageMultiplier) + flow.BossDamageBonus;
                 }
             }
-
-            enemy.ApplyDifficulty(scaledHp, scaledDmg);
+            currentEnemy.ApplyDifficulty(scaledHp, scaledDmg);
         }
         else if (isBossEncounter)
         {
@@ -178,7 +193,7 @@ public class BattleManager : MonoBehaviour
             {
                 int scaledHp = Mathf.RoundToInt(chosen.maxHP * flow.BossHpMultiplier) + flow.BossHpBonus;
                 int scaledDmg = Mathf.RoundToInt(chosen.attackDamage * flow.BossDamageMultiplier) + flow.BossDamageBonus;
-                enemy.ApplyDifficulty(scaledHp, scaledDmg);
+                currentEnemy.ApplyDifficulty(scaledHp, scaledDmg);
             }
         }
     }
@@ -210,6 +225,41 @@ public class BattleManager : MonoBehaviour
     {
         if (balanceConfig == null)
             balanceConfig = RunBalanceConfig.LoadDefault();
+    }
+
+    private void ReplaceEnemy(Enemy prefab)
+    {
+        if (prefab == null)
+        {
+            Debug.LogError("[Battle] Enemy prefab missing.");
+            return;
+        }
+
+        bool prefabIsSceneObject = prefab.gameObject.scene.IsValid();
+        Enemy newEnemy;
+        if (prefabIsSceneObject)
+        {
+            newEnemy = prefab;
+        }
+        else
+        {
+            Vector3 position = enemySpawnPoint != null ? enemySpawnPoint.position : Vector3.zero;
+            Quaternion rotation = enemySpawnPoint != null ? enemySpawnPoint.rotation : Quaternion.identity;
+            newEnemy = Instantiate(prefab, position, rotation);
+        }
+
+        if (currentEnemy != null && currentEnemy != newEnemy)
+        {
+            currentEnemy.Defeated -= OnEnemyDefeated;
+            Destroy(currentEnemy.gameObject);
+        }
+
+        currentEnemy = newEnemy;
+        if (enemySpawnPoint != null)
+            currentEnemy.transform.SetPositionAndRotation(enemySpawnPoint.position, enemySpawnPoint.rotation);
+
+        currentEnemy.gameObject.SetActive(true);
+        currentEnemy.Defeated += OnEnemyDefeated;
     }
 
 }

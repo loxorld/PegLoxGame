@@ -15,3 +15,4 @@ MonoBehaviour:
   enemyName: Brute
   maxHP: 10
   attackDamage: 8
+  enemyPrefab: {fileID: 689132391747191276, guid: d63cabf70a6924e4b8553dcbbc94cc67, type: 3}

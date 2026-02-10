@@ -6,4 +6,5 @@ public class EnemyData : ScriptableObject
     public string enemyName = "Goblin";
     public int maxHP = 50;
     public int attackDamage = 5;
+    public Enemy enemyPrefab;
 }

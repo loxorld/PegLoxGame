@@ -138,13 +138,13 @@ TextureImporter:
       name: Canon_0
       rect:
         serializedVersion: 2
-        x: 111
-        y: 496
-        width: 391
-        height: 523
+        x: 116
+        y: 588
+        width: 343
+        height: 332
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 71, z: 0, w: 94}
+      border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
@@ -160,10 +160,10 @@ TextureImporter:
       name: Canon_1
       rect:
         serializedVersion: 2
-        x: 559
-        y: 552
-        width: 407
-        height: 371
+        x: 562
+        y: 588
+        width: 350
+        height: 332
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -182,13 +182,13 @@ TextureImporter:
       name: Canon_2
       rect:
         serializedVersion: 2
-        x: 111
-        y: 88
-        width: 354
-        height: 367
+        x: 112
+        y: 141
+        width: 352
+        height: 313
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 15, z: 0, w: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
@@ -204,10 +204,10 @@ TextureImporter:
       name: Canon_3
       rect:
         serializedVersion: 2
-        x: 559
-        y: 113
-        width: 463
-        height: 344
+        x: 563
+        y: 140
+        width: 348
+        height: 316
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -234,7 +234,9 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     spriteCustomMetadata:
-      entries: []
+      entries:
+      - key: SpriteEditor.SliceSettings
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":64.0,"y":64.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":0,"keepEmptyRects":false,"isAlternate":false}'
     nameFileIdTable:
       Canon_0: 3265060137090216594
       Canon_1: -5274995987570668974

@@ -15,3 +15,4 @@ MonoBehaviour:
   enemyName: Goblin
   maxHP: 10
   attackDamage: 5
+  enemyPrefab: {fileID: 191534006137774108, guid: dcbb4725543951045a8ed59daab895a1, type: 3}
