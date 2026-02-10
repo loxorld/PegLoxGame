@@ -11,14 +11,13 @@ GameObject:
   - component: {fileID: 1511201668990226265}
   - component: {fileID: 1179750974541351782}
   - component: {fileID: 1310777307819904284}
-  - component: {fileID: 5808069014304189988}
   m_Layer: 5
   m_Name: Text (TMP)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1511201668990226265
 RectTransform:
   m_ObjectHideFlags: 0
@@ -151,6 +150,7 @@ GameObject:
   - component: {fileID: 5634172932675053149}
   - component: {fileID: 8623802701147540586}
   - component: {fileID: 7844445026191562680}
+  - component: {fileID: 5808069014304189988}
   m_Layer: 5
   m_Name: MapNodeUIButton
   m_TagString: Untagged
@@ -274,7 +274,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MapNodeUI
   button: {fileID: 8623802701147540586}
   label: {fileID: 1310777307819904284}
-
+  nodeIconImage: {fileID: 5634172932675053149}
+  combatSprite: {fileID: -9055695819608123292, guid: 2b122946f68511a428b548a3b671d389, type: 3}
+  eventSprite: {fileID: -693908007, guid: 2b122946f68511a428b548a3b671d389, type: 3}
+  shopSprite: {fileID: -1580017249, guid: 2b122946f68511a428b548a3b671d389, type: 3}
+  bossSprite: {fileID: -2076347872577234529, guid: 64988b29d1ee38a4e8dbb3a6101a8b24, type: 3}
 --- !u!114 &5808069014304189988
 MonoBehaviour:
   m_ObjectHideFlags: 0
