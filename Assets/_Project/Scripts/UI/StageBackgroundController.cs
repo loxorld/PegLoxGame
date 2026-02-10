@@ -3,6 +3,9 @@ using UnityEngine.UI;
 
 public class StageBackgroundController : MonoBehaviour
 {
+    private const int WorldBackgroundSortingOrder = -1000;
+    private const float WorldBackgroundZ = 15f;
+
     [System.Serializable]
     private struct StageBackgroundStyle
     {
@@ -21,6 +24,7 @@ public class StageBackgroundController : MonoBehaviour
     };
 
     private int lastStageIndex = -1;
+    private SpriteRenderer worldBackgroundRenderer;
 
     private void Start()
     {
@@ -45,18 +49,95 @@ public class StageBackgroundController : MonoBehaviour
     {
         if (!IsValidBackgroundImage(backgroundImage))
             backgroundImage = ResolveBackgroundImage();
-        if (backgroundImage == null)
-            return;
 
         GameFlowManager flow = GameFlowManager.Instance;
         int stageIndex = flow != null ? Mathf.Max(0, flow.CurrentStageIndex) : 0;
-
         StageBackgroundStyle style = ResolveStyle(stageIndex);
-        if (style.sprite != null)
-            backgroundImage.sprite = style.sprite;
-        backgroundImage.color = style.tint;
+
+        Canvas parentCanvas = backgroundImage != null ? backgroundImage.canvas : null;
+        bool isOverlayCanvas = parentCanvas != null
+            && parentCanvas.renderMode == RenderMode.ScreenSpaceOverlay;
+
+        if (isOverlayCanvas)
+        {
+            ApplyToWorldBackground(style);
+            if (backgroundImage != null)
+                backgroundImage.enabled = false;
+        }
+        else
+        {
+            DisableWorldBackground();
+            if (backgroundImage != null)
+            {
+                if (style.sprite != null)
+                    backgroundImage.sprite = style.sprite;
+                backgroundImage.color = style.tint;
+                backgroundImage.enabled = true;
+            }
+        }
+
         lastStageIndex = stageIndex;
     }
+
+    private void ApplyToWorldBackground(StageBackgroundStyle style)
+    {
+        if (style.sprite == null)
+        {
+            DisableWorldBackground();
+            return;
+        }
+
+        SpriteRenderer sr = EnsureWorldBackgroundRenderer();
+        if (sr == null)
+            return;
+
+        sr.enabled = true;
+        sr.sprite = style.sprite;
+        sr.color = style.tint;
+
+        Camera targetCam = Camera.main;
+        if (targetCam == null)
+            return;
+
+        Vector3 camPos = targetCam.transform.position;
+        sr.transform.position = new Vector3(camPos.x, camPos.y, WorldBackgroundZ);
+
+        Vector2 spriteSize = sr.sprite.bounds.size;
+        if (spriteSize.x <= 0.0001f || spriteSize.y <= 0.0001f)
+            return;
+
+        float viewHeight = targetCam.orthographicSize * 2f;
+        float viewWidth = viewHeight * targetCam.aspect;
+        float scale = Mathf.Max(viewWidth / spriteSize.x, viewHeight / spriteSize.y);
+        sr.transform.localScale = new Vector3(scale, scale, 1f);
+    }
+
+    private SpriteRenderer EnsureWorldBackgroundRenderer()
+    {
+        if (worldBackgroundRenderer != null)
+            return worldBackgroundRenderer;
+
+        Transform existing = transform.Find("StageBackground_World");
+        if (existing != null)
+            worldBackgroundRenderer = existing.GetComponent<SpriteRenderer>();
+
+        if (worldBackgroundRenderer == null)
+        {
+            GameObject go = new GameObject("StageBackground_World");
+            go.transform.SetParent(transform, false);
+            worldBackgroundRenderer = go.AddComponent<SpriteRenderer>();
+            worldBackgroundRenderer.sortingOrder = WorldBackgroundSortingOrder;
+        }
+
+        return worldBackgroundRenderer;
+    }
+
+    private void DisableWorldBackground()
+    {
+        if (worldBackgroundRenderer != null)
+            worldBackgroundRenderer.enabled = false;
+    }
+
 
     private bool IsValidBackgroundImage(Image img)
     {
