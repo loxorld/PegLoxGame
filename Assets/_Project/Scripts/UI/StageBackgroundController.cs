@@ -52,6 +52,7 @@ public class StageBackgroundController : MonoBehaviour
 
         GameFlowManager flow = GameFlowManager.Instance;
         int stageIndex = flow != null ? Mathf.Max(0, flow.CurrentStageIndex) : 0;
+        ValidateStageConsistency(stageIndex);
         StageBackgroundStyle style = ResolveStyle(stageIndex);
 
         Canvas parentCanvas = backgroundImage != null ? backgroundImage.canvas : null;
@@ -77,6 +78,15 @@ public class StageBackgroundController : MonoBehaviour
         }
 
         lastStageIndex = stageIndex;
+    }
+
+    private void ValidateStageConsistency(int flowStageIndex)
+    {
+        BattleManager battle = FindObjectOfType<BattleManager>();
+        if (battle != null && battle.CurrentStageIndex != flowStageIndex)
+        {
+            Debug.LogWarning($"[StageBackground] Visual stage mismatch with battle scaling. FlowStage={flowStageIndex}, BattleStage={battle.CurrentStageIndex}.");
+        }
     }
 
     private void ApplyToWorldBackground(StageBackgroundStyle style)
@@ -162,6 +172,8 @@ public class StageBackgroundController : MonoBehaviour
             return new StageBackgroundStyle { sprite = null, tint = Color.white };
 
         int clamped = Mathf.Clamp(stageIndex, 0, stageStyles.Length - 1);
+        if (clamped != stageIndex)
+            Debug.LogWarning($"[StageBackground] Stage style fallback. FlowStage={stageIndex}, AppliedStyleIndex={clamped}.");
         return stageStyles[clamped];
     }
 

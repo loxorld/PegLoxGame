@@ -43,23 +43,14 @@ public class BattleManager : MonoBehaviour
     public bool LastEncounterWasBoss => lastEncounterWasBoss;
     public int EncounterIndex => encounterIndex;
     public int EnemiesToDefeat => enemiesToDefeat;
+    public int CurrentStageIndex => currentStageIndex;
     public float EnemyHpMultiplier => currentEnemyHpMultiplier;
     public float EnemyDamageMultiplier => currentEnemyDamageMultiplier;
     public int EnemyHpBonus => 0;
     public int EnemyDamageBonus => 0;
     public bool HasDifficultyConfig => balanceConfig != null;
 
-    public string StageName
-    {
-        get
-        {
-            GameFlowManager flow = GameFlowManager.Instance;
-            if (flow != null && !string.IsNullOrWhiteSpace(flow.CurrentStageName))
-                return flow.CurrentStageName;
-
-            return $"Stage {currentStageIndex + 1}";
-        }
-    }
+    public string StageName => $"Stage {currentStageIndex + 1}";
 
     public string DifficultyHudText
     {
@@ -145,7 +136,6 @@ public class BattleManager : MonoBehaviour
                 if (flow != null)
                 {
                     flow.AdvanceStage();
-                    flow.ResetEncounterProgressInStage();
                     flow.ResetNodesVisited();
                 }
                 GameFlowManager.Instance?.ClearBossEncounter();
@@ -252,11 +242,21 @@ public class BattleManager : MonoBehaviour
         if (flow != null)
         {
             // Ejes explcitos de escalado: bioma real + encounter dentro de ese bioma.
-            currentStageIndex = flow.CurrentStageIndex;
-            encounterInStage = flow.EncounterInStageIndex;
+            int flowStageIndex = Mathf.Max(0, flow.CurrentStageIndex);
+            int flowEncounterInStage = Mathf.Max(0, flow.EncounterInStageIndex);
+            int flowEncounterIndex = Mathf.Max(0, flow.EncounterIndex);
+
+            if (hasStartedEncounter && flowStageIndex != currentStageIndex)
+                Debug.LogWarning($"[Battle] Stage mismatch detected before scaling. Local={currentStageIndex}, Flow={flowStageIndex}.");
+
+            currentStageIndex = flowStageIndex;
+            encounterInStage = flowEncounterInStage;
 
             // EncounterIndex global slo para telemetra/progreso total de la run.
-            encounterIndex = flow.EncounterIndex;
+            encounterIndex = flowEncounterIndex;
+
+            if (encounterInStage > encounterIndex)
+                Debug.LogWarning($"[Battle] Invalid encounter state. EncounterInStage={encounterInStage} > EncounterGlobal={encounterIndex}.");
         }
     }
 

@@ -45,7 +45,6 @@ public class MapManager : MonoBehaviour
             int stageIndex = GetStageIndex(stage);
             if (stageIndex >= 0)
                 flow.SetCurrentStageIndex(stageIndex);
-            flow.SetCurrentStageName(stage.stageName);
         }
 
         if (flow != null && IsSavedNodeValidForStage(flow.SavedMapNode, stage))
@@ -174,6 +173,7 @@ public class MapManager : MonoBehaviour
         GameFlowManager flow = ResolveGameFlowManager();
         int stageIndex = flow != null ? Mathf.Max(0, flow.CurrentStageIndex) : 0;
         MapStage stageToLoad = ResolveStageByIndex(stageIndex);
+        ValidateStageConsistency(stageIndex, stageToLoad, flow);
         if (stageToLoad == null)
         {
             Debug.LogWarning("[MapManager] No hay MapStage asignado.");
@@ -467,6 +467,18 @@ public class MapManager : MonoBehaviour
             return Mathf.Max(0, flow.CurrentStageIndex);
 
         return 0;
+    }
+
+    private void ValidateStageConsistency(int expectedStageIndex, MapStage stage, GameFlowManager flow)
+    {
+        if (flow == null || stage == null)
+            return;
+
+        int resolvedIndex = GetStageIndex(stage);
+        if (resolvedIndex >= 0 && resolvedIndex != expectedStageIndex)
+        {
+            Debug.LogWarning($"[MapManager] Stage mismatch detected. FlowStage={expectedStageIndex}, MapStageIndex={resolvedIndex}, MapStage='{stage.stageName}'.");
+        }
     }
 
     private RunBalanceConfig ResolveBalanceConfig()
