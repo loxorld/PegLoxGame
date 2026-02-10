@@ -18,7 +18,7 @@ MonoBehaviour:
     enemyDamageMultiplier: 1
     enemyHpBonus: 0
     enemyDamageBonus: 0
-    stageName: Bosque - Arboleda I
+    stageName: Bosque - Arboleda X
   - enemiesToDefeat: 2
     enemyHpMultiplier: 1.35
     enemyDamageMultiplier: 1.2

@@ -289,7 +289,9 @@ public class RewardManager : MonoBehaviour
         GameFlowManager flow = GameFlowManager.Instance;
         if (flow != null)
         {
-            flow.AdvanceEncounter();
+            bool shouldAdvanceEncounter = battle == null || !battle.LastEncounterWasBoss;
+            if (shouldAdvanceEncounter)
+                flow.AdvanceEncounter();
             flow.StartCoroutine(WaitForMapManagerAndSetState(flow));
         }
 
@@ -434,7 +436,7 @@ public class RewardManager : MonoBehaviour
     private int GetStageIndexForBalance(GameFlowManager flow)
     {
         if (flow != null)
-            return Mathf.Max(0, flow.EncounterIndex);
+            return Mathf.Max(0, flow.CurrentStageIndex);
 
         if (battle != null)
             return Mathf.Max(0, battle.EncounterIndex);

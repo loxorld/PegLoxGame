@@ -32,11 +32,13 @@ public class BattleManager : MonoBehaviour
     private int stageProgressIndex = 0;     // índice que resuelve el tier en DifficultyConfig
     private DifficultyStage stage;          // stage actual cacheado
     private bool isBossEncounter;
+    private bool lastEncounterWasBoss;
 
     private Enemy currentEnemy;
 
     public Enemy CurrentEnemy => currentEnemy;
     public bool WaitingForRewards => waitingForRewards;
+    public bool LastEncounterWasBoss => lastEncounterWasBoss;
 
     /// <summary>0-based (el HUD puede mostrar +1).</summary>
     public int EncounterIndex => encounterIndex;
@@ -84,6 +86,7 @@ public class BattleManager : MonoBehaviour
         hasStartedEncounter = true;
         defeatedCount = 0;
         waitingForRewards = false;
+        lastEncounterWasBoss = false;
 
         SyncEncounterIndexFromFlow();
         ResolveBalanceConfig();
@@ -112,6 +115,7 @@ public class BattleManager : MonoBehaviour
         if (defeatedCount >= enemiesToDefeat)
         {
             waitingForRewards = true;
+            lastEncounterWasBoss = isBossEncounter;
             if (isBossEncounter)
             {
                 GameFlowManager flow = GameFlowManager.Instance;
@@ -230,7 +234,7 @@ public class BattleManager : MonoBehaviour
         if (flow != null)
         {
             encounterIndex = flow.EncounterIndex;
-            stageProgressIndex = flow.CurrentStageIndex;
+            stageProgressIndex = flow.EncounterInStageIndex;
         }
     }
 
