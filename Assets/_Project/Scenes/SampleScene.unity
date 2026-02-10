@@ -3670,27 +3670,6 @@ MonoBehaviour:
   enemiesToDefeatFallback: 3
   respawnDelay: 0.5
   autoStartOnLoad: 1
---- !u!114 &611753840
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 611753837}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a526585c74b14428a41fc49d4e46e29e, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::StageBackgroundController
-  backgroundImage: {fileID: 0}
-  applyOnStart: 1
-  stageStyles:
-  - sprite: {fileID: 0}
-    tint: {r: 0.2, g: 0.35, b: 0.24, a: 1}
-  - sprite: {fileID: 0}
-    tint: {r: 0.23, g: 0.33, b: 0.26, a: 1}
-  - sprite: {fileID: 0}
-    tint: {r: 0.28, g: 0.28, b: 0.36, a: 1}  
 --- !u!4 &611753839
 Transform:
   m_ObjectHideFlags: 0
@@ -3706,6 +3685,27 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &611753840
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 611753837}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a526585c74b14428a41fc49d4e46e29e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StageBackgroundController
+  backgroundImage: {fileID: 0}
+  applyOnStart: 0
+  stageStyles:
+  - sprite: {fileID: 4741783903038332501, guid: afa55779e6f7ba54e957401a57941aae, type: 3}
+    tint: {r: 0.2, g: 0.35, b: 0.24, a: 1}
+  - sprite: {fileID: 647671454982661556, guid: f1b1ab8a500ac64499517e211e81bee1, type: 3}
+    tint: {r: 0.23, g: 0.33, b: 0.26, a: 1}
+  - sprite: {fileID: -4837096037484145439, guid: bfae312ebd6372745818766373a5d4f3, type: 3}
+    tint: {r: 0.28, g: 0.28, b: 0.36, a: 1}
 --- !u!1 &613728784
 GameObject:
   m_ObjectHideFlags: 0

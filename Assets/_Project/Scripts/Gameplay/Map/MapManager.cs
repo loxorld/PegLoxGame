@@ -47,10 +47,13 @@ public class MapManager : MonoBehaviour
                 flow.SetCurrentStageIndex(stageIndex);
         }
 
-        if (flow != null && flow.SavedMapNode != null && HasConnections(flow.SavedMapNode))
+        if (flow != null && IsSavedNodeValidForStage(flow.SavedMapNode, stage))
             currentNode = flow.SavedMapNode;
         else
+        {
+            flow?.SaveMapNode(null);
             currentNode = stage.startingNode;
+        }
 
         if (currentNode == null)
         {
@@ -237,6 +240,50 @@ public class MapManager : MonoBehaviour
         return node != null && node.nextNodes != null && node.nextNodes.Length > 0;
     }
 
+    private static bool IsSavedNodeValidForStage(MapNodeData savedNode, MapStage stage)
+    {
+        if (savedNode == null || stage == null)
+            return false;
+
+        if (!HasConnections(savedNode))
+            return false;
+
+        return IsNodeReachableFromStageStart(stage.startingNode, savedNode);
+    }
+
+    private static bool IsNodeReachableFromStageStart(MapNodeData startNode, MapNodeData targetNode)
+    {
+        if (startNode == null || targetNode == null)
+            return false;
+
+        var visited = new HashSet<MapNodeData>();
+        var pending = new Stack<MapNodeData>();
+        pending.Push(startNode);
+
+        while (pending.Count > 0)
+        {
+            MapNodeData current = pending.Pop();
+            if (current == null || !visited.Add(current))
+                continue;
+
+            if (current == targetNode)
+                return true;
+
+            if (current.nextNodes == null)
+                continue;
+
+            for (int i = 0; i < current.nextNodes.Length; i++)
+            {
+                MapNodeConnection connection = current.nextNodes[i];
+                if (connection.targetNode != null)
+                    pending.Push(connection.targetNode);
+            }
+        }
+
+        return false;
+    }
+
+
     private System.Collections.IEnumerator WaitForMapUIAndShow(MapNodeData node)
     {
         while (MapNavigationUI.Instance == null)
@@ -278,7 +325,7 @@ public class MapManager : MonoBehaviour
             : -Random.Range(Mathf.Min(damageMin, damageMax), Mathf.Max(damageMin, damageMax) + 1);
 
         string outcome = isGoodEvent
-            ? $"Encontraste algo útil. +{coinDelta} monedas, +{hpDelta} HP."
+           ? $"Encontraste algo útil. +{coinDelta} monedas, +{hpDelta} HP."
             : $"La expedición salió mal. {coinDelta} monedas, {hpDelta} HP.";
 
         if (coinDelta != 0)
