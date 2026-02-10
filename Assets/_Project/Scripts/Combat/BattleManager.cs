@@ -112,7 +112,15 @@ public class BattleManager : MonoBehaviour
         {
             waitingForRewards = true;
             if (isBossEncounter)
+            {
+                GameFlowManager flow = GameFlowManager.Instance;
+                if (flow != null)
+                {
+                    flow.AdvanceStage();
+                    flow.ResetNodesVisited();
+                }
                 GameFlowManager.Instance?.ClearBossEncounter();
+            }
             EncounterCompleted?.Invoke();
             return;
         }

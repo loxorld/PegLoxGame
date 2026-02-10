@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a40f45d489afdd7409d6b4502e8f4562, type: 3}
-  m_Name: MapStage_Bosque
+  m_Name: MapStage_Pantano
   m_EditorClassIdentifier: Assembly-CSharp::MapStage
-  stageName: Bosque
-  stageDescription: Primer zona de la run.
-  startingNode: {fileID: 11400000, guid: 40fd2f38b86854e44a73565df3ed0d11, type: 2}
-  bossNode: {fileID: 11400000, guid: 5013d33e605832a4d9114fcbcf7040aa, type: 2}
+  stageName: Pantano
+  stageDescription: Zona intermedia de la run.
+  startingNode: {fileID: 11400000, guid: 5b37c614d6b5449fa78d64e84f87f715, type: 2}
+  bossNode: {fileID: 11400000, guid: 6991a7da40024e3fa6ef1bae2d460412, type: 2}
   bossAfterNodes: 6

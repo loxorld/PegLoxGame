@@ -18,16 +18,52 @@ MonoBehaviour:
     enemyDamageMultiplier: 1
     enemyHpBonus: 0
     enemyDamageBonus: 0
-    stageName: Bosque - Arboleda 1
+    stageName: Bosque - Arboleda I
   - enemiesToDefeat: 2
-    enemyHpMultiplier: 2
-    enemyDamageMultiplier: 2
+    enemyHpMultiplier: 1.35
+    enemyDamageMultiplier: 1.2
     enemyHpBonus: 0
-    enemyDamageBonus: 0
-    stageName: Bosque - Arboleda 2
+    enemyDamageBonus: 1
+    stageName: Bosque - Arboleda II
   - enemiesToDefeat: 2
+    enemyHpMultiplier: 1.6
+    enemyDamageMultiplier: 1.35
+    enemyHpBonus: 8
+    enemyDamageBonus: 1
+    stageName: Bosque - Arboleda III
+  - enemiesToDefeat: 2
+    enemyHpMultiplier: 1.9
+    enemyDamageMultiplier: 1.5
+    enemyHpBonus: 10
+    enemyDamageBonus: 2
+    stageName: Pantano - Cieno I
+  - enemiesToDefeat: 2
+    enemyHpMultiplier: 2.15
+    enemyDamageMultiplier: 1.65
+    enemyHpBonus: 14
+    enemyDamageBonus: 2
+    stageName: Pantano - Cieno II
+  - enemiesToDefeat: 3
+    enemyHpMultiplier: 2.4
+    enemyDamageMultiplier: 1.8
+    enemyHpBonus: 18
+    enemyDamageBonus: 3
+    stageName: Pantano - Cieno III
+  - enemiesToDefeat: 3
+    enemyHpMultiplier: 2.7
+    enemyDamageMultiplier: 1.95
+    enemyHpBonus: 24
+    enemyDamageBonus: 3
+    stageName: Castillo - Murallas I
+  - enemiesToDefeat: 3
     enemyHpMultiplier: 3
-    enemyDamageMultiplier: 3
-    enemyHpBonus: 0
-    enemyDamageBonus: 0
-    stageName: Bosque - Arboleda 3
+    enemyDamageMultiplier: 2.1
+    enemyHpBonus: 30
+    enemyDamageBonus: 4
+    stageName: Castillo - Murallas II
+  - enemiesToDefeat: 3
+    enemyHpMultiplier: 3.35
+    enemyDamageMultiplier: 2.3
+    enemyHpBonus: 36
+    enemyDamageBonus: 5
+    stageName: Castillo - Trono Final

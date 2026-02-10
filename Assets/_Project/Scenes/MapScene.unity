@@ -389,6 +389,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapManager
   currentMapStage: {fileID: 11400000, guid: 32539d1ecb6fe614bbb2d289e757e143, type: 2}
+  stageSequence:
+  - {fileID: 11400000, guid: 32539d1ecb6fe614bbb2d289e757e143, type: 2}
+  - {fileID: 11400000, guid: da47baaa4d644986af2269bd144cce26, type: 2}
+  - {fileID: 11400000, guid: d75b4daa43834401a323fbd007f809ce, type: 2}
   gameFlowManager: {fileID: 1182409062}
   balanceConfig: {fileID: 0}
   eventCoinsRewardMin: 5

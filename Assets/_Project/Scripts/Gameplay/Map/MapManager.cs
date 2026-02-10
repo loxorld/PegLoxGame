@@ -4,6 +4,7 @@ using UnityEngine;
 public class MapManager : MonoBehaviour
 {
     [SerializeField] private MapStage currentMapStage;
+    [SerializeField] private MapStage[] stageSequence;
     [SerializeField] private GameFlowManager gameFlowManager;
     [SerializeField] private RunBalanceConfig balanceConfig;
     [Header("Event Settings")]
@@ -39,8 +40,12 @@ public class MapManager : MonoBehaviour
         currentMapStage = stage;
 
         GameFlowManager flow = ResolveGameFlowManager();
-        if (flow != null && (flow.SavedMapNode == null || !HasConnections(flow.SavedMapNode)))
-            flow.ResetRunState();
+        if (flow != null)
+        {
+            int stageIndex = GetStageIndex(stage);
+            if (stageIndex >= 0)
+                flow.SetCurrentStageIndex(stageIndex);
+        }
 
         if (flow != null && flow.SavedMapNode != null && HasConnections(flow.SavedMapNode))
             currentNode = flow.SavedMapNode;
@@ -142,10 +147,7 @@ public class MapManager : MonoBehaviour
 
     private void Start()
     {
-        if (currentMapStage != null)
-            StartStage(currentMapStage);
-        else
-            Debug.LogWarning("[MapManager] No hay MapStage asignado.");
+        StartStageForCurrentRun();
     }
 
     private GameFlowManager ResolveGameFlowManager()
@@ -162,6 +164,47 @@ public class MapManager : MonoBehaviour
     }
 
     public MapStage CurrentMapStage => currentMapStage; // NUEVO: getter pblico
+
+    public void StartStageForCurrentRun()
+    {
+        GameFlowManager flow = ResolveGameFlowManager();
+        int stageIndex = flow != null ? Mathf.Max(0, flow.CurrentStageIndex) : 0;
+        MapStage stageToLoad = ResolveStageByIndex(stageIndex);
+        if (stageToLoad == null)
+        {
+            Debug.LogWarning("[MapManager] No hay MapStage asignado.");
+            return;
+        }
+
+        StartStage(stageToLoad);
+    }
+
+    private MapStage ResolveStageByIndex(int stageIndex)
+    {
+        if (stageSequence != null && stageSequence.Length > 0)
+        {
+            int clamped = Mathf.Clamp(stageIndex, 0, stageSequence.Length - 1);
+            MapStage selected = stageSequence[clamped];
+            if (selected != null)
+                return selected;
+        }
+
+        return currentMapStage;
+    }
+
+    private int GetStageIndex(MapStage stage)
+    {
+        if (stage == null || stageSequence == null)
+            return -1;
+
+        for (int i = 0; i < stageSequence.Length; i++)
+        {
+            if (stageSequence[i] == stage)
+                return i;
+        }
+
+        return -1;
+    }
 
     public bool ShouldForceBossNode(out MapNodeData bossNode)
     {
@@ -340,6 +383,8 @@ public class MapManager : MonoBehaviour
                 currentNode.bossHpBonus,
                 currentNode.bossDamageBonus);
         }
+
+        flow.SaveMapNode(null);
 
         flow.SetState(GameState.Combat);
         UnityEngine.SceneManagement.SceneManager.LoadScene(SceneCatalog.Load().CombatScene, UnityEngine.SceneManagement.LoadSceneMode.Single);

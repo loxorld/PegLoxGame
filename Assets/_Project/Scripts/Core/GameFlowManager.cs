@@ -14,6 +14,7 @@ public class GameFlowManager : MonoBehaviour
     public MapNodeData SavedMapNode { get; private set; }
     public int NodesVisited { get; private set; }
     public int EncounterIndex { get; private set; }
+    public int CurrentStageIndex { get; private set; }
 
     public bool HasSavedPlayerHP { get; private set; }
     public int SavedPlayerHP { get; private set; }
@@ -99,7 +100,7 @@ public class GameFlowManager : MonoBehaviour
         {
             MapManager mapManager = FindObjectOfType<MapManager>();
             if (mapManager != null)
-                mapManager.StartStage(mapManager.CurrentMapStage);
+                mapManager.StartStageForCurrentRun();
             else
                 Debug.LogError("[GameFlow] No se encontr MapManager.");
         }
@@ -170,6 +171,7 @@ public class GameFlowManager : MonoBehaviour
         SavedMapNode = null;
         NodesVisited = 0;
         EncounterIndex = 0;
+        CurrentStageIndex = 0;
         Coins = startingCoins;
         PlayerMaxHP = Mathf.Max(1, startingPlayerMaxHP);
         ClearBossEncounter();
@@ -183,6 +185,7 @@ public class GameFlowManager : MonoBehaviour
         {
             SavedMapNodeId = SavedMapNode != null ? SavedMapNode.name : null,
             EncounterIndex = EncounterIndex,
+            CurrentStageIndex = CurrentStageIndex,
             NodesVisited = NodesVisited,
             Coins = Coins,
             PlayerMaxHP = PlayerMaxHP,
@@ -243,6 +246,7 @@ public class GameFlowManager : MonoBehaviour
         pendingMapNodeId = data.SavedMapNodeId;
         SavedMapNode = ResolveMapNodeById(pendingMapNodeId);
         EncounterIndex = Mathf.Max(0, data.EncounterIndex);
+        CurrentStageIndex = Mathf.Max(0, data.CurrentStageIndex);
         NodesVisited = Mathf.Max(0, data.NodesVisited);
         Coins = Mathf.Max(0, data.Coins);
         PlayerMaxHP = Mathf.Max(1, data.PlayerMaxHP);
@@ -340,6 +344,16 @@ public class GameFlowManager : MonoBehaviour
         SetState(GameState.Combat);
         Time.timeScale = 1f;
         SceneManager.LoadScene(SceneCatalog.Load().MapScene, LoadSceneMode.Single);
+    }
+
+    public void SetCurrentStageIndex(int stageIndex)
+    {
+        CurrentStageIndex = Mathf.Max(0, stageIndex);
+    }
+
+    public void AdvanceStage()
+    {
+        CurrentStageIndex = Mathf.Max(0, CurrentStageIndex + 1);
     }
 
     public bool ContinueRunFromMenu()
