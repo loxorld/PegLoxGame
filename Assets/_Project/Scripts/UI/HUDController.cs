@@ -227,7 +227,7 @@ public class HUDController : MonoBehaviour
             string nextText;
             if (battle == null)
                 nextText = "";
-            else if (battle.HasDifficultyConfig)
+            else if (battle.HasBalanceConfig)
                 nextText = $"STAGE: {battle.DifficultyHudText}";
             else
                 nextText = $"STAGE: {battle.StageName}";

@@ -143,7 +143,9 @@ public class RunBalanceConfig : ScriptableObject
     public int GetEnemiesToDefeat(int stageIndex, int encounterInStage, int fallback)
     {
         CombatStageBalance stageBalance = ResolveCombatStage(stageIndex);
-        int baseEnemies = fallback > 0 ? fallback : (stageBalance != null ? stageBalance.enemiesToDefeatByStage : 1);
+        int baseEnemies = stageBalance != null
+            ? stageBalance.enemiesToDefeatByStage
+            : Mathf.Max(1, fallback);
         float encounterScale = stageBalance != null ? EvaluateFloat(stageBalance.enemiesToDefeatByEncounterCurve, encounterInStage, 1f, 0.1f) : 1f;
         return Mathf.Max(1, Mathf.RoundToInt(baseEnemies * encounterScale));
     }

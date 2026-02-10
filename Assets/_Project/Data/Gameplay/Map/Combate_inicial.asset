@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c5c33ba73120f4544bf92e41adb69ecd, type: 3}
-  m_Name: Combate_1
+  m_Name: Combate_inicial
   m_EditorClassIdentifier: Assembly-CSharp::MapNodeData
   nodeType: 0
   title: Combate

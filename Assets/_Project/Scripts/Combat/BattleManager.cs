@@ -48,9 +48,18 @@ public class BattleManager : MonoBehaviour
     public float EnemyDamageMultiplier => currentEnemyDamageMultiplier;
     public int EnemyHpBonus => 0;
     public int EnemyDamageBonus => 0;
-    public bool HasDifficultyConfig => balanceConfig != null;
+    public bool HasBalanceConfig => balanceConfig != null;
 
-    public string StageName => $"Stage {currentStageIndex + 1}";
+    public string StageName
+    {
+        get
+        {
+            if (balanceConfig == null)
+                return $"Stage {currentStageIndex + 1}";
+
+            return balanceConfig.GetStageDisplayName(currentStageIndex, $"Stage {currentStageIndex + 1}");
+        }
+    }
 
     public string DifficultyHudText
     {

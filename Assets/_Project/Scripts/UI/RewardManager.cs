@@ -439,7 +439,7 @@ public class RewardManager : MonoBehaviour
             return Mathf.Max(0, flow.CurrentStageIndex);
 
         if (battle != null)
-            return Mathf.Max(0, battle.EncounterIndex);
+            return Mathf.Max(0, battle.CurrentStageIndex);
 
         return 0;
     }

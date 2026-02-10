@@ -22,6 +22,8 @@ MonoBehaviour:
     targetNode: {fileID: 11400000}
   - label: Camino C
     targetNode: {fileID: 11400000, guid: 8f2f8289c38663641819f3c51b95de95, type: 2}
+  - label: Camino D
+    targetNode: {fileID: 11400000}
   bossEnemy: {fileID: 0}
   bossHpMultiplier: 2
   bossDamageMultiplier: 1.5
