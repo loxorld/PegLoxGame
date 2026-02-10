@@ -14,6 +14,7 @@ public class Enemy : MonoBehaviour
     private int currentAttackDamage;
 
     private SpriteRenderer sr;
+    private Color originalColor;
     private bool initializedExternally;
 
     public int CurrentHP => currentHP;
@@ -25,6 +26,7 @@ public class Enemy : MonoBehaviour
     private void Awake()
     {
         sr = GetComponent<SpriteRenderer>();
+        originalColor = sr != null ? sr.color : Color.white;
     }
 
     private void Start()
@@ -93,7 +95,7 @@ public class Enemy : MonoBehaviour
         int max = MaxHP;
         float hpPercent = max > 0 ? (float)currentHP / max : 0f;
 
-        sr.color = Color.Lerp(Color.black, Color.red, hpPercent);
+        sr.color = Color.Lerp(Color.red, originalColor, hpPercent);
     }
 
     private void Die()
