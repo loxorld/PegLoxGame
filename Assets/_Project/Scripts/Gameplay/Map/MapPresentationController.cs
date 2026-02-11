@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class MapPresentationController : MonoBehaviour
 {
@@ -89,6 +90,13 @@ public class MapPresentationController : MonoBehaviour
 
         ServiceRegistry.LogFallback(nameof(MapPresentationController), nameof(mapNodeModalView), "missing-injected-reference");
 
+        if (IsMigratedMapSceneActive())
+        {
+            ServiceRegistry.LogFallbackMetric(nameof(MapPresentationController), nameof(mapNodeModalView), "strict-missing-reference");
+            Debug.LogError("[MapPresentationController] DI estricto: falta IMapNodeModalView en escena migrada. Revisa el cableado de dependencias.");
+            return null;
+        }
+
         MonoBehaviour[] behaviours = ServiceRegistry.LegacyFindAll<MonoBehaviour>(true);
         for (int i = 0; i < behaviours.Length; i++)
         {
@@ -112,4 +120,12 @@ public class MapPresentationController : MonoBehaviour
 
         return null;
     }
+
+    private static bool IsMigratedMapSceneActive()
+    {
+        SceneCatalog catalog = SceneCatalog.Load();
+        string activeSceneName = SceneManager.GetActiveScene().name;
+        return string.Equals(activeSceneName, catalog.MapScene, StringComparison.Ordinal);
+    }
+
 }

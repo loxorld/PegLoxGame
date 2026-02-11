@@ -149,6 +149,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BootSceneController
   persistentPrefabs:
+  - {fileID: 8509125026335150420, guid: 98859d94f85233e46b427910da1693d0, type: 3}
   - {fileID: 3232855538373770073, guid: 071a158c084bd704ea57fec7ce438c27, type: 3}
   - {fileID: 7020423171214184243, guid: 409385ffa663b6d4590e36fed3b98c7e, type: 3}
   - {fileID: 6706010847968152458, guid: d4746b23932d2e04887baf66e788df01, type: 3}

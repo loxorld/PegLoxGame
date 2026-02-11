@@ -403,7 +403,8 @@ MonoBehaviour:
   eventHealMax: 6
   eventDamageMin: 2
   eventDamageMax: 5
-  mapNodeModalView: {fileID: 0}
+  presentationController: {fileID: 0}
+  mapNodeModalView: {fileID: 1277378249}
   shopHealCost: 0
   shopHealAmount: 1
   shopOrbUpgradeCost: 0
@@ -760,6 +761,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3299ba83f7ec5b04f99eeaac25c56992, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapNavigationUI
+  mapManager: {fileID: 0}
   nodeContainer: {fileID: 2082193581}
   nodePrefab: {fileID: 2478664092124389430, guid: c6bd9713b4c43ae48b8add90a7ea6547, type: 3}
 --- !u!1 &2082193580

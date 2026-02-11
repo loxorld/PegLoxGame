@@ -218,7 +218,11 @@ public class GameFlowManager : MonoBehaviour
 
     public bool LoadRun()
     {
-        if (!ResolveRunSaveService().TryLoad(out RunSaveData data))
+        RunSaveService saveService = ResolveRunSaveService();
+        if (saveService == null)
+            return false;
+
+        if (!saveService.TryLoad(out RunSaveData data))
             return false;
 
         StageLoadedRunSnapshot(data);
@@ -438,6 +442,14 @@ public class GameFlowManager : MonoBehaviour
             return mapManager;
 
         ServiceRegistry.LogFallback(nameof(GameFlowManager), nameof(mapManager), "missing-injected-reference");
+
+        if (IsMigratedMapSceneActive())
+        {
+            ServiceRegistry.LogFallbackMetric(nameof(GameFlowManager), nameof(mapManager), "strict-missing-reference");
+            Debug.LogError("[GameFlow] DI estricto: falta MapManager en escena migrada. Revisa el cableado de dependencias.");
+            return null;
+        }
+
         mapManager = ServiceRegistry.ResolveWithFallback(nameof(GameFlowManager), nameof(mapManager), () => ServiceRegistry.LegacyFind<MapManager>(true));
         if (mapManager != null)
         {
@@ -457,7 +469,16 @@ public class GameFlowManager : MonoBehaviour
             return orbManager;
 
         ServiceRegistry.LogFallback(nameof(GameFlowManager), nameof(orbManager), "missing-injected-reference");
-        orbManager = ServiceRegistry.ResolveWithFallback(nameof(GameFlowManager), nameof(orbManager), () => OrbManager.Instance); if (orbManager != null)
+
+        if (IsMigratedGameplaySceneActive())
+        {
+            ServiceRegistry.LogFallbackMetric(nameof(GameFlowManager), nameof(orbManager), "strict-missing-reference");
+            Debug.LogError("[GameFlow] DI estricto: falta OrbManager en escena migrada. Revisa el cableado de dependencias.");
+            return null;
+        }
+
+        orbManager = ServiceRegistry.ResolveWithFallback(nameof(GameFlowManager), nameof(orbManager), () => OrbManager.Instance);
+        if (orbManager != null)
         {
             ServiceRegistry.Register(orbManager);
             ServiceRegistry.LogFallbackMetric(nameof(GameFlowManager), nameof(orbManager), "legacy-resolver");
@@ -475,6 +496,14 @@ public class GameFlowManager : MonoBehaviour
             return relicManager;
 
         ServiceRegistry.LogFallback(nameof(GameFlowManager), nameof(relicManager), "missing-injected-reference");
+
+        if (IsMigratedGameplaySceneActive())
+        {
+            ServiceRegistry.LogFallbackMetric(nameof(GameFlowManager), nameof(relicManager), "strict-missing-reference");
+            Debug.LogError("[GameFlow] DI estricto: falta RelicManager en escena migrada. Revisa el cableado de dependencias.");
+            return null;
+        }
+
         relicManager = ServiceRegistry.ResolveWithFallback(nameof(GameFlowManager), nameof(relicManager), () => RelicManager.Instance);
         if (relicManager != null)
         {
@@ -494,11 +523,35 @@ public class GameFlowManager : MonoBehaviour
             return runSaveService;
 
         ServiceRegistry.LogFallback(nameof(GameFlowManager), nameof(runSaveService), "missing-injected-reference");
+
+        if (IsMigratedGameplaySceneActive())
+        {
+            ServiceRegistry.LogFallbackMetric(nameof(GameFlowManager), nameof(runSaveService), "strict-missing-reference");
+            Debug.LogError("[GameFlow] DI estricto: falta RunSaveService en escena migrada. Revisa el cableado de dependencias.");
+            return null;
+        }
+
         runSaveService = new RunSaveService();
         ServiceRegistry.Register(runSaveService);
         ServiceRegistry.LogFallbackMetric(nameof(GameFlowManager), nameof(runSaveService), "in-process-default");
         return runSaveService;
     }
+
+    private static bool IsMigratedMapSceneActive()
+    {
+        SceneCatalog catalog = SceneCatalog.Load();
+        string activeSceneName = SceneManager.GetActiveScene().name;
+        return string.Equals(activeSceneName, catalog.MapScene, StringComparison.Ordinal);
+    }
+
+    private static bool IsMigratedGameplaySceneActive()
+    {
+        SceneCatalog catalog = SceneCatalog.Load();
+        string activeSceneName = SceneManager.GetActiveScene().name;
+        return string.Equals(activeSceneName, catalog.MapScene, StringComparison.Ordinal)
+            || string.Equals(activeSceneName, catalog.CombatScene, StringComparison.Ordinal);
+    }
+
     public void SetBossEncounter(EnemyData enemy, float hpMultiplier, float damageMultiplier, int hpBonus, int damageBonus)
     {
         bossEncounterActive = true;

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -243,14 +244,18 @@ public class MapManager : MonoBehaviour
         GameFlowManager flow = ResolveGameFlowManager();
         if (flow == null)
         {
-            Debug.LogWarning("[MapManager] No se encontró GameFlowManager en la escena.");
+            Debug.LogWarning("[MapManager] No se encontr GameFlowManager en la escena.");
             return;
         }
 
-        if (shopService == null)
-            shopService = ServiceRegistry.ResolveWithFallback(nameof(MapManager), nameof(shopService), () => new ShopService());
+        ShopService resolvedShopService = ResolveShopService();
+        if (resolvedShopService == null)
+            return;
 
-        OrbManager orbManager = ServiceRegistry.ResolveWithFallback(nameof(MapManager), "OrbManagerForShop", () => OrbManager.Instance ?? ServiceRegistry.LegacyFind<OrbManager>(true));
+        OrbManager orbManager = ResolveOrbManagerForShop();
+        if (orbManager == null)
+            return;
+
         int balanceStageIndex = GetStageIndexForBalance(flow);
 
         MapDomainService.ShopOutcome shopOutcome = domainService.BuildShopOutcome(
@@ -263,7 +268,7 @@ public class MapManager : MonoBehaviour
             shopOrbUpgradeCost,
             extraMessage);
 
-        List<ShopService.ShopOptionData> shopOptions = shopService.GetShopOptions(
+        List<ShopService.ShopOptionData> shopOptions = resolvedShopService.GetShopOptions(
             flow,
             orbManager,
             shopOutcome.HealCost,
@@ -275,7 +280,6 @@ public class MapManager : MonoBehaviour
         EnsurePresentationController();
         presentationController?.ShowShopModal(shopOutcome, shopOptions);
     }
-
     private void HandleBossNode()
     {
         GameFlowManager flow = ResolveGameFlowManager();
@@ -329,6 +333,13 @@ public class MapManager : MonoBehaviour
             return gameFlowManager;
         }
 
+        if (IsMigratedMapSceneActive())
+        {
+            ServiceRegistry.LogFallbackMetric(nameof(MapManager), nameof(gameFlowManager), "strict-missing-reference");
+            Debug.LogError("[MapManager] DI estricto: falta GameFlowManager en escena migrada. Revisa el cableado de dependencias.");
+            return null;
+        }
+
         gameFlowManager = ServiceRegistry.ResolveWithFallback(nameof(MapManager), nameof(gameFlowManager), () => ServiceRegistry.LegacyFind<GameFlowManager>());
         if (gameFlowManager != null)
         {
@@ -337,6 +348,58 @@ public class MapManager : MonoBehaviour
         }
 
         return gameFlowManager;
+    }
+
+
+    private ShopService ResolveShopService()
+    {
+        if (shopService != null)
+            return shopService;
+
+        if (ServiceRegistry.TryResolve(out shopService))
+            return shopService;
+
+        ServiceRegistry.LogFallback(nameof(MapManager), nameof(shopService), "missing-injected-reference");
+
+        if (IsMigratedMapSceneActive())
+        {
+            ServiceRegistry.LogFallbackMetric(nameof(MapManager), nameof(shopService), "strict-missing-reference");
+            Debug.LogError("[MapManager] DI estricto: falta ShopService en escena migrada. Revisa el cableado de dependencias.");
+            return null;
+        }
+
+        shopService = new ShopService();
+        ServiceRegistry.Register(shopService);
+        ServiceRegistry.LogFallbackMetric(nameof(MapManager), nameof(shopService), "in-process-default");
+        return shopService;
+    }
+
+    private OrbManager ResolveOrbManagerForShop()
+    {
+        if (ServiceRegistry.TryResolve(out OrbManager registeredOrbManager))
+            return registeredOrbManager;
+
+        ServiceRegistry.LogFallback(nameof(MapManager), "OrbManagerForShop", "missing-injected-reference");
+
+        if (IsMigratedMapSceneActive())
+        {
+            ServiceRegistry.LogFallbackMetric(nameof(MapManager), "OrbManagerForShop", "strict-missing-reference");
+            Debug.LogError("[MapManager] DI estricto: falta OrbManager en escena migrada para tienda. Revisa el cableado de dependencias.");
+            return null;
+        }
+
+        OrbManager orbManager = ServiceRegistry.ResolveWithFallback(nameof(MapManager), "OrbManagerForShop", () => OrbManager.Instance ?? ServiceRegistry.LegacyFind<OrbManager>(true));
+        if (orbManager != null)
+            ServiceRegistry.LogFallbackMetric(nameof(MapManager), "OrbManagerForShop", "legacy-resolver");
+
+        return orbManager;
+    }
+
+    private static bool IsMigratedMapSceneActive()
+    {
+        SceneCatalog catalog = SceneCatalog.Load();
+        string activeSceneName = SceneManager.GetActiveScene().name;
+        return string.Equals(activeSceneName, catalog.MapScene, StringComparison.Ordinal);
     }
 
     private MapStage ResolveStageByIndex(int stageIndex)
