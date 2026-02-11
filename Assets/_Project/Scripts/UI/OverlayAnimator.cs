@@ -44,12 +44,14 @@ public class OverlayAnimator : MonoBehaviour
 
     private void OnDisable()
     {
-        tween?.Kill();
+        tween?.Kill(false);
+        tween = null;
     }
 
     private void OnDestroy()
     {
-        tween?.Kill();
+        tween?.Kill(false);
+        tween = null;
     }
 
     public void Show()
@@ -65,6 +67,7 @@ public class OverlayAnimator : MonoBehaviour
 
         Sequence s = DOTween.Sequence();
         s.SetUpdate(true);
+        s.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
         cg.alpha = 0f;
 
         s.Join(cg.DOFade(1f, fadeIn));
@@ -90,12 +93,17 @@ public class OverlayAnimator : MonoBehaviour
 
         Sequence s = DOTween.Sequence();
         s.SetUpdate(true);
+        s.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
         s.Join(cg.DOFade(0f, fadeOut));
 
         if (card != null)
             s.Join(card.DOScale(popFromScale, fadeOut).SetEase(Ease.InOutSine));
 
-        s.OnComplete(() => gameObject.SetActive(false));
+        s.OnComplete(() =>
+        {
+            if (this == null || gameObject == null) return;
+            gameObject.SetActive(false);
+        });
 
         tween = s;
     }
