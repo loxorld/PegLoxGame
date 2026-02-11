@@ -120,14 +120,12 @@ public class PauseMenuUI : MonoBehaviour
     {
         AudioManager.Instance?.PlaySfx(AudioEventId.UiClick);
 
-        // Reanudar por si estaba en estado Paused
         RefreshFlowSubscription();
-        if (flow != null)
-        {
-            flow.SaveRun();
-            flow.Resume();
-        }
+        flow?.SaveRun();
         flow?.Resume();
+
+        // Si por alguna razón no está disponible GameFlow, evitamos que el menú quede congelado.
+        Time.timeScale = 1f;
 
         // Cargar la escena del menu principal en modo Single
         SceneManager.LoadScene(SceneCatalog.Load().MainMenuScene, LoadSceneMode.Single);

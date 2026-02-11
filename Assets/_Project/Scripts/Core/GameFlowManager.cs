@@ -268,8 +268,19 @@ public class GameFlowManager : MonoBehaviour
         pendingRelicApply = true;
 
         hasLoadedRun = true;
-        pendingLoadedState = (GameState)Mathf.Clamp(data.GameState, 0, (int)GameState.GameOver);
+        GameState loadedState = (GameState)Mathf.Clamp(data.GameState, 0, (int)GameState.GameOver);
+        pendingLoadedState = NormalizeLoadedState(loadedState);
         pendingStateApply = true;
+    }
+
+    private static GameState NormalizeLoadedState(GameState loadedState)
+    {
+        // Nunca restaurar una corrida directamente en estados que congelan el tiempo.
+        // Si se guardó estando en pausa o game over, retomamos en combate.
+        if (loadedState == GameState.Paused || loadedState == GameState.GameOver)
+            return GameState.Combat;
+
+        return loadedState;
     }
 
     private void ApplyRunSnapshot(RunSaveData data)

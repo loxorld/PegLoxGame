@@ -23,6 +23,13 @@ public class MainMenuController : MonoBehaviour
 
     private void Awake()
     {
+        // El menú siempre debe arrancar con tiempo real, aunque el último save se haya hecho en pausa.
+        Time.timeScale = 1f;
+
+        GameFlowManager flow = GameFlowManager.Instance;
+        if (flow != null && (flow.State == GameState.Paused || flow.State == GameState.GameOver))
+            flow.SetState(GameState.Combat);
+
         AudioManager.Instance?.PlayMenuMusic();
 
         // Asegura que los paneles correctos estén activos al iniciar.
