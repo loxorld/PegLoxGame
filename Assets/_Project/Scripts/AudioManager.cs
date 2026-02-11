@@ -46,9 +46,9 @@ public class AudioManager : MonoBehaviour
 
     private void Awake()
     {
-
         if (Instance != null && Instance != this)
         {
+            Debug.LogWarning("[AudioManager] Duplicate instance detected. Keep only the BootScene prefab instance.");
             Destroy(gameObject);
             return;
         }
@@ -61,7 +61,11 @@ public class AudioManager : MonoBehaviour
         SetMusicVolume(savedMusic);
         SetSfxVolume(savedSfx);
         RebuildSfxMap();
+
+        if (musicSource == null || sfxSource == null)
+            Debug.LogWarning("[AudioManager] Missing AudioSource references. Configure the BootScene AudioManager prefab.");
     }
+
 
     private void OnValidate()
     {
@@ -93,7 +97,16 @@ public class AudioManager : MonoBehaviour
     public void PlaySfx(AudioEventId eventId)
     {
         if (!sfxByEvent.TryGetValue(eventId, out AudioClip clip) || clip == null)
+        {
+            if ((eventId == AudioEventId.UiOpenPanel || eventId == AudioEventId.UiClosePanel)
+                && sfxByEvent.TryGetValue(AudioEventId.UiClick, out AudioClip fallbackClip)
+                && fallbackClip != null)
+            {
+                PlaySfx(fallbackClip);
+            }
+
             return;
+        }
 
         PlaySfx(clip);
     }

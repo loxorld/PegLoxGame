@@ -44,5 +44,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5400410d2616e2f4494c10fa39d4c204, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameFlowManager
-  startingCoins: 0
+  startingCoins: 10
   startingPlayerMaxHP: 100

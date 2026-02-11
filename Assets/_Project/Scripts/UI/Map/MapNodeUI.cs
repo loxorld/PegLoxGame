@@ -34,6 +34,10 @@ public class MapNodeUI : MonoBehaviour
         }
 
         button.onClick.RemoveAllListeners();
-        button.onClick.AddListener(() => callback?.Invoke(nodeData));
+        button.onClick.AddListener(() =>
+        {
+            AudioManager.Instance?.PlaySfx(AudioEventId.UiClick);
+            callback?.Invoke(nodeData);
+        });
     }
 }

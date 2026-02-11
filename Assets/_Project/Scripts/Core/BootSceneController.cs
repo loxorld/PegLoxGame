@@ -18,10 +18,24 @@ public class BootSceneController : MonoBehaviour
         for (int i = 0; i < persistentPrefabs.Length; i++)
         {
             var prefab = persistentPrefabs[i];
-            if (prefab == null) continue;
+            if (ShouldSkipInstantiation(prefab))
+                continue;
 
             Instantiate(prefab);
         }
+    }
+
+
+    private static bool ShouldSkipInstantiation(GameObject prefab)
+    {
+        if (prefab == null)
+            return true;
+
+        AudioManager audioManager = prefab.GetComponent<AudioManager>();
+        if (audioManager != null && AudioManager.Instance != null)
+            return true;
+
+        return false;
     }
 
     private void Start()

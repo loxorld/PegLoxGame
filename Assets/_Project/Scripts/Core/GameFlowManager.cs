@@ -79,6 +79,8 @@ public class GameFlowManager : MonoBehaviour
             StartCoroutine(ApplyLoadedStateNextFrame());
         else if (hasLoadedRun)
             ApplyManagersFromRunData();
+
+        TryInitializeMapForCurrentState();
     }
 
 
@@ -96,15 +98,7 @@ public class GameFlowManager : MonoBehaviour
         OnStateChanged?.Invoke(State);
         Debug.Log($"[GameFlow] State -> {State}");
 
-        // Inicializa el mapa si estamos entrando en navegacin
-        if (State == GameState.MapNavigation)
-        {
-            MapManager mapManager = FindObjectOfType<MapManager>();
-            if (mapManager != null)
-                mapManager.StartStageForCurrentRun();
-            else
-                Debug.LogError("[GameFlow] No se encontr MapManager.");
-        }
+        TryInitializeMapForCurrentState();
     }
 
 
@@ -313,6 +307,8 @@ public class GameFlowManager : MonoBehaviour
             StartCoroutine(ApplyLoadedStateNextFrame());
         else
             ApplyManagersFromRunData();
+
+        TryInitializeMapForCurrentState();
     }
 
     private System.Collections.IEnumerator ApplyLoadedStateNextFrame()
@@ -390,6 +386,24 @@ public class GameFlowManager : MonoBehaviour
         {
             Debug.LogWarning($"[GameFlow] Unexpected state after {source}. EncounterInStage ({EncounterInStageIndex}) is greater than EncounterGlobal ({EncounterIndex}).");
         }
+    }
+
+    private void TryInitializeMapForCurrentState()
+    {
+        if (State != GameState.MapNavigation)
+            return;
+
+        MapManager mapManager = FindObjectOfType<MapManager>(true);
+        if (mapManager != null)
+        {
+            mapManager.StartStageForCurrentRun();
+            return;
+        }
+
+        SceneCatalog catalog = SceneCatalog.Load();
+        string activeSceneName = SceneManager.GetActiveScene().name;
+        if (string.Equals(activeSceneName, catalog.MapScene, StringComparison.Ordinal))
+            Debug.LogError("[GameFlow] No se encontr MapManager en la escena de mapa.");
     }
 
     public bool ContinueRunFromMenu()

@@ -9,6 +9,7 @@ public class Peg : MonoBehaviour
     private bool consumed;
     private SpriteRenderer sr;
     private Collider2D col;
+    private Sprite defaultSprite;
 
     // Para Durable (o futuras mecánicas)
     private int hitPointsRemaining = 1;
@@ -21,6 +22,7 @@ public class Peg : MonoBehaviour
     {
         sr = GetComponent<SpriteRenderer>();
         col = GetComponent<Collider2D>();
+        defaultSprite = sr != null ? sr.sprite : null;
         ApplyIdleVisual();
     }
 
@@ -70,10 +72,9 @@ public class Peg : MonoBehaviour
         if (col != null) col.enabled = true;
         if (sr != null) sr.enabled = true;
 
-        
         ApplyIdleVisual();
 
-        // Behaviors pueden querer resetear su estado por encounter 
+        // Behaviors pueden querer resetear su estado por encounter
         if (definition != null && definition.behaviors != null)
         {
             for (int i = 0; i < definition.behaviors.Length; i++)
@@ -87,13 +88,33 @@ public class Peg : MonoBehaviour
     private void ApplyIdleVisual()
     {
         if (sr == null) return;
-        sr.color = (definition != null) ? definition.idleColor : Color.cyan;
+
+        Sprite spriteToApply = definition != null && definition.idleSprite != null
+            ? definition.idleSprite
+            : defaultSprite;
+        if (spriteToApply != null)
+            sr.sprite = spriteToApply;
+
+        sr.color = definition != null ? definition.idleColor : Color.cyan;
     }
 
     private void ApplyHitVisual()
     {
         if (sr == null) return;
-        sr.color = (definition != null) ? definition.hitColor : Color.gray;
+
+        Sprite spriteToApply = defaultSprite;
+        if (definition != null)
+        {
+            if (definition.hitSprite != null)
+                spriteToApply = definition.hitSprite;
+            else if (definition.idleSprite != null)
+                spriteToApply = definition.idleSprite;
+        }
+
+        if (spriteToApply != null)
+            sr.sprite = spriteToApply;
+
+        sr.color = definition != null ? definition.hitColor : Color.gray;
     }
 
     private void Consume()
@@ -111,8 +132,6 @@ public class Peg : MonoBehaviour
     {
         if (consumed) return;
         if (!collision.gameObject.CompareTag("Ball")) return;
-
-        
 
         // 2) Behaviors deciden si se consume o no (durable: no en primer hit)
         bool consumeNow = true;
@@ -142,8 +161,7 @@ public class Peg : MonoBehaviour
         }
         else
         {
-            // feedback visual opcional para hit estándar 
-            // ApplyHitVisual();
+            ApplyHitVisual();
         }
     }
 
@@ -178,7 +196,4 @@ public class Peg : MonoBehaviour
         if (consumed) return;
         Consume();
     }
-
-    
-
 }
