@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class MapManager : MonoBehaviour
 {
@@ -7,6 +8,7 @@ public class MapManager : MonoBehaviour
     [SerializeField] private MapStage[] stageSequence;
     [SerializeField] private GameFlowManager gameFlowManager;
     [SerializeField] private RunBalanceConfig balanceConfig;
+
     [Header("Event Settings")]
     [SerializeField, Min(0)] private int eventCoinsRewardMin = 5;
     [SerializeField, Min(0)] private int eventCoinsRewardMax = 15;
@@ -18,6 +20,7 @@ public class MapManager : MonoBehaviour
     [SerializeField, Min(0)] private int eventDamageMax = 5;
 
     [Header("Modal UI")]
+    [SerializeField] private MapPresentationController presentationController;
     [SerializeField] private MonoBehaviour mapNodeModalView;
 
     [Header("Shop Settings")]
@@ -26,8 +29,20 @@ public class MapManager : MonoBehaviour
     [SerializeField, Min(0)] private int shopOrbUpgradeCost = 15;
     [SerializeField] private ShopService shopService;
 
-
+    private readonly MapDomainService domainService = new MapDomainService();
     private MapNodeData currentNode;
+
+    public MapStage CurrentMapStage => currentMapStage;
+
+    private void Awake()
+    {
+        ServiceRegistry.Register(this);
+    }
+
+    private void Start()
+    {
+        StartStageForCurrentRun();
+    }
 
     public void InjectDependencies(GameFlowManager injectedGameFlowManager, ShopService injectedShopService, IMapNodeModalView injectedMapNodeModalView)
     {
@@ -39,6 +54,24 @@ public class MapManager : MonoBehaviour
 
         if (injectedMapNodeModalView != null)
             mapNodeModalView = injectedMapNodeModalView as MonoBehaviour;
+
+        EnsurePresentationController();
+        presentationController?.InjectModalView(injectedMapNodeModalView);
+    }
+
+    public void StartStageForCurrentRun()
+    {
+        GameFlowManager flow = ResolveGameFlowManager();
+        int stageIndex = flow != null ? Mathf.Max(0, flow.CurrentStageIndex) : 0;
+        MapStage stageToLoad = ResolveStageByIndex(stageIndex);
+        ValidateStageConsistency(stageIndex, stageToLoad, flow);
+        if (stageToLoad == null)
+        {
+            Debug.LogWarning("[MapManager] No hay MapStage asignado.");
+            return;
+        }
+
+        StartStage(stageToLoad);
     }
 
     public void StartStage(MapStage stage)
@@ -54,19 +87,16 @@ public class MapManager : MonoBehaviour
         GameFlowManager flow = ResolveGameFlowManager();
         if (flow != null)
         {
-            int stageIndex = GetStageIndex(stage);
+            int stageIndex = domainService.GetStageIndex(stageSequence, stage);
             if (stageIndex >= 0)
                 flow.SetCurrentStageIndex(stageIndex);
         }
 
-        if (flow != null && IsSavedNodeValidForStage(flow.SavedMapNode, stage))
-            currentNode = flow.SavedMapNode;
-        else
-        {
+        MapDomainService.NodeResolution nodeResolution = domainService.ResolveCurrentNode(stage, flow != null ? flow.SavedMapNode : null);
+        if (nodeResolution.ShouldClearSavedNode)
             flow?.SaveMapNode(null);
-            currentNode = stage.startingNode;
-        }
 
+        currentNode = nodeResolution.Node;
         if (currentNode == null)
         {
             Debug.LogWarning("[MapManager] El MapStage no tiene startingNode asignado.");
@@ -86,25 +116,16 @@ public class MapManager : MonoBehaviour
 
         currentNode = node;
 
-        // Notificar al GameFlowManager
         GameFlowManager flow = ResolveGameFlowManager();
         if (flow == null)
         {
-            Debug.LogWarning("[MapManager] No se encontr GameFlowManager en la escena.");
+            Debug.LogWarning("[MapManager] No se encontró GameFlowManager en la escena.");
             return;
         }
 
         flow.SetState(GameState.MapNavigation);
-
-        // Mostrar UI
-        if (MapNavigationUI.Instance == null)
-        {
-            Debug.LogWarning("[MapManager] MapNavigationUI.Instance es nulo. Reintentando...");
-            StartCoroutine(WaitForMapUIAndShow(node));
-            return;
-        }
-
-        MapNavigationUI.Instance.ShowNode(node);
+        EnsurePresentationController();
+        presentationController?.OpenNode(node);
     }
 
     public void SelectPath(MapNodeData nextNode)
@@ -117,7 +138,9 @@ public class MapManager : MonoBehaviour
             flow.SaveRun();
         }
         else
-            Debug.LogWarning("[MapManager] No se encontr GameFlowManager al guardar MapNode.");
+        {
+            Debug.LogWarning("[MapManager] No se encontró GameFlowManager al guardar MapNode.");
+        }
 
         currentNode = nextNode;
         ConfirmNode();
@@ -125,49 +148,168 @@ public class MapManager : MonoBehaviour
 
     public void ConfirmNode()
     {
+        if (currentNode == null)
+        {
+            Debug.LogWarning("[MapManager] ConfirmNode llamado sin nodo actual.");
+            return;
+        }
 
-        Debug.Log("[MapManager] ConfirmNode llamado");
         switch (currentNode.nodeType)
         {
             case NodeType.Combat:
-                // Guardar datos de nodo actual, si es necesario
-
-                GameFlowManager flow = ResolveGameFlowManager();
-                if (flow == null)
-                {
-                    Debug.LogWarning("[MapManager] No se encontr GameFlowManager en la escena.");
-                    return;
-                }
-
-                flow.SetState(GameState.Combat);
-
-                // Cargar la escena de combate
-                UnityEngine.SceneManagement.SceneManager.LoadScene(SceneCatalog.Load().CombatScene, UnityEngine.SceneManagement.LoadSceneMode.Single);
+                StartCombatEncounter();
                 break;
-
             case NodeType.Event:
                 HandleEventNode();
                 break;
-
             case NodeType.Shop:
                 HandleShopNode();
                 break;
-
             case NodeType.Boss:
                 HandleBossNode();
                 break;
         }
     }
 
-
-    private void Awake()
+    public bool ShouldForceBossNode(out MapNodeData bossNode)
     {
-        ServiceRegistry.Register(this);
+        GameFlowManager flow = ResolveGameFlowManager();
+        int nodesVisited = flow != null ? flow.NodesVisited : 0;
+        int bossAfterNodes = GetBossAfterNodes();
+        return domainService.ShouldForceBossNode(currentMapStage, nodesVisited, bossAfterNodes, out bossNode);
     }
 
-    private void Start()
+    public int GetBossAfterNodes()
     {
-        StartStageForCurrentRun();
+        GameFlowManager flow = ResolveGameFlowManager();
+        int stageIndex = GetStageIndexForBalance(flow);
+        return domainService.GetBossAfterNodes(currentMapStage, ResolveBalanceConfig(), stageIndex);
+    }
+
+    private void StartCombatEncounter()
+    {
+        GameFlowManager flow = ResolveGameFlowManager();
+        if (flow == null)
+        {
+            Debug.LogWarning("[MapManager] No se encontró GameFlowManager en la escena.");
+            return;
+        }
+
+        flow.SetState(GameState.Combat);
+        SceneManager.LoadScene(SceneCatalog.Load().CombatScene, LoadSceneMode.Single);
+    }
+
+    private void HandleEventNode()
+    {
+        GameFlowManager flow = ResolveGameFlowManager();
+        if (flow == null)
+        {
+            Debug.LogWarning("[MapManager] No se encontró GameFlowManager en la escena.");
+            return;
+        }
+
+        int balanceStageIndex = GetStageIndexForBalance(flow);
+        MapDomainService.EventOutcome eventOutcome = domainService.BuildEventOutcome(
+            currentNode,
+            ResolveBalanceConfig(),
+            balanceStageIndex,
+            eventCoinsRewardMin,
+            eventCoinsRewardMax,
+            eventCoinsPenaltyMin,
+            eventCoinsPenaltyMax,
+            eventHealMin,
+            eventHealMax,
+            eventDamageMin,
+            eventDamageMax);
+
+        if (eventOutcome.CoinDelta != 0)
+            flow.AddCoins(eventOutcome.CoinDelta);
+        if (eventOutcome.HpDelta != 0)
+            flow.ModifySavedHP(eventOutcome.HpDelta);
+
+        flow.SaveRun();
+
+        EnsurePresentationController();
+        presentationController?.ShowEvent(eventOutcome, () => OpenNode(currentNode));
+    }
+
+    private void HandleShopNode()
+    {
+        ShowShopModal(null);
+    }
+
+    private void ShowShopModal(string extraMessage)
+    {
+        GameFlowManager flow = ResolveGameFlowManager();
+        if (flow == null)
+        {
+            Debug.LogWarning("[MapManager] No se encontró GameFlowManager en la escena.");
+            return;
+        }
+
+        if (shopService == null)
+            shopService = ServiceRegistry.ResolveWithFallback(nameof(MapManager), nameof(shopService), () => new ShopService());
+
+        OrbManager orbManager = ServiceRegistry.ResolveWithFallback(nameof(MapManager), "OrbManagerForShop", () => OrbManager.Instance ?? ServiceRegistry.LegacyFind<OrbManager>(true));
+        int balanceStageIndex = GetStageIndexForBalance(flow);
+
+        MapDomainService.ShopOutcome shopOutcome = domainService.BuildShopOutcome(
+            currentNode,
+            ResolveBalanceConfig(),
+            balanceStageIndex,
+            flow.Coins,
+            shopHealCost,
+            shopHealAmount,
+            shopOrbUpgradeCost,
+            extraMessage);
+
+        List<ShopService.ShopOptionData> shopOptions = shopService.GetShopOptions(
+            flow,
+            orbManager,
+            shopOutcome.HealCost,
+            shopOutcome.HealAmount,
+            shopOutcome.OrbUpgradeCost,
+            ShowShopModal,
+            () => OpenNode(currentNode));
+
+        EnsurePresentationController();
+        presentationController?.ShowShopModal(shopOutcome, shopOptions);
+    }
+
+    private void HandleBossNode()
+    {
+        GameFlowManager flow = ResolveGameFlowManager();
+        if (flow == null)
+        {
+            Debug.LogWarning("[MapManager] No se encontró GameFlowManager en la escena.");
+            return;
+        }
+
+        if (currentNode != null)
+        {
+            flow.SetBossEncounter(
+                currentNode.bossEnemy,
+                currentNode.bossHpMultiplier,
+                currentNode.bossDamageMultiplier,
+                currentNode.bossHpBonus,
+                currentNode.bossDamageBonus);
+        }
+
+        flow.SaveMapNode(null);
+        flow.SetState(GameState.Combat);
+        SceneManager.LoadScene(SceneCatalog.Load().CombatScene, LoadSceneMode.Single);
+    }
+
+    private void EnsurePresentationController()
+    {
+        if (presentationController == null)
+            presentationController = GetComponent<MapPresentationController>();
+
+        if (presentationController == null)
+            presentationController = gameObject.AddComponent<MapPresentationController>();
+
+        if (mapNodeModalView is IMapNodeModalView modalView)
+            presentationController.InjectModalView(modalView);
     }
 
     private GameFlowManager ResolveGameFlowManager()
@@ -193,24 +335,8 @@ public class MapManager : MonoBehaviour
             ServiceRegistry.Register(gameFlowManager);
             ServiceRegistry.LogFallbackMetric(nameof(MapManager), nameof(gameFlowManager), "findobjectoftype");
         }
+
         return gameFlowManager;
-    }
-
-    public MapStage CurrentMapStage => currentMapStage; // NUEVO: getter pblico
-
-    public void StartStageForCurrentRun()
-    {
-        GameFlowManager flow = ResolveGameFlowManager();
-        int stageIndex = flow != null ? Mathf.Max(0, flow.CurrentStageIndex) : 0;
-        MapStage stageToLoad = ResolveStageByIndex(stageIndex);
-        ValidateStageConsistency(stageIndex, stageToLoad, flow);
-        if (stageToLoad == null)
-        {
-            Debug.LogWarning("[MapManager] No hay MapStage asignado.");
-            return;
-        }
-
-        StartStage(stageToLoad);
     }
 
     private MapStage ResolveStageByIndex(int stageIndex)
@@ -226,290 +352,9 @@ public class MapManager : MonoBehaviour
         return currentMapStage;
     }
 
-    private int GetStageIndex(MapStage stage)
-    {
-        if (stage == null || stageSequence == null)
-            return -1;
-
-        for (int i = 0; i < stageSequence.Length; i++)
-        {
-            if (stageSequence[i] == stage)
-                return i;
-        }
-
-        return -1;
-    }
-
-    public bool ShouldForceBossNode(out MapNodeData bossNode)
-    {
-        bossNode = null;
-        if (currentMapStage == null || currentMapStage.bossNode == null)
-            return false;
-
-        GameFlowManager flow = ResolveGameFlowManager();
-        if (flow == null)
-            return false;
-
-        int bossAfterNodes = GetBossAfterNodes();
-        if (bossAfterNodes <= 0)
-        {
-            bossNode = currentMapStage.bossNode;
-            return true;
-        }
-
-        if (flow.NodesVisited >= bossAfterNodes)
-        {
-            bossNode = currentMapStage.bossNode;
-            return true;
-        }
-
-        return false;
-    }
-
-    private static bool HasConnections(MapNodeData node)
-    {
-        return node != null && node.nextNodes != null && node.nextNodes.Length > 0;
-    }
-
-    private static bool IsSavedNodeValidForStage(MapNodeData savedNode, MapStage stage)
-    {
-        if (savedNode == null || stage == null)
-            return false;
-
-        if (!HasConnections(savedNode))
-            return false;
-
-        return IsNodeReachableFromStageStart(stage.startingNode, savedNode);
-    }
-
-    private static bool IsNodeReachableFromStageStart(MapNodeData startNode, MapNodeData targetNode)
-    {
-        if (startNode == null || targetNode == null)
-            return false;
-
-        var visited = new HashSet<MapNodeData>();
-        var pending = new Stack<MapNodeData>();
-        pending.Push(startNode);
-
-        while (pending.Count > 0)
-        {
-            MapNodeData current = pending.Pop();
-            if (current == null || !visited.Add(current))
-                continue;
-
-            if (current == targetNode)
-                return true;
-
-            if (current.nextNodes == null)
-                continue;
-
-            for (int i = 0; i < current.nextNodes.Length; i++)
-            {
-                MapNodeConnection connection = current.nextNodes[i];
-                if (connection.targetNode != null)
-                    pending.Push(connection.targetNode);
-            }
-        }
-
-        return false;
-    }
-
-
-    private System.Collections.IEnumerator WaitForMapUIAndShow(MapNodeData node)
-    {
-        while (MapNavigationUI.Instance == null)
-            yield return null;
-
-        MapNavigationUI.Instance.ShowNode(node);
-    }
-
-    private void HandleEventNode()
-    {
-        GameFlowManager flow = ResolveGameFlowManager();
-        if (flow == null)
-        {
-            Debug.LogWarning("[MapManager] No se encontr GameFlowManager en la escena.");
-            return;
-        }
-        RunBalanceConfig balance = ResolveBalanceConfig();
-        int balanceStageIndex = GetStageIndexForBalance(flow);
-        float goodEventChance = balance != null
-            ? balance.GetEventPositiveChance(balanceStageIndex, 0.5f)
-            : 0.5f;
-        bool isGoodEvent = Random.value <= goodEventChance;
-
-        int rewardMin = balance != null ? balance.GetEventCoinsRewardMin(balanceStageIndex, eventCoinsRewardMin) : eventCoinsRewardMin;
-        int rewardMax = balance != null ? balance.GetEventCoinsRewardMax(balanceStageIndex, eventCoinsRewardMax) : eventCoinsRewardMax;
-        int penaltyMin = balance != null ? balance.GetEventCoinsPenaltyMin(balanceStageIndex, eventCoinsPenaltyMin) : eventCoinsPenaltyMin;
-        int penaltyMax = balance != null ? balance.GetEventCoinsPenaltyMax(balanceStageIndex, eventCoinsPenaltyMax) : eventCoinsPenaltyMax;
-        int healMin = balance != null ? balance.GetEventHealMin(balanceStageIndex, eventHealMin) : eventHealMin;
-        int healMax = balance != null ? balance.GetEventHealMax(balanceStageIndex, eventHealMax) : eventHealMax;
-        int damageMin = balance != null ? balance.GetEventDamageMin(balanceStageIndex, eventDamageMin) : eventDamageMin;
-        int damageMax = balance != null ? balance.GetEventDamageMax(balanceStageIndex, eventDamageMax) : eventDamageMax;
-
-        int coinDelta = isGoodEvent
-            ? Random.Range(Mathf.Min(rewardMin, rewardMax), Mathf.Max(rewardMin, rewardMax) + 1)
-            : -Random.Range(Mathf.Min(penaltyMin, penaltyMax), Mathf.Max(penaltyMin, penaltyMax) + 1);
-
-        int hpDelta = isGoodEvent
-            ? Random.Range(Mathf.Min(healMin, healMax), Mathf.Max(healMin, healMax) + 1)
-            : -Random.Range(Mathf.Min(damageMin, damageMax), Mathf.Max(damageMin, damageMax) + 1);
-
-        string outcome = isGoodEvent
-           ? $"Encontraste algo útil. +{coinDelta} monedas, +{hpDelta} HP."
-            : $"La expedición salió mal. {coinDelta} monedas, {hpDelta} HP.";
-
-        if (coinDelta != 0)
-            flow.AddCoins(coinDelta);
-
-        if (hpDelta != 0)
-            flow.ModifySavedHP(hpDelta);
-
-        flow.SaveRun();
-
-        IMapNodeModalView modalView = ResolveMapNodeModalView();
-        if (modalView == null)
-        {
-            Debug.LogWarning("[MapManager] No se encontr IMapNodeModalView en la escena.");
-            return;
-        }
-
-        var options = new List<MapNodeModalOption>
-        {
-            new MapNodeModalOption("Continuar", () => OpenNode(currentNode), true)
-        };
-
-        modalView.ShowEvent(
-            currentNode != null ? currentNode.title : "Evento",
-            $"{currentNode?.description}\n\n{outcome}",
-            options
-        );
-    }
-
-    private void HandleShopNode()
-    {
-        ShowShopModal(null);
-    }
-
-    private void ShowShopModal(string extraMessage)
-    {
-        GameFlowManager flow = ResolveGameFlowManager();
-        if (flow == null)
-        {
-            Debug.LogWarning("[MapManager] No se encontr GameFlowManager en la escena.");
-            return;
-        }
-        if (shopService == null)
-            shopService = ServiceRegistry.ResolveWithFallback(nameof(MapManager), nameof(shopService), () => new ShopService());
-
-        OrbManager orbManager = ServiceRegistry.ResolveWithFallback(nameof(MapManager), "OrbManagerForShop", () => OrbManager.Instance ?? ServiceRegistry.LegacyFind<OrbManager>(true));
-        RunBalanceConfig balance = ResolveBalanceConfig();
-        int balanceStageIndex = GetStageIndexForBalance(flow);
-        int healCost = balance != null ? balance.GetShopHealCost(balanceStageIndex, shopHealCost) : shopHealCost;
-        int healAmount = balance != null ? balance.GetShopHealAmount(balanceStageIndex, shopHealAmount) : shopHealAmount;
-        int orbUpgradeCost = balance != null ? balance.GetShopOrbUpgradeCost(balanceStageIndex, shopOrbUpgradeCost) : shopOrbUpgradeCost;
-
-        string description = $"{currentNode?.description}\n\nMonedas: {flow.Coins}";
-        if (!string.IsNullOrWhiteSpace(extraMessage))
-            description += $"\n{extraMessage}";
-
-        List<ShopService.ShopOptionData> shopOptions = shopService.GetShopOptions(
-            flow,
-            orbManager,
-            healCost,
-            healAmount,
-            orbUpgradeCost,
-            ShowShopModal,
-            () => OpenNode(currentNode));
-
-        var options = new List<MapNodeModalOption>();
-        for (int i = 0; i < shopOptions.Count; i++)
-        {
-            ShopService.ShopOptionData option = shopOptions[i];
-            options.Add(new MapNodeModalOption(option.Label, option.OnSelect, option.IsEnabled));
-        }
-
-        IMapNodeModalView modalView = ResolveMapNodeModalView();
-        if (modalView == null)
-        {
-            Debug.LogWarning("[MapManager] No se encontr IMapNodeModalView en la escena.");
-            return;
-        }
-
-        modalView.ShowShop(
-            currentNode != null ? currentNode.title : "Tienda",
-            description,
-            options
-        );
-    }
-
-    private void HandleBossNode()
-    {
-        GameFlowManager flow = ResolveGameFlowManager();
-        if (flow == null)
-        {
-            Debug.LogWarning("[MapManager] No se encontr GameFlowManager en la escena.");
-            return;
-        }
-
-        if (currentNode != null)
-        {
-            flow.SetBossEncounter(
-                currentNode.bossEnemy,
-                currentNode.bossHpMultiplier,
-                currentNode.bossDamageMultiplier,
-                currentNode.bossHpBonus,
-                currentNode.bossDamageBonus);
-        }
-
-        flow.SaveMapNode(null);
-
-        flow.SetState(GameState.Combat);
-        UnityEngine.SceneManagement.SceneManager.LoadScene(SceneCatalog.Load().CombatScene, UnityEngine.SceneManagement.LoadSceneMode.Single);
-    }
-
-    private IMapNodeModalView ResolveMapNodeModalView()
-    {
-        if (mapNodeModalView != null && mapNodeModalView is IMapNodeModalView view)
-            return view;
-
-        IMapNodeModalView registryView = ServiceRegistry.Resolve<IMapNodeModalView>();
-        if (registryView != null)
-        {
-            mapNodeModalView = registryView as MonoBehaviour;
-            return registryView;
-        }
-
-        ServiceRegistry.LogFallback(nameof(MapManager), nameof(mapNodeModalView), "missing-injected-reference");
-
-        MonoBehaviour[] behaviours = ServiceRegistry.LegacyFindAll<MonoBehaviour>(true);
-        for (int i = 0; i < behaviours.Length; i++)
-        {
-            if (behaviours[i] is IMapNodeModalView candidate)
-            {
-                mapNodeModalView = behaviours[i];
-                ServiceRegistry.Register(candidate);
-                ServiceRegistry.LogFallbackMetric(nameof(MapManager), nameof(mapNodeModalView), "findobjectsoftype");
-                return candidate;
-            }
-        }
-        MapNodeModalUI modalUI = MapNodeModalUI.GetOrCreate();
-        if (modalUI != null)
-        {
-            mapNodeModalView = modalUI;
-            ServiceRegistry.Register<IMapNodeModalView>(modalUI);
-            ServiceRegistry.LogFallbackMetric(nameof(MapManager), nameof(mapNodeModalView), "mapnodemodalui-getorcreate");
-            return modalUI;
-        }
-        return null;
-    }
-
     private int GetStageIndexForBalance(GameFlowManager flow)
     {
-        if (flow != null)
-            return Mathf.Max(0, flow.CurrentStageIndex);
-
-        return 0;
+        return flow != null ? Mathf.Max(0, flow.CurrentStageIndex) : 0;
     }
 
     private void ValidateStageConsistency(int expectedStageIndex, MapStage stage, GameFlowManager flow)
@@ -517,9 +362,9 @@ public class MapManager : MonoBehaviour
         if (flow == null || stage == null)
             return;
 
-        int resolvedIndex = GetStageIndex(stage);
-        if (resolvedIndex >= 0 && resolvedIndex != expectedStageIndex)
+        if (domainService.HasStageConsistencyIssue(stageSequence, stage, expectedStageIndex))
         {
+            int resolvedIndex = domainService.GetStageIndex(stageSequence, stage);
             Debug.LogWarning($"[MapManager] Stage mismatch detected. FlowStage={expectedStageIndex}, MapStageIndex={resolvedIndex}, MapStage='{stage.stageName}'.");
         }
     }
@@ -530,14 +375,5 @@ public class MapManager : MonoBehaviour
             balanceConfig = RunBalanceConfig.LoadDefault();
 
         return balanceConfig;
-    }
-
-    public int GetBossAfterNodes()
-    {
-        GameFlowManager flow = ResolveGameFlowManager();
-        int defaultValue = currentMapStage != null ? currentMapStage.bossAfterNodes : 0;
-        RunBalanceConfig balance = ResolveBalanceConfig();
-        int balanceStageIndex = flow != null ? Mathf.Max(0, flow.CurrentStageIndex) : 0;
-        return balance != null ? balance.GetBossAfterNodes(balanceStageIndex, defaultValue) : defaultValue;
     }
 }

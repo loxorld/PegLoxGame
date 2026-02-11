@@ -15,7 +15,7 @@ public class PauseButtonUI : MonoBehaviour
         }
 
         if (flow == null)
-            flow = GameFlowManager.Instance ?? FindObjectOfType<GameFlowManager>(true);
+            flow = ServiceRegistry.ResolveWithFallback(nameof(PauseButtonUI), nameof(flow), () => GameFlowManager.Instance ?? ServiceRegistry.LegacyFind<GameFlowManager>(true));
     }
 
     private void Awake()

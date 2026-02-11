@@ -265,13 +265,13 @@ public class RewardManager : MonoBehaviour
     private void ResolveReferences()
     {
         if (battle == null)
-            battle = FindObjectOfType<BattleManager>();
+            battle = ServiceRegistry.ResolveWithFallback(nameof(RewardManager), nameof(battle), () => ServiceRegistry.LegacyFind<BattleManager>());
 
         if (orbs == null)
-            orbs = OrbManager.Instance ?? FindObjectOfType<OrbManager>(true);
+            orbs = ServiceRegistry.ResolveWithFallback(nameof(RewardManager), nameof(orbs), () => OrbManager.Instance ?? ServiceRegistry.LegacyFind<OrbManager>(true));
 
         if (relics == null)
-            relics = RelicManager.Instance ?? FindObjectOfType<RelicManager>(true);
+            relics = ServiceRegistry.ResolveWithFallback(nameof(RewardManager), nameof(relics), () => RelicManager.Instance ?? ServiceRegistry.LegacyFind<RelicManager>(true));
     }
 
     private RunBalanceConfig ResolveBalanceConfig()
@@ -306,7 +306,7 @@ public class RewardManager : MonoBehaviour
         MapManager mapManager = null;
         while (mapManager == null)
         {
-            mapManager = FindObjectOfType<MapManager>();
+            mapManager = ServiceRegistry.ResolveWithFallback(nameof(RewardManager), "MapManagerDuringSceneTransition", () => ServiceRegistry.LegacyFind<MapManager>());
             yield return null;
         }
 
