@@ -9,14 +9,15 @@ public class StageBackgroundController : MonoBehaviour
     private const float FarBackgroundZ = 17f;
     private const float MidBackgroundZ = 16f;
     private const float WorldBackgroundZ = 15f;
-    private const float LayerBobAmplitude = 0.2f;
-    private const float LayerScrollAmplitude = 0.35f;
-    private const float MainLayerParallaxFactor = 0.65f;
+    private const float LayerBobAmplitude = 0.3f;
+    private const float LayerScrollAmplitude = 0.5f;
+    private const float MainLayerParallaxFactor = 0.9f;
     private const float DefaultMidLayerParallaxFactor = 0.45f;
     private const float DefaultFarLayerParallaxFactor = 0.3f;
     private const float DefaultMidLayerSpeed = 0.18f;
     private const float DefaultFarLayerSpeed = 0.1f;
     private const int AmbientVfxSortingOrder = -999;
+    private const float ViewportCoveragePadding = 0.2f;
 
     [System.Serializable]
     private struct StageBackgroundStyle
@@ -153,14 +154,7 @@ public class StageBackgroundController : MonoBehaviour
         Vector3 camPos = targetCam.transform.position;
         renderer.transform.position = new Vector3(camPos.x, camPos.y, zPosition);
 
-        Vector2 spriteSize = sprite.bounds.size;
-        if (spriteSize.x <= 0.0001f || spriteSize.y <= 0.0001f)
-            return;
-
-        float viewHeight = targetCam.orthographicSize * 2f;
-        float viewWidth = viewHeight * targetCam.aspect;
-        float scale = Mathf.Max(viewWidth / spriteSize.x, viewHeight / spriteSize.y);
-        renderer.transform.localScale = new Vector3(scale, scale, 1f);
+        FitLayerToCamera(renderer, targetCam, 0f, 0f);
     }
 
     private Camera ResolveTargetCamera()
@@ -260,9 +254,31 @@ public class StageBackgroundController : MonoBehaviour
         float midSpeed = style.scrollSpeedMid > 0f ? style.scrollSpeedMid : DefaultMidLayerSpeed;
         float farSpeed = style.scrollSpeedFar > 0f ? style.scrollSpeedFar : DefaultFarLayerSpeed;
 
+        FitLayerToCamera(worldBackgroundRenderer, targetCam, LayerScrollAmplitude * MainLayerParallaxFactor, LayerBobAmplitude * MainLayerParallaxFactor);
+        FitLayerToCamera(midBackgroundRenderer, targetCam, LayerScrollAmplitude * DefaultMidLayerParallaxFactor, LayerBobAmplitude * DefaultMidLayerParallaxFactor);
+        FitLayerToCamera(farBackgroundRenderer, targetCam, LayerScrollAmplitude * DefaultFarLayerParallaxFactor, LayerBobAmplitude * DefaultFarLayerParallaxFactor);
+
         UpdateLayerParallax(worldBackgroundRenderer, targetCam, WorldBackgroundZ, MainLayerParallaxFactor, Mathf.Max(midSpeed, 0.05f));
         UpdateLayerParallax(midBackgroundRenderer, targetCam, MidBackgroundZ, DefaultMidLayerParallaxFactor, midSpeed);
         UpdateLayerParallax(farBackgroundRenderer, targetCam, FarBackgroundZ, DefaultFarLayerParallaxFactor, farSpeed);
+    }
+
+    private void FitLayerToCamera(SpriteRenderer renderer, Camera targetCam, float extraHorizontal, float extraVertical)
+    {
+        if (renderer == null || !renderer.enabled || renderer.sprite == null || targetCam == null)
+            return;
+
+        Vector2 spriteSize = renderer.sprite.bounds.size;
+        if (spriteSize.x <= 0.0001f || spriteSize.y <= 0.0001f)
+            return;
+
+        float viewHeight = targetCam.orthographicSize * 2f;
+        float viewWidth = viewHeight * targetCam.aspect;
+        float paddedWidth = viewWidth + (extraHorizontal * 2f);
+        float paddedHeight = viewHeight + (extraVertical * 2f);
+        float scale = Mathf.Max(paddedWidth / spriteSize.x, paddedHeight / spriteSize.y);
+        scale *= 1f + ViewportCoveragePadding;
+        renderer.transform.localScale = new Vector3(scale, scale, 1f);
     }
 
     private void UpdateLayerParallax(SpriteRenderer renderer, Camera targetCam, float baseZ, float amplitudeFactor, float speed)
