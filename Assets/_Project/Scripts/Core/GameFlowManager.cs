@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -54,6 +53,8 @@ public class GameFlowManager : MonoBehaviour
     [SerializeField] private OrbManager orbManager;
     [SerializeField] private RelicManager relicManager;
 
+    private RunSaveService runSaveService;
+
     public void InjectDependencies(MapManager injectedMapManager, OrbManager injectedOrbManager, RelicManager injectedRelicManager)
     {
         if (injectedMapManager != null)
@@ -64,6 +65,12 @@ public class GameFlowManager : MonoBehaviour
 
         if (injectedRelicManager != null)
             relicManager = injectedRelicManager;
+    }
+
+    public void InjectRunSaveService(RunSaveService injectedRunSaveService)
+    {
+        if (injectedRunSaveService != null)
+            runSaveService = injectedRunSaveService;
     }
 
     private void Awake()
@@ -81,6 +88,7 @@ public class GameFlowManager : MonoBehaviour
         PlayerMaxHP = Mathf.Max(1, startingPlayerMaxHP);
         Coins = startingCoins;
 
+        ResolveRunSaveService();
         LoadRun();
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
@@ -204,6 +212,21 @@ public class GameFlowManager : MonoBehaviour
 
     public void SaveRun()
     {
+        RunSaveData data = BuildRunSnapshot();
+        ResolveRunSaveService()?.Save(data);
+    }
+
+    public bool LoadRun()
+    {
+        if (!ResolveRunSaveService().TryLoad(out RunSaveData data))
+            return false;
+
+        StageLoadedRunSnapshot(data);
+        return true;
+    }
+
+    private RunSaveData BuildRunSnapshot()
+    {
         RunSaveData data = new RunSaveData
         {
             SavedMapNodeId = SavedMapNode != null ? SavedMapNode.name : null,
@@ -229,43 +252,23 @@ public class GameFlowManager : MonoBehaviour
         if (relicManagerInstance != null)
             data.Relics = relicManagerInstance.SerializeRelics();
 
-        string json = JsonUtility.ToJson(data, true);
-        string path = GetRunSavePath();
-
-        try
-        {
-            File.WriteAllText(path, json);
-        }
-        catch (Exception ex)
-        {
-            Debug.LogWarning($"[GameFlow] Failed to save run: {ex.Message}");
-        }
+        return data;
     }
 
-    public bool LoadRun()
+    private void StageLoadedRunSnapshot(RunSaveData data)
     {
-        string path = GetRunSavePath();
-        if (!File.Exists(path))
-            return false;
+        ApplyRunSnapshot(data);
 
-        try
-        {
-            string json = File.ReadAllText(path);
-            RunSaveData data = JsonUtility.FromJson<RunSaveData>(json);
-            if (data == null)
-                return false;
+        pendingRunData = data;
+        pendingOrbApply = true;
+        pendingRelicApply = true;
 
-            ApplyRunData(data);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Debug.LogWarning($"[GameFlow] Failed to load run: {ex.Message}");
-            return false;
-        }
+        hasLoadedRun = true;
+        pendingLoadedState = (GameState)Mathf.Clamp(data.GameState, 0, (int)GameState.GameOver);
+        pendingStateApply = true;
     }
 
-    private void ApplyRunData(RunSaveData data)
+    private void ApplyRunSnapshot(RunSaveData data)
     {
         pendingMapNodeId = data.SavedMapNodeId;
         SavedMapNode = ResolveMapNodeById(pendingMapNodeId);
@@ -278,16 +281,7 @@ public class GameFlowManager : MonoBehaviour
         SavedPlayerHP = Mathf.Clamp(data.SavedPlayerHP, 0, PlayerMaxHP);
         HasSavedPlayerHP = data.HasSavedPlayerHP;
 
-        hasLoadedRun = true;
-        pendingLoadedState = (GameState)Mathf.Clamp(data.GameState, 0, (int)GameState.GameOver);
-        pendingStateApply = true;
-        pendingRunData = data;
-        pendingOrbApply = true;
-        pendingRelicApply = true;
-
         ValidateEncounterState("ApplyRunData");
-
-        ApplyManagersFromRunData();
     }
 
     private void ApplyManagersFromRunData()
@@ -354,11 +348,6 @@ public class GameFlowManager : MonoBehaviour
         }
 
         return null;
-    }
-
-    private static string GetRunSavePath()
-    {
-        return Path.Combine(Application.persistentDataPath, "run_save.json");
     }
 
     public void RestartCombatScene()
@@ -468,8 +457,7 @@ public class GameFlowManager : MonoBehaviour
             return orbManager;
 
         ServiceRegistry.LogFallback(nameof(GameFlowManager), nameof(orbManager), "missing-injected-reference");
-        orbManager = ServiceRegistry.ResolveWithFallback(nameof(GameFlowManager), nameof(orbManager), () => OrbManager.Instance ?? ServiceRegistry.LegacyFind<OrbManager>(true));
-        if (orbManager != null)
+        orbManager = ServiceRegistry.ResolveWithFallback(nameof(GameFlowManager), nameof(orbManager), () => OrbManager.Instance); if (orbManager != null)
         {
             ServiceRegistry.Register(orbManager);
             ServiceRegistry.LogFallbackMetric(nameof(GameFlowManager), nameof(orbManager), "legacy-resolver");
@@ -487,7 +475,7 @@ public class GameFlowManager : MonoBehaviour
             return relicManager;
 
         ServiceRegistry.LogFallback(nameof(GameFlowManager), nameof(relicManager), "missing-injected-reference");
-        relicManager = ServiceRegistry.ResolveWithFallback(nameof(GameFlowManager), nameof(relicManager), () => RelicManager.Instance ?? ServiceRegistry.LegacyFind<RelicManager>(true));
+        relicManager = ServiceRegistry.ResolveWithFallback(nameof(GameFlowManager), nameof(relicManager), () => RelicManager.Instance);
         if (relicManager != null)
         {
             ServiceRegistry.Register(relicManager);
@@ -497,6 +485,20 @@ public class GameFlowManager : MonoBehaviour
         return relicManager;
     }
 
+    private RunSaveService ResolveRunSaveService()
+    {
+        if (runSaveService != null)
+            return runSaveService;
+
+        if (ServiceRegistry.TryResolve(out runSaveService))
+            return runSaveService;
+
+        ServiceRegistry.LogFallback(nameof(GameFlowManager), nameof(runSaveService), "missing-injected-reference");
+        runSaveService = new RunSaveService();
+        ServiceRegistry.Register(runSaveService);
+        ServiceRegistry.LogFallbackMetric(nameof(GameFlowManager), nameof(runSaveService), "in-process-default");
+        return runSaveService;
+    }
     public void SetBossEncounter(EnemyData enemy, float hpMultiplier, float damageMultiplier, int hpBonus, int damageBonus)
     {
         bossEncounterActive = true;
