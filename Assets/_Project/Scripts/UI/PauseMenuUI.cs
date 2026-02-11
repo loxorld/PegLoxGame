@@ -16,7 +16,9 @@ public class PauseMenuUI : MonoBehaviour
 
     private void RefreshFlowSubscription()
     {
-        GameFlowManager current = GameFlowManager.Instance ?? FindObjectOfType<GameFlowManager>(true);
+        GameFlowManager current = flow != null
+          ? flow
+          : ServiceRegistry.ResolveWithFallback(nameof(PauseMenuUI), nameof(flow), () => GameFlowManager.Instance ?? ServiceRegistry.LegacyFind<GameFlowManager>(true));
 
         if (current == flow) return;
 

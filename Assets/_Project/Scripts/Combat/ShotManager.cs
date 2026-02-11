@@ -114,13 +114,13 @@ public class ShotManager : MonoBehaviour
     private void ResolveReferences()
     {
         if (battle == null)
-            battle = FindObjectOfType<BattleManager>();
+            battle = ServiceRegistry.ResolveWithFallback(nameof(ShotManager), nameof(battle), () => ServiceRegistry.LegacyFind<BattleManager>());
 
         if (player == null)
-            player = FindObjectOfType<PlayerStats>();
+            player = ServiceRegistry.ResolveWithFallback(nameof(ShotManager), nameof(player), () => ServiceRegistry.LegacyFind<PlayerStats>());
 
         if (relics == null)
-            relics = RelicManager.Instance ?? FindObjectOfType<RelicManager>(true);
+            relics = ServiceRegistry.ResolveWithFallback(nameof(ShotManager), nameof(relics), () => RelicManager.Instance ?? ServiceRegistry.LegacyFind<RelicManager>(true));
     }
 
     public void RegisterPegHit(PegType pegType)

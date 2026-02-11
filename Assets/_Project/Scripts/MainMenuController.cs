@@ -44,7 +44,7 @@ public class MainMenuController : MonoBehaviour
     {
         AudioManager.Instance?.PlaySfx(AudioEventId.UiClick);
 
-        GameFlowManager flow = GameFlowManager.Instance ?? FindObjectOfType<GameFlowManager>(true);
+        GameFlowManager flow = GameFlowManager.Instance ?? ServiceRegistry.ResolveWithFallback(nameof(MainMenuController), "GameFlowManagerPlayButton", () => ServiceRegistry.LegacyFind<GameFlowManager>(true));
         if (flow != null)
         {
             flow.RestartRunFromMenu();
@@ -61,7 +61,7 @@ public class MainMenuController : MonoBehaviour
     {
         AudioManager.Instance?.PlaySfx(AudioEventId.UiClick);
 
-        GameFlowManager flow = GameFlowManager.Instance ?? FindObjectOfType<GameFlowManager>(true);
+        GameFlowManager flow = GameFlowManager.Instance ?? ServiceRegistry.ResolveWithFallback(nameof(MainMenuController), "GameFlowManagerContinueButton", () => ServiceRegistry.LegacyFind<GameFlowManager>(true));
         if (flow != null && flow.ContinueRunFromMenu())
         {
             return;

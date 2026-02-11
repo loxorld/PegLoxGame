@@ -31,7 +31,7 @@ public class BallLifecycle : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         col = GetComponent<Collider2D>();
         if (boundsProvider == null)
-            boundsProvider = FindObjectOfType<BoardBoundsProvider>();
+            boundsProvider = ServiceRegistry.ResolveWithFallback(nameof(BallLifecycle), nameof(boundsProvider), () => ServiceRegistry.LegacyFind<BoardBoundsProvider>());
     }
 
     private void OnEnable()

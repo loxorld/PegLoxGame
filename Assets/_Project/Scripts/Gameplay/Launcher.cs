@@ -515,10 +515,10 @@ public class Launcher : MonoBehaviour
     private void ResolveReferences()
     {
         if (orbManager == null)
-            orbManager = OrbManager.Instance ?? FindObjectOfType<OrbManager>(true);
+            orbManager = ServiceRegistry.ResolveWithFallback(nameof(Launcher), nameof(orbManager), () => OrbManager.Instance ?? ServiceRegistry.LegacyFind<OrbManager>(true));
 
         if (relicManager == null)
-            relicManager = RelicManager.Instance ?? FindObjectOfType<RelicManager>(true);
+            relicManager = ServiceRegistry.ResolveWithFallback(nameof(Launcher), nameof(relicManager), () => RelicManager.Instance ?? ServiceRegistry.LegacyFind<RelicManager>(true));
 
         if (cachedCamera == null)
             cachedCamera = Camera.main;

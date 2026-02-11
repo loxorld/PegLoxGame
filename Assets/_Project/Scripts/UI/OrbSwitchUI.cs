@@ -15,13 +15,13 @@ public class OrbSwitchUI : MonoBehaviour
     private void ResolveReferences()
     {
         if (orbManager == null)
-            orbManager = OrbManager.Instance ?? FindObjectOfType<OrbManager>(true);
+            orbManager = ServiceRegistry.ResolveWithFallback(nameof(OrbSwitchUI), nameof(orbManager), () => OrbManager.Instance ?? ServiceRegistry.LegacyFind<OrbManager>(true));
 
         if (gameFlowManager == null)
-            gameFlowManager = GameFlowManager.Instance ?? FindObjectOfType<GameFlowManager>(true);
+            gameFlowManager = ServiceRegistry.ResolveWithFallback(nameof(OrbSwitchUI), nameof(gameFlowManager), () => GameFlowManager.Instance ?? ServiceRegistry.LegacyFind<GameFlowManager>(true));
 
         if (shotManager == null)
-            shotManager = FindObjectOfType<ShotManager>(true);
+            shotManager = ServiceRegistry.ResolveWithFallback(nameof(OrbSwitchUI), nameof(shotManager), () => ServiceRegistry.LegacyFind<ShotManager>(true));
     }
 
     private void Awake()

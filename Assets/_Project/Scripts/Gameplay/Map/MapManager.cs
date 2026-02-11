@@ -29,6 +29,18 @@ public class MapManager : MonoBehaviour
 
     private MapNodeData currentNode;
 
+    public void InjectDependencies(GameFlowManager injectedGameFlowManager, ShopService injectedShopService, IMapNodeModalView injectedMapNodeModalView)
+    {
+        if (injectedGameFlowManager != null)
+            gameFlowManager = injectedGameFlowManager;
+
+        if (injectedShopService != null)
+            shopService = injectedShopService;
+
+        if (injectedMapNodeModalView != null)
+            mapNodeModalView = injectedMapNodeModalView as MonoBehaviour;
+    }
+
     public void StartStage(MapStage stage)
     {
         if (stage == null)
@@ -148,6 +160,11 @@ public class MapManager : MonoBehaviour
     }
 
 
+    private void Awake()
+    {
+        ServiceRegistry.Register(this);
+    }
+
     private void Start()
     {
         StartStageForCurrentRun();
@@ -157,12 +174,25 @@ public class MapManager : MonoBehaviour
     {
         if (gameFlowManager != null)
             return gameFlowManager;
+        if (ServiceRegistry.TryResolve(out gameFlowManager))
+            return gameFlowManager;
+
+        ServiceRegistry.LogFallback(nameof(MapManager), nameof(gameFlowManager), "missing-injected-reference");
 
         gameFlowManager = GameFlowManager.Instance;
         if (gameFlowManager != null)
+        {
+            ServiceRegistry.Register(gameFlowManager);
+            ServiceRegistry.LogFallbackMetric(nameof(MapManager), nameof(gameFlowManager), "gameflow-instance");
             return gameFlowManager;
+        }
 
-        gameFlowManager = FindObjectOfType<GameFlowManager>();
+        gameFlowManager = ServiceRegistry.ResolveWithFallback(nameof(MapManager), nameof(gameFlowManager), () => ServiceRegistry.LegacyFind<GameFlowManager>());
+        if (gameFlowManager != null)
+        {
+            ServiceRegistry.Register(gameFlowManager);
+            ServiceRegistry.LogFallbackMetric(nameof(MapManager), nameof(gameFlowManager), "findobjectoftype");
+        }
         return gameFlowManager;
     }
 
@@ -370,9 +400,9 @@ public class MapManager : MonoBehaviour
             return;
         }
         if (shopService == null)
-            shopService = new ShopService();
+            shopService = ServiceRegistry.ResolveWithFallback(nameof(MapManager), nameof(shopService), () => new ShopService());
 
-        OrbManager orbManager = OrbManager.Instance ?? FindObjectOfType<OrbManager>(true);
+        OrbManager orbManager = ServiceRegistry.ResolveWithFallback(nameof(MapManager), "OrbManagerForShop", () => OrbManager.Instance ?? ServiceRegistry.LegacyFind<OrbManager>(true));
         RunBalanceConfig balance = ResolveBalanceConfig();
         int balanceStageIndex = GetStageIndexForBalance(flow);
         int healCost = balance != null ? balance.GetShopHealCost(balanceStageIndex, shopHealCost) : shopHealCost;
@@ -443,12 +473,23 @@ public class MapManager : MonoBehaviour
         if (mapNodeModalView != null && mapNodeModalView is IMapNodeModalView view)
             return view;
 
-        MonoBehaviour[] behaviours = FindObjectsOfType<MonoBehaviour>(true);
+        IMapNodeModalView registryView = ServiceRegistry.Resolve<IMapNodeModalView>();
+        if (registryView != null)
+        {
+            mapNodeModalView = registryView as MonoBehaviour;
+            return registryView;
+        }
+
+        ServiceRegistry.LogFallback(nameof(MapManager), nameof(mapNodeModalView), "missing-injected-reference");
+
+        MonoBehaviour[] behaviours = ServiceRegistry.LegacyFindAll<MonoBehaviour>(true);
         for (int i = 0; i < behaviours.Length; i++)
         {
             if (behaviours[i] is IMapNodeModalView candidate)
             {
                 mapNodeModalView = behaviours[i];
+                ServiceRegistry.Register(candidate);
+                ServiceRegistry.LogFallbackMetric(nameof(MapManager), nameof(mapNodeModalView), "findobjectsoftype");
                 return candidate;
             }
         }
@@ -456,6 +497,8 @@ public class MapManager : MonoBehaviour
         if (modalUI != null)
         {
             mapNodeModalView = modalUI;
+            ServiceRegistry.Register<IMapNodeModalView>(modalUI);
+            ServiceRegistry.LogFallbackMetric(nameof(MapManager), nameof(mapNodeModalView), "mapnodemodalui-getorcreate");
             return modalUI;
         }
         return null;

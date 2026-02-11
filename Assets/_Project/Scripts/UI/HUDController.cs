@@ -48,16 +48,16 @@ public class HUDController : MonoBehaviour
     private void ResolveReferences()
     {
         if (player == null)
-            player = FindObjectOfType<PlayerStats>(true);
+            player = ServiceRegistry.ResolveWithFallback(nameof(HUDController), nameof(player), () => ServiceRegistry.LegacyFind<PlayerStats>(true));
 
         if (battle == null)
-            battle = FindObjectOfType<BattleManager>(true);
+            battle = ServiceRegistry.ResolveWithFallback(nameof(HUDController), nameof(battle), () => ServiceRegistry.LegacyFind<BattleManager>(true));
 
         if (orbs == null)
-            orbs = OrbManager.Instance ?? FindObjectOfType<OrbManager>(true);
+            orbs = ServiceRegistry.ResolveWithFallback(nameof(HUDController), nameof(orbs), () => OrbManager.Instance ?? ServiceRegistry.LegacyFind<OrbManager>(true));
 
         if (flow == null)
-            flow = GameFlowManager.Instance ?? FindObjectOfType<GameFlowManager>(true);
+            flow = ServiceRegistry.ResolveWithFallback(nameof(HUDController), nameof(flow), () => GameFlowManager.Instance ?? ServiceRegistry.LegacyFind<GameFlowManager>(true));
     }
 
     private void Awake()

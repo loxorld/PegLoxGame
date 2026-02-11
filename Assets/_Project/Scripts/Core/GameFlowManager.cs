@@ -49,6 +49,23 @@ public class GameFlowManager : MonoBehaviour
     private bool pendingOrbApply;
     private bool pendingRelicApply;
 
+    [Header("Scene References (DI)")]
+    [SerializeField] private MapManager mapManager;
+    [SerializeField] private OrbManager orbManager;
+    [SerializeField] private RelicManager relicManager;
+
+    public void InjectDependencies(MapManager injectedMapManager, OrbManager injectedOrbManager, RelicManager injectedRelicManager)
+    {
+        if (injectedMapManager != null)
+            mapManager = injectedMapManager;
+
+        if (injectedOrbManager != null)
+            orbManager = injectedOrbManager;
+
+        if (injectedRelicManager != null)
+            relicManager = injectedRelicManager;
+    }
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -58,6 +75,7 @@ public class GameFlowManager : MonoBehaviour
         }
 
         Instance = this;
+        ServiceRegistry.Register(this);
         DontDestroyOnLoad(gameObject);
 
         PlayerMaxHP = Mathf.Max(1, startingPlayerMaxHP);
@@ -200,16 +218,16 @@ public class GameFlowManager : MonoBehaviour
             GameState = (int)State
         };
 
-        OrbManager orbManager = OrbManager.Instance ?? FindObjectOfType<OrbManager>(true);
-        if (orbManager != null)
+        OrbManager orbManagerInstance = ResolveOrbManager();
+        if (orbManagerInstance != null)
         {
-            data.Orbs = orbManager.SerializeOrbs();
-            data.CurrentOrbId = orbManager.GetCurrentOrbId();
+            data.Orbs = orbManagerInstance.SerializeOrbs();
+            data.CurrentOrbId = orbManagerInstance.GetCurrentOrbId();
         }
 
-        RelicManager relicManager = RelicManager.Instance ?? FindObjectOfType<RelicManager>(true);
-        if (relicManager != null)
-            data.Relics = relicManager.SerializeRelics();
+        RelicManager relicManagerInstance = ResolveRelicManager();
+        if (relicManagerInstance != null)
+            data.Relics = relicManagerInstance.SerializeRelics();
 
         string json = JsonUtility.ToJson(data, true);
         string path = GetRunSavePath();
@@ -277,17 +295,17 @@ public class GameFlowManager : MonoBehaviour
         if (pendingRunData == null)
             return;
 
-        OrbManager orbManager = OrbManager.Instance ?? FindObjectOfType<OrbManager>(true);
-        if (pendingOrbApply && orbManager != null)
+        OrbManager orbManagerInstance = ResolveOrbManager();
+        if (pendingOrbApply && orbManagerInstance != null)
         {
-            orbManager.DeserializeOrbs(pendingRunData.Orbs, pendingRunData.CurrentOrbId);
+            orbManagerInstance.DeserializeOrbs(pendingRunData.Orbs, pendingRunData.CurrentOrbId);
             pendingOrbApply = false;
         }
 
-        RelicManager relicManager = RelicManager.Instance ?? FindObjectOfType<RelicManager>(true);
-        if (pendingRelicApply && relicManager != null)
+        RelicManager relicManagerInstance = ResolveRelicManager();
+        if (pendingRelicApply && relicManagerInstance != null)
         {
-            relicManager.DeserializeRelics(pendingRunData.Relics);
+            relicManagerInstance.DeserializeRelics(pendingRunData.Relics);
             pendingRelicApply = false;
         }
 
@@ -393,10 +411,10 @@ public class GameFlowManager : MonoBehaviour
         if (State != GameState.MapNavigation)
             return;
 
-        MapManager mapManager = FindObjectOfType<MapManager>(true);
-        if (mapManager != null)
+        MapManager resolvedMapManager = ResolveMapManager();
+        if (resolvedMapManager != null)
         {
-            mapManager.StartStageForCurrentRun();
+            resolvedMapManager.StartStageForCurrentRun();
             return;
         }
 
@@ -418,8 +436,65 @@ public class GameFlowManager : MonoBehaviour
 
     private void ResetPersistentManagers()
     {
-        OrbManager.Instance?.ResetToDefaults();
-        RelicManager.Instance?.ResetToDefaults();
+        ResolveOrbManager()?.ResetToDefaults();
+        ResolveRelicManager()?.ResetToDefaults();
+    }
+
+    private MapManager ResolveMapManager()
+    {
+        if (mapManager != null)
+            return mapManager;
+
+        if (ServiceRegistry.TryResolve(out mapManager))
+            return mapManager;
+
+        ServiceRegistry.LogFallback(nameof(GameFlowManager), nameof(mapManager), "missing-injected-reference");
+        mapManager = ServiceRegistry.ResolveWithFallback(nameof(GameFlowManager), nameof(mapManager), () => ServiceRegistry.LegacyFind<MapManager>(true));
+        if (mapManager != null)
+        {
+            ServiceRegistry.Register(mapManager);
+            ServiceRegistry.LogFallbackMetric(nameof(GameFlowManager), nameof(mapManager), "findobjectoftype");
+        }
+
+        return mapManager;
+    }
+
+    private OrbManager ResolveOrbManager()
+    {
+        if (orbManager != null)
+            return orbManager;
+
+        if (ServiceRegistry.TryResolve(out orbManager))
+            return orbManager;
+
+        ServiceRegistry.LogFallback(nameof(GameFlowManager), nameof(orbManager), "missing-injected-reference");
+        orbManager = ServiceRegistry.ResolveWithFallback(nameof(GameFlowManager), nameof(orbManager), () => OrbManager.Instance ?? ServiceRegistry.LegacyFind<OrbManager>(true));
+        if (orbManager != null)
+        {
+            ServiceRegistry.Register(orbManager);
+            ServiceRegistry.LogFallbackMetric(nameof(GameFlowManager), nameof(orbManager), "legacy-resolver");
+        }
+
+        return orbManager;
+    }
+
+    private RelicManager ResolveRelicManager()
+    {
+        if (relicManager != null)
+            return relicManager;
+
+        if (ServiceRegistry.TryResolve(out relicManager))
+            return relicManager;
+
+        ServiceRegistry.LogFallback(nameof(GameFlowManager), nameof(relicManager), "missing-injected-reference");
+        relicManager = ServiceRegistry.ResolveWithFallback(nameof(GameFlowManager), nameof(relicManager), () => RelicManager.Instance ?? ServiceRegistry.LegacyFind<RelicManager>(true));
+        if (relicManager != null)
+        {
+            ServiceRegistry.Register(relicManager);
+            ServiceRegistry.LogFallbackMetric(nameof(GameFlowManager), nameof(relicManager), "legacy-resolver");
+        }
+
+        return relicManager;
     }
 
     public void SetBossEncounter(EnemyData enemy, float hpMultiplier, float damageMultiplier, int hpBonus, int damageBonus)

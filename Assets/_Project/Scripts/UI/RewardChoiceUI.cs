@@ -35,10 +35,10 @@ public class RewardChoiceUI : MonoBehaviour
     private void ResolveReferences()
     {
         if (rewards == null)
-            rewards = FindObjectOfType<RewardManager>(true);
+            rewards = ServiceRegistry.ResolveWithFallback(nameof(RewardChoiceUI), nameof(rewards), () => ServiceRegistry.LegacyFind<RewardManager>(true));
 
         if (flow == null)
-            flow = GameFlowManager.Instance ?? FindObjectOfType<GameFlowManager>(true);
+            flow = ServiceRegistry.ResolveWithFallback(nameof(RewardChoiceUI), nameof(flow), () => GameFlowManager.Instance ?? ServiceRegistry.LegacyFind<GameFlowManager>(true));
     }
 
     private void Awake()

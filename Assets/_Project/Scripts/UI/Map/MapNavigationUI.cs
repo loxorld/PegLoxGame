@@ -5,6 +5,8 @@ public class MapNavigationUI : MonoBehaviour
 {
     public static MapNavigationUI Instance;
 
+    [SerializeField] private MapManager mapManager;
+
     [SerializeField] private Transform nodeContainer;
     [SerializeField] private GameObject nodePrefab;
 
@@ -24,8 +26,8 @@ public class MapNavigationUI : MonoBehaviour
             return;
         }
 
-        MapManager mapManager = FindObjectOfType<MapManager>();
-        if (mapManager != null && mapManager.ShouldForceBossNode(out MapNodeData bossNode) && bossNode != null)
+        MapManager mapManagerRef = ResolveMapManager();
+        if (mapManagerRef != null && mapManagerRef.ShouldForceBossNode(out MapNodeData bossNode) && bossNode != null)
         {
             var bossObj = Instantiate(nodePrefab, nodeContainer);
             var bossUI = bossObj.GetComponent<MapNodeUI>();
@@ -58,13 +60,25 @@ public class MapNavigationUI : MonoBehaviour
 
     void OnNodeSelected(MapNodeData next)
     {
-        MapManager mapManager = FindObjectOfType<MapManager>();
-        mapManager.SelectPath(next);
+        MapManager mapManagerRef = ResolveMapManager();
+        if (mapManagerRef == null)
+            return;
+
+        mapManagerRef.SelectPath(next);
 
 
-        
+
     }
 
+
+    private MapManager ResolveMapManager()
+    {
+        if (mapManager != null)
+            return mapManager;
+
+        mapManager = ServiceRegistry.ResolveWithFallback(nameof(MapNavigationUI), nameof(mapManager), () => ServiceRegistry.LegacyFind<MapManager>());
+        return mapManager;
+    }
 
     void ClearNodes()
     {

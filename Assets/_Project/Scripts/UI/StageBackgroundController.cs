@@ -112,7 +112,7 @@ public class StageBackgroundController : MonoBehaviour
 
     private void ValidateStageConsistency(int flowStageIndex)
     {
-        BattleManager battle = FindObjectOfType<BattleManager>();
+        BattleManager battle = ServiceRegistry.ResolveWithFallback(nameof(StageBackgroundController), "BattleManagerForValidation", () => ServiceRegistry.LegacyFind<BattleManager>());
         if (battle != null && battle.CurrentStageIndex != flowStageIndex)
         {
             Debug.LogWarning($"[StageBackground] Visual stage mismatch with battle scaling. FlowStage={flowStageIndex}, BattleStage={battle.CurrentStageIndex}.");
@@ -163,7 +163,7 @@ public class StageBackgroundController : MonoBehaviour
         if (targetCam != null)
             return targetCam;
 
-        targetCam = FindObjectOfType<Camera>();
+        targetCam = ServiceRegistry.ResolveWithFallback(nameof(StageBackgroundController), "FallbackCamera", () => ServiceRegistry.LegacyFind<Camera>());
         if (targetCam == null)
             return null;
 
@@ -381,7 +381,7 @@ public class StageBackgroundController : MonoBehaviour
 
     private Image ResolveBackgroundImage()
     {
-        Image[] images = FindObjectsOfType<Image>(true);
+        Image[] images = ServiceRegistry.LegacyFindAll<Image>(true);
         Image fallback = null;
         float bestArea = -1f;
 
