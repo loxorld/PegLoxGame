@@ -68,6 +68,7 @@ public class MenuMicroInteractions : MonoBehaviour
 
     private void OnEnable()
     {
+        RefreshLayoutBeforeIntro();
         PlayIntroSequence();
         StartIdlePulseIfNeeded();
     }
@@ -199,11 +200,19 @@ public class MenuMicroInteractions : MonoBehaviour
             titleCg.DOKill(false);
 
             Vector2 basePos = CachedTitleRect.anchoredPosition;
+            bool animateTitlePosition = !IsLayoutDriven(CachedTitleRect);
             titleCg.alpha = 0f;
-            CachedTitleRect.anchoredPosition = basePos + (Vector2.up * introOffsetY);
+
+            if (animateTitlePosition)
+            {
+                CachedTitleRect.anchoredPosition = basePos + (Vector2.up * introOffsetY);
+            }
 
             intro.Insert(cumulativeDelay, titleCg.DOFade(1f, introFade).SetEase(Ease.OutQuad));
-            intro.Insert(cumulativeDelay, CachedTitleRect.DOAnchorPos(basePos, introMove).SetEase(Ease.OutQuad));
+            if (animateTitlePosition)
+            {
+                intro.Insert(cumulativeDelay, CachedTitleRect.DOAnchorPos(basePos, introMove).SetEase(Ease.OutQuad));
+            }
 
             cumulativeDelay += introStagger;
         }
@@ -220,17 +229,52 @@ public class MenuMicroInteractions : MonoBehaviour
 
             entry.baseScale = entry.rect.localScale;
             entry.baseAnchoredPos = entry.rect.anchoredPosition;
+            bool animateButtonPosition = !IsLayoutDriven(entry.rect);
 
             entry.canvasGroup.alpha = 0f;
-            entry.rect.anchoredPosition = entry.baseAnchoredPos + (Vector2.up * introOffsetY);
+
+            if (animateButtonPosition)
+            {
+                entry.rect.anchoredPosition = entry.baseAnchoredPos + (Vector2.up * introOffsetY);
+            }
 
             intro.Insert(cumulativeDelay, entry.canvasGroup.DOFade(1f, introFade).SetEase(Ease.OutQuad));
-            intro.Insert(cumulativeDelay, entry.rect.DOAnchorPos(entry.baseAnchoredPos, introMove).SetEase(Ease.OutQuad));
+            if (animateButtonPosition)
+            {
+                intro.Insert(cumulativeDelay, entry.rect.DOAnchorPos(entry.baseAnchoredPos, introMove).SetEase(Ease.OutQuad));
+            }
 
             cumulativeDelay += introStagger;
         }
 
         intro.Play();
+    }
+
+    private void RefreshLayoutBeforeIntro()
+    {
+        Canvas.ForceUpdateCanvases();
+
+        RectTransform rootRect = transform as RectTransform;
+        if (rootRect != null)
+        {
+            LayoutRebuilder.ForceRebuildLayoutImmediate(rootRect);
+        }
+    }
+
+    private static bool IsLayoutDriven(RectTransform rect)
+    {
+        if (rect == null)
+        {
+            return false;
+        }
+
+        LayoutElement layoutElement = rect.GetComponent<LayoutElement>();
+        if (layoutElement != null && layoutElement.ignoreLayout)
+        {
+            return false;
+        }
+
+        return rect.GetComponentInParent<LayoutGroup>() != null;
     }
 
     private void StartIdlePulseIfNeeded()
@@ -257,6 +301,7 @@ public class MenuMicroInteractions : MonoBehaviour
         {
             return;
         }
+
 
         entry.idleTween?.Kill(false);
         entry.idleTween = entry.rect.DOScale(entry.baseScale * idlePulseScale, idlePulseHalfCycle)
