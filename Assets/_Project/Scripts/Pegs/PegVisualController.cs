@@ -13,17 +13,35 @@ public class PegVisualController : MonoBehaviour
     private PegDefinition definition;
     private Sprite fallbackSprite;
     private Coroutine hideRoutine;
+    private Vector3 baseLocalScale;
+    private float fallbackMaxDimension = 1f;
+    private float activeScaleMultiplier = 1f;
+    private bool initialized;
 
     private void Awake()
     {
+        EnsureInitialized();
+    }
+
+    private void EnsureInitialized()
+    {
+        if (initialized) return;
+
         spriteRenderer = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
         fallbackSprite = spriteRenderer != null ? spriteRenderer.sprite : null;
+        baseLocalScale = transform.localScale;
+        fallbackMaxDimension = GetSpriteMaxDimension(fallbackSprite);
+        initialized = true;
     }
 
     public void SetDefinition(PegDefinition pegDefinition)
     {
+        EnsureInitialized();
+
         definition = pegDefinition;
+        activeScaleMultiplier = CalculateScaleMultiplier();
+        ApplyScaleMultiplier();
 
         if (animator != null)
         {
@@ -33,6 +51,7 @@ public class PegVisualController : MonoBehaviour
 
     public void PlayIdle()
     {
+        EnsureInitialized();
         StopHideRoutine();
 
         if (spriteRenderer == null) return;
@@ -44,6 +63,7 @@ public class PegVisualController : MonoBehaviour
 
     public void PlayHit()
     {
+        EnsureInitialized();
         if (spriteRenderer == null) return;
 
         Sprite idleSprite = definition != null ? definition.idleSprite : null;
@@ -58,6 +78,7 @@ public class PegVisualController : MonoBehaviour
 
     public void PlayConsume()
     {
+        EnsureInitialized();
         if (spriteRenderer == null) return;
 
         SpawnVfx(definition != null ? definition.consumeVfxPrefab : null);
@@ -75,6 +96,7 @@ public class PegVisualController : MonoBehaviour
 
     public void PlayRestore(bool withFeedback)
     {
+        EnsureInitialized();
         StopHideRoutine();
 
         if (spriteRenderer == null) return;
@@ -90,12 +112,14 @@ public class PegVisualController : MonoBehaviour
 
     public void SetColor(Color color)
     {
+        EnsureInitialized();
         if (spriteRenderer == null) return;
         spriteRenderer.color = color;
     }
 
     public void SetColorToIdle()
     {
+        EnsureInitialized();
         if (spriteRenderer == null) return;
         spriteRenderer.color = definition != null ? definition.idleColor : Color.cyan;
     }
@@ -153,5 +177,31 @@ public class PegVisualController : MonoBehaviour
             spriteRenderer.sprite = candidates[i];
             return;
         }
+    }
+    private float CalculateScaleMultiplier()
+    {
+        if (fallbackMaxDimension <= Mathf.Epsilon) return 1f;
+
+        Sprite referenceSprite = definition != null && definition.idleSprite != null
+            ? definition.idleSprite
+            : fallbackSprite;
+
+        float referenceDimension = GetSpriteMaxDimension(referenceSprite);
+        if (referenceDimension <= Mathf.Epsilon) return 1f;
+
+        return fallbackMaxDimension / referenceDimension;
+    }
+
+    private float GetSpriteMaxDimension(Sprite sprite)
+    {
+        if (sprite == null) return 0f;
+
+        Vector2 size = sprite.bounds.size;
+        return Mathf.Max(size.x, size.y);
+    }
+
+    private void ApplyScaleMultiplier()
+    {
+        transform.localScale = baseLocalScale * activeScaleMultiplier;
     }
 }

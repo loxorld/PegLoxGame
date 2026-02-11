@@ -20,7 +20,7 @@ MonoBehaviour:
   animatorController: {fileID: 0}
   consumeHideDelay: 0.12
   hitVfxPrefab: {fileID: 0}
-  consumeVfxPrefab: {fileID: 0}
+  consumeVfxPrefab: {fileID: 3149910436248124710, guid: 20986c35dccda6347999afc2f4c130c0, type: 3}
   restoreVfxPrefab: {fileID: 0}
   customHitSfx: {fileID: 0}
   customConsumeSfx: {fileID: 0}

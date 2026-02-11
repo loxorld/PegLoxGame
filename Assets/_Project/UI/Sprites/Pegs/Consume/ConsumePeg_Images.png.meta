@@ -1,0 +1,619 @@
+fileFormatVersion: 2
+guid: c13fffca29762f046a1a9535ff7a3408
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -8527855578453124580
+    second: ConsumePeg_Images_0
+  - first:
+      213: 9184933452009877882
+    second: ConsumePeg_Images_1
+  - first:
+      213: -7549293586306805986
+    second: ConsumePeg_Images_2
+  - first:
+      213: -6252375315763680648
+    second: ConsumePeg_Images_3
+  - first:
+      213: 6943252992779033027
+    second: ConsumePeg_Images_4
+  - first:
+      213: 4973455492746848261
+    second: ConsumePeg_Images_5
+  - first:
+      213: 913763451399779385
+    second: ConsumePeg_Images_6
+  - first:
+      213: -5848739143652839692
+    second: ConsumePeg_Images_7
+  - first:
+      213: 2136894796292729563
+    second: ConsumePeg_Images_8
+  - first:
+      213: -6921922539662030084
+    second: ConsumePeg_Images_9
+  - first:
+      213: 7363300581503988763
+    second: ConsumePeg_Images_10
+  - first:
+      213: 1645861381982216058
+    second: ConsumePeg_Images_11
+  - first:
+      213: -1637328379872889578
+    second: ConsumePeg_Images_12
+  - first:
+      213: 2982047788900622647
+    second: ConsumePeg_Images_13
+  - first:
+      213: -3230992918724247174
+    second: ConsumePeg_Images_14
+  - first:
+      213: 5839794757299610354
+    second: ConsumePeg_Images_15
+  - first:
+      213: 2425685173589744072
+    second: ConsumePeg_Images_16
+  - first:
+      213: -7150328974309208199
+    second: ConsumePeg_Images_17
+  - first:
+      213: -2028568756652831531
+    second: ConsumePeg_Images_18
+  - first:
+      213: 4860864603992137740
+    second: ConsumePeg_Images_19
+  - first:
+      213: 4607463545615694448
+    second: ConsumePeg_Images_20
+  - first:
+      213: 7486803947220576334
+    second: ConsumePeg_Images_21
+  - first:
+      213: -2216808550055310806
+    second: ConsumePeg_Images_22
+  - first:
+      213: -3061029463921572308
+    second: ConsumePeg_Images_23
+  - first:
+      213: -8328277131386225725
+    second: ConsumePeg_Images_24
+  - first:
+      213: -2048656497912813558
+    second: ConsumePeg_Images_25
+  - first:
+      213: 1896415694556438550
+    second: ConsumePeg_Images_26
+  - first:
+      213: 6718130578954312422
+    second: ConsumePeg_Images_27
+  - first:
+      213: 2458581786457381243
+    second: ConsumePeg_Images_28
+  - first:
+      213: 7636604046108528312
+    second: ConsumePeg_Images_29
+  - first:
+      213: -6509351114584181260
+    second: ConsumePeg_Images_30
+  - first:
+      213: 8845166988521909431
+    second: ConsumePeg_Images_31
+  - first:
+      213: 649306711134912279
+    second: ConsumePeg_Images_32
+  - first:
+      213: -6557788167632054225
+    second: ConsumePeg_Images_33
+  - first:
+      213: 1440666688659273095
+    second: ConsumePeg_Images_34
+  - first:
+      213: -7687258172769748117
+    second: ConsumePeg_Images_35
+  - first:
+      213: 2830636162311989738
+    second: ConsumePeg_Images_36
+  - first:
+      213: -317879717036938120
+    second: ConsumePeg_Images_37
+  - first:
+      213: -1678615893089754277
+    second: ConsumePeg_Images_38
+  - first:
+      213: -3960604249173548615
+    second: ConsumePeg_Images_39
+  - first:
+      213: 3849220246927973522
+    second: ConsumePeg_Images_40
+  - first:
+      213: 8817888880637134953
+    second: ConsumePeg_Images_41
+  - first:
+      213: -8825480446239593474
+    second: ConsumePeg_Images_42
+  - first:
+      213: -2519870336975907179
+    second: ConsumePeg_Images_43
+  - first:
+      213: -1036858519422923188
+    second: ConsumePeg_Images_44
+  - first:
+      213: 3226092464905790712
+    second: ConsumePeg_Images_45
+  - first:
+      213: -483998329925814299
+    second: ConsumePeg_Images_46
+  - first:
+      213: 9170397687927780178
+    second: ConsumePeg_Images_47
+  - first:
+      213: -2739722706558255810
+    second: ConsumePeg_Images_48
+  - first:
+      213: 373117485338179581
+    second: ConsumePeg_Images_49
+  - first:
+      213: 1602093488579223544
+    second: ConsumePeg_Images_50
+  - first:
+      213: -8816327419107537295
+    second: ConsumePeg_Images_51
+  - first:
+      213: -2780848071990560449
+    second: ConsumePeg_Images_52
+  - first:
+      213: 3574483996500632642
+    second: ConsumePeg_Images_53
+  - first:
+      213: 3304696478697126122
+    second: ConsumePeg_Images_54
+  - first:
+      213: -2035831333322653588
+    second: ConsumePeg_Images_55
+  - first:
+      213: 6931924647702318279
+    second: ConsumePeg_Images_56
+  - first:
+      213: 8146003926817570897
+    second: ConsumePeg_Images_57
+  - first:
+      213: -8300624266582378677
+    second: ConsumePeg_Images_58
+  - first:
+      213: 6228252344542188569
+    second: ConsumePeg_Images_59
+  - first:
+      213: -2861929879233918454
+    second: ConsumePeg_Images_60
+  - first:
+      213: -5751738888453145131
+    second: ConsumePeg_Images_61
+  - first:
+      213: 953679733574560733
+    second: ConsumePeg_Images_62
+  - first:
+      213: -3006997282386153968
+    second: ConsumePeg_Images_63
+  - first:
+      213: 317601763605056709
+    second: ConsumePeg_Images_64
+  - first:
+      213: 4939271187351171788
+    second: ConsumePeg_Images_65
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 0
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: ConsumePeg_Images_0
+      rect:
+        serializedVersion: 2
+        x: 79
+        y: 679
+        width: 244
+        height: 226
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c1ad77ea888f6a980800000000000000
+      internalID: -8527855578453124580
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ConsumePeg_Images_1
+      rect:
+        serializedVersion: 2
+        x: 342
+        y: 679
+        width: 261
+        height: 226
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a71b6ac8f40777f70800000000000000
+      internalID: 9184933452009877882
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ConsumePeg_Images_2
+      rect:
+        serializedVersion: 2
+        x: 620
+        y: 680
+        width: 253
+        height: 220
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e1f4c0b2b758b3790800000000000000
+      internalID: -7549293586306805986
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ConsumePeg_Images_3
+      rect:
+        serializedVersion: 2
+        x: 893
+        y: 684
+        width: 194
+        height: 204
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 87a2c7dd6c91b39a0800000000000000
+      internalID: -6252375315763680648
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ConsumePeg_Images_4
+      rect:
+        serializedVersion: 2
+        x: 78
+        y: 454
+        width: 243
+        height: 204
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3c9134c5fc36b5060800000000000000
+      internalID: 6943252992779033027
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ConsumePeg_Images_5
+      rect:
+        serializedVersion: 2
+        x: 343
+        y: 453
+        width: 255
+        height: 206
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 508246f8b63450540800000000000000
+      internalID: 4973455492746848261
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ConsumePeg_Images_6
+      rect:
+        serializedVersion: 2
+        x: 623
+        y: 457
+        width: 248
+        height: 185
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9343b6984075eac00800000000000000
+      internalID: 913763451399779385
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ConsumePeg_Images_7
+      rect:
+        serializedVersion: 2
+        x: 892
+        y: 458
+        width: 195
+        height: 185
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4fe66ae9cba15dea0800000000000000
+      internalID: -5848739143652839692
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ConsumePeg_Images_8
+      rect:
+        serializedVersion: 2
+        x: 78
+        y: 233
+        width: 240
+        height: 196
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bdaa867de76c7ad10800000000000000
+      internalID: 2136894796292729563
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ConsumePeg_Images_9
+      rect:
+        serializedVersion: 2
+        x: 349
+        y: 236
+        width: 245
+        height: 190
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cfacca4cf1460ff90800000000000000
+      internalID: -6921922539662030084
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ConsumePeg_Images_10
+      rect:
+        serializedVersion: 2
+        x: 621
+        y: 237
+        width: 249
+        height: 190
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b14f8fecdd2bf2660800000000000000
+      internalID: 7363300581503988763
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ConsumePeg_Images_11
+      rect:
+        serializedVersion: 2
+        x: 896
+        y: 240
+        width: 184
+        height: 181
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a7f559ee43647d610800000000000000
+      internalID: 1645861381982216058
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 1b7f2cd2639b07546962065ec0554889
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries:
+      - key: SpriteEditor.SliceSettings
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":4.0,"y":3.0},"gridSpriteSize":{"x":384.0,"y":341.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":2,"keepEmptyRects":false,"isAlternate":false}'
+    nameFileIdTable:
+      ConsumePeg_Images_0: -8527855578453124580
+      ConsumePeg_Images_1: 9184933452009877882
+      ConsumePeg_Images_10: 7363300581503988763
+      ConsumePeg_Images_11: 1645861381982216058
+      ConsumePeg_Images_2: -7549293586306805986
+      ConsumePeg_Images_3: -6252375315763680648
+      ConsumePeg_Images_4: 6943252992779033027
+      ConsumePeg_Images_5: 4973455492746848261
+      ConsumePeg_Images_6: 913763451399779385
+      ConsumePeg_Images_7: -5848739143652839692
+      ConsumePeg_Images_8: 2136894796292729563
+      ConsumePeg_Images_9: -6921922539662030084
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

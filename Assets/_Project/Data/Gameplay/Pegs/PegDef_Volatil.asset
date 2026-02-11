@@ -13,8 +13,18 @@ MonoBehaviour:
   m_Name: PegDef_Volatil
   m_EditorClassIdentifier: Assembly-CSharp::PegDefinition
   type: 0
-  idleColor: {r: 1, g: 0.32348293, b: 0, a: 1}
+  idleSprite: {fileID: 21300000, guid: 78fde2426afb3bb4d965519c9b1ad067, type: 3}
+  hitSprite: {fileID: 0}
+  idleColor: {r: 1, g: 1, b: 1, a: 1}
   hitColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  animatorController: {fileID: 0}
+  consumeHideDelay: 0.12
+  hitVfxPrefab: {fileID: 0}
+  consumeVfxPrefab: {fileID: 0}
+  restoreVfxPrefab: {fileID: 0}
+  customHitSfx: {fileID: 0}
+  customConsumeSfx: {fileID: 0}
+  customRestoreSfx: {fileID: 0}
   behaviors:
   - {fileID: 11400000, guid: 2de5506100c84d4408fb36a120e2f691, type: 2}
   countsForMultiplier: 0
