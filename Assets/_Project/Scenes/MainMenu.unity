@@ -2113,6 +2113,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1012590510}
   - component: {fileID: 1012590509}
+  - component: {fileID: 1012590511}
   m_Layer: 0
   m_Name: MainMenuController
   m_TagString: Untagged
@@ -2150,6 +2151,47 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1012590511
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1012590508}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7167448bf395456b9d3cf443a091475a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MenuMicroInteractions
+  titleOrLogo: {fileID: 1407658714}
+  titleOrLogoImage: {fileID: 1407658715}
+  buttons:
+  - rect: {fileID: 464564260}
+    image: {fileID: 464564262}
+    isPrimary: 1
+  - rect: {fileID: 174388237}
+    image: {fileID: 174388240}
+    isPrimary: 0
+  - rect: {fileID: 1159149093}
+    image: {fileID: 1159149095}
+    isPrimary: 0
+  - rect: {fileID: 1802648897}
+    image: {fileID: 1802648899}
+    isPrimary: 0
+  reducedMotion: 0
+  hoverScale: 1.04
+  hoverDuration: 0.18
+  pressDownScale: 0.98
+  pressBounceScale: 1.02
+  pressDownDuration: 0.07
+  pressBounceDuration: 0.1
+  enableIdlePulse: 1
+  idlePulseScale: 1.03
+  idlePulseHalfCycle: 0.9
+  introFade: 0.18
+  introMove: 0.2
+  introStagger: 0.06
+  introOffsetY: 20
 --- !u!1 &1048560226
 GameObject:
   m_ObjectHideFlags: 0
@@ -3743,7 +3785,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 400, y: -130}
+  m_AnchoredPosition: {x: 512, y: -484}
   m_SizeDelta: {x: 231.49, y: 140}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1935380328
