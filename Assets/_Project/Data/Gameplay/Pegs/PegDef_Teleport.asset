@@ -13,8 +13,18 @@ MonoBehaviour:
   m_Name: PegDef_Teleport
   m_EditorClassIdentifier: Assembly-CSharp::PegDefinition
   type: 0
-  idleColor: {r: 0.48635912, g: 0, b: 1, a: 1}
+  idleSprite: {fileID: 0}
+  hitSprite: {fileID: 0}
+  idleColor: {r: 1, g: 1, b: 1, a: 1}
   hitColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  animatorController: {fileID: 9100000, guid: e710e5cf336379c4c8002a7b0733cbb2, type: 2}
+  consumeHideDelay: 0.12
+  hitVfxPrefab: {fileID: 0}
+  consumeVfxPrefab: {fileID: 0}
+  restoreVfxPrefab: {fileID: 0}
+  customHitSfx: {fileID: 0}
+  customConsumeSfx: {fileID: 0}
+  customRestoreSfx: {fileID: 0}
   behaviors:
   - {fileID: 11400000, guid: 9008944fcadc0af46b0bf36a8d94fcf6, type: 2}
   countsForMultiplier: 0

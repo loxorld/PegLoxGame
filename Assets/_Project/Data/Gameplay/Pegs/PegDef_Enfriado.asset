@@ -13,8 +13,18 @@ MonoBehaviour:
   m_Name: PegDef_Enfriado
   m_EditorClassIdentifier: Assembly-CSharp::PegDefinition
   type: 0
-  idleColor: {r: 0, g: 0.065425396, b: 1, a: 1}
+  idleSprite: {fileID: 21300000, guid: 3d9a1e5bbb4b343498e2bc187cd7a80f, type: 3}
+  hitSprite: {fileID: 0}
+  idleColor: {r: 1, g: 1, b: 1, a: 1}
   hitColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  animatorController: {fileID: 0}
+  consumeHideDelay: 0.12
+  hitVfxPrefab: {fileID: 0}
+  consumeVfxPrefab: {fileID: 0}
+  restoreVfxPrefab: {fileID: 0}
+  customHitSfx: {fileID: 0}
+  customConsumeSfx: {fileID: 0}
+  customRestoreSfx: {fileID: 0}
   behaviors:
   - {fileID: 11400000, guid: 18327f57c717e7c4e971d1a57edb39ed, type: 2}
   countsForMultiplier: 0
