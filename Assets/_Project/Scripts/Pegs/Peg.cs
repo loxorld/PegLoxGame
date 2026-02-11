@@ -7,9 +7,8 @@ public class Peg : MonoBehaviour
     [SerializeField] private PegDefinition definition;
 
     private bool consumed;
-    private SpriteRenderer sr;
     private Collider2D col;
-    private Sprite defaultSprite;
+    private PegVisualController visualController;
 
     // Para Durable (o futuras mecánicas)
     private int hitPointsRemaining = 1;
@@ -20,10 +19,16 @@ public class Peg : MonoBehaviour
 
     private void Awake()
     {
-        sr = GetComponent<SpriteRenderer>();
         col = GetComponent<Collider2D>();
-        defaultSprite = sr != null ? sr.sprite : null;
-        ApplyIdleVisual();
+        visualController = GetComponent<PegVisualController>();
+
+        if (visualController == null)
+        {
+            visualController = gameObject.AddComponent<PegVisualController>();
+        }
+
+        visualController.SetDefinition(definition);
+        visualController.PlayIdle();
     }
 
     private void OnEnable()
@@ -40,6 +45,10 @@ public class Peg : MonoBehaviour
     public void SetDefinition(PegDefinition def)
     {
         definition = def;
+        if (visualController != null)
+        {
+            visualController.SetDefinition(definition);
+        }
         ResetForNewEncounter();
     }
 
@@ -50,9 +59,7 @@ public class Peg : MonoBehaviour
         hitPointsRemaining = 1;
 
         if (col != null) col.enabled = true;
-        if (sr != null) sr.enabled = true;
-
-        ApplyIdleVisual();
+        visualController?.PlayRestore();
 
         // Behaviors pueden inicializar estado (ej: Durable setea HP=2)
         if (definition != null && definition.behaviors != null)
@@ -70,9 +77,7 @@ public class Peg : MonoBehaviour
     {
         consumed = false;
         if (col != null) col.enabled = true;
-        if (sr != null) sr.enabled = true;
-
-        ApplyIdleVisual();
+        visualController?.PlayRestore();
 
         // Behaviors pueden querer resetear su estado por encounter
         if (definition != null && definition.behaviors != null)
@@ -85,44 +90,12 @@ public class Peg : MonoBehaviour
         }
     }
 
-    private void ApplyIdleVisual()
-    {
-        if (sr == null) return;
-
-        Sprite spriteToApply = definition != null && definition.idleSprite != null
-            ? definition.idleSprite
-            : defaultSprite;
-        if (spriteToApply != null)
-            sr.sprite = spriteToApply;
-
-        sr.color = definition != null ? definition.idleColor : Color.cyan;
-    }
-
-    private void ApplyHitVisual()
-    {
-        if (sr == null) return;
-
-        Sprite spriteToApply = defaultSprite;
-        if (definition != null)
-        {
-            if (definition.hitSprite != null)
-                spriteToApply = definition.hitSprite;
-            else if (definition.idleSprite != null)
-                spriteToApply = definition.idleSprite;
-        }
-
-        if (spriteToApply != null)
-            sr.sprite = spriteToApply;
-
-        sr.color = definition != null ? definition.hitColor : Color.gray;
-    }
-
     private void Consume()
     {
         consumed = true;
 
         // visual
-        if (sr != null) sr.enabled = false;
+        visualController?.PlayConsume();
 
         // colisión
         if (col != null) col.enabled = false;
@@ -161,7 +134,7 @@ public class Peg : MonoBehaviour
         }
         else
         {
-            ApplyHitVisual();
+            visualController?.PlayHit();
         }
     }
 
@@ -180,12 +153,12 @@ public class Peg : MonoBehaviour
 
     public void SetColor(Color c)
     {
-        if (sr != null) sr.color = c;
+        visualController?.SetColor(c);
     }
 
     public void SetColorToIdle()
     {
-        ApplyIdleVisual();
+        visualController?.SetColorToIdle();
     }
 
     /// <summary>
