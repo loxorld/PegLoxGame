@@ -59,7 +59,7 @@ public class Peg : MonoBehaviour
         hitPointsRemaining = 1;
 
         if (col != null) col.enabled = true;
-        visualController?.PlayRestore();
+        visualController?.PlayIdle();
 
         // Behaviors pueden inicializar estado (ej: Durable setea HP=2)
         if (definition != null && definition.behaviors != null)
@@ -77,7 +77,12 @@ public class Peg : MonoBehaviour
     {
         consumed = false;
         if (col != null) col.enabled = true;
-        visualController?.PlayRestore();
+        visualController?.PlayRestore(withFeedback: true);
+
+        if (definition != null && definition.customRestoreSfx != null)
+        {
+            AudioManager.Instance?.PlaySfx(definition.customRestoreSfx);
+        }
 
         // Behaviors pueden querer resetear su estado por encounter
         if (definition != null && definition.behaviors != null)
@@ -96,6 +101,11 @@ public class Peg : MonoBehaviour
 
         // visual
         visualController?.PlayConsume();
+
+        if (definition != null && definition.customConsumeSfx != null)
+        {
+            AudioManager.Instance?.PlaySfx(definition.customConsumeSfx);
+        }
 
         // colisión
         if (col != null) col.enabled = false;
@@ -126,7 +136,15 @@ public class Peg : MonoBehaviour
         }
 
         ShotManager.Instance?.RegisterPegHit(Type);
-        AudioManager.Instance?.PlaySfx(AudioEventId.PegHit);
+
+        if (definition != null && definition.customHitSfx != null)
+        {
+            AudioManager.Instance?.PlaySfx(definition.customHitSfx);
+        }
+        else
+        {
+            AudioManager.Instance?.PlaySfx(AudioEventId.PegHit);
+        }
 
         if (consumeNow)
         {
