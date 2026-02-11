@@ -3,18 +3,36 @@ using UnityEngine.UI;
 
 public class StageBackgroundController : MonoBehaviour
 {
+    private const int FarBackgroundSortingOrder = -1002;
+    private const int MidBackgroundSortingOrder = -1001;
     private const int WorldBackgroundSortingOrder = -1000;
+    private const float FarBackgroundZ = 17f;
+    private const float MidBackgroundZ = 16f;
     private const float WorldBackgroundZ = 15f;
+    private const float LayerBobAmplitude = 0.2f;
+    private const float LayerScrollAmplitude = 0.35f;
+    private const float MainLayerParallaxFactor = 0.65f;
+    private const float DefaultMidLayerParallaxFactor = 0.45f;
+    private const float DefaultFarLayerParallaxFactor = 0.3f;
+    private const float DefaultMidLayerSpeed = 0.18f;
+    private const float DefaultFarLayerSpeed = 0.1f;
+    private const int AmbientVfxSortingOrder = -999;
 
     [System.Serializable]
     private struct StageBackgroundStyle
     {
         public Sprite sprite;
+        public Sprite midLayer;
+        public Sprite farLayer;
         public Color tint;
+        public float scrollSpeedFar;
+        public float scrollSpeedMid;
+        public GameObject ambientVfxPrefab;
     }
 
     [SerializeField] private Image backgroundImage;
     [SerializeField] private bool applyOnStart = true;
+    [SerializeField] private bool enforceAmbientVfxBehindGameplay = true;
     [SerializeField]
     private StageBackgroundStyle[] stageStyles = new StageBackgroundStyle[]
     {
@@ -25,6 +43,10 @@ public class StageBackgroundController : MonoBehaviour
 
     private int lastStageIndex = -1;
     private SpriteRenderer worldBackgroundRenderer;
+    private SpriteRenderer midBackgroundRenderer;
+    private SpriteRenderer farBackgroundRenderer;
+    private Transform ambientVfxRoot;
+    private GameObject ambientVfxInstance;
 
     private void Start()
     {
@@ -34,6 +56,8 @@ public class StageBackgroundController : MonoBehaviour
 
     private void Update()
     {
+        AnimateBackgroundLayers();
+
         GameFlowManager flow = GameFlowManager.Instance;
         if (flow == null)
             return;
@@ -75,7 +99,12 @@ public class StageBackgroundController : MonoBehaviour
                 backgroundImage.color = style.tint;
                 backgroundImage.enabled = true;
             }
+
+            DisableLayer(midBackgroundRenderer);
+            DisableLayer(farBackgroundRenderer);
         }
+
+        ReplaceAmbientVfx(style.ambientVfxPrefab);
 
         lastStageIndex = stageIndex;
     }
@@ -91,35 +120,60 @@ public class StageBackgroundController : MonoBehaviour
 
     private void ApplyToWorldBackground(StageBackgroundStyle style)
     {
-        if (style.sprite == null)
+        if (style.sprite == null && style.midLayer == null && style.farLayer == null)
         {
             DisableWorldBackground();
             return;
         }
 
-        SpriteRenderer sr = EnsureWorldBackgroundRenderer();
-        if (sr == null)
+        ApplyLayer(EnsureFarBackgroundRenderer(), style.farLayer, style.tint, FarBackgroundZ);
+        ApplyLayer(EnsureMidBackgroundRenderer(), style.midLayer, style.tint, MidBackgroundZ);
+        ApplyLayer(EnsureWorldBackgroundRenderer(), style.sprite, style.tint, WorldBackgroundZ);
+    }
+
+    private void ApplyLayer(SpriteRenderer renderer, Sprite sprite, Color tint, float zPosition)
+    {
+        if (renderer == null)
             return;
 
-        sr.enabled = true;
-        sr.sprite = style.sprite;
-        sr.color = style.tint;
+        if (sprite == null)
+        {
+            renderer.enabled = false;
+            return;
+        }
 
-        Camera targetCam = Camera.main;
+        renderer.enabled = true;
+        renderer.sprite = sprite;
+        renderer.color = tint;
+
+        Camera targetCam = ResolveTargetCamera();
         if (targetCam == null)
             return;
 
         Vector3 camPos = targetCam.transform.position;
-        sr.transform.position = new Vector3(camPos.x, camPos.y, WorldBackgroundZ);
+        renderer.transform.position = new Vector3(camPos.x, camPos.y, zPosition);
 
-        Vector2 spriteSize = sr.sprite.bounds.size;
+        Vector2 spriteSize = sprite.bounds.size;
         if (spriteSize.x <= 0.0001f || spriteSize.y <= 0.0001f)
             return;
 
         float viewHeight = targetCam.orthographicSize * 2f;
         float viewWidth = viewHeight * targetCam.aspect;
         float scale = Mathf.Max(viewWidth / spriteSize.x, viewHeight / spriteSize.y);
-        sr.transform.localScale = new Vector3(scale, scale, 1f);
+        renderer.transform.localScale = new Vector3(scale, scale, 1f);
+    }
+
+    private Camera ResolveTargetCamera()
+    {
+        Camera targetCam = Camera.main;
+        if (targetCam != null)
+            return targetCam;
+
+        targetCam = FindObjectOfType<Camera>();
+        if (targetCam == null)
+            return null;
+
+        return targetCam;
     }
 
     private SpriteRenderer EnsureWorldBackgroundRenderer()
@@ -136,18 +190,150 @@ public class StageBackgroundController : MonoBehaviour
             GameObject go = new GameObject("StageBackground_World");
             go.transform.SetParent(transform, false);
             worldBackgroundRenderer = go.AddComponent<SpriteRenderer>();
-            worldBackgroundRenderer.sortingOrder = WorldBackgroundSortingOrder;
         }
+
+        worldBackgroundRenderer.sortingOrder = WorldBackgroundSortingOrder;
 
         return worldBackgroundRenderer;
     }
 
-    private void DisableWorldBackground()
+    private SpriteRenderer EnsureMidBackgroundRenderer()
     {
-        if (worldBackgroundRenderer != null)
-            worldBackgroundRenderer.enabled = false;
+        if (midBackgroundRenderer != null)
+            return midBackgroundRenderer;
+
+        Transform existing = transform.Find("StageBackground_Mid");
+        if (existing != null)
+            midBackgroundRenderer = existing.GetComponent<SpriteRenderer>();
+
+        if (midBackgroundRenderer == null)
+        {
+            GameObject go = new GameObject("StageBackground_Mid");
+            go.transform.SetParent(transform, false);
+            midBackgroundRenderer = go.AddComponent<SpriteRenderer>();
+        }
+
+        midBackgroundRenderer.sortingOrder = MidBackgroundSortingOrder;
+        return midBackgroundRenderer;
     }
 
+    private SpriteRenderer EnsureFarBackgroundRenderer()
+    {
+        if (farBackgroundRenderer != null)
+            return farBackgroundRenderer;
+
+        Transform existing = transform.Find("StageBackground_Far");
+        if (existing != null)
+            farBackgroundRenderer = existing.GetComponent<SpriteRenderer>();
+
+        if (farBackgroundRenderer == null)
+        {
+            GameObject go = new GameObject("StageBackground_Far");
+            go.transform.SetParent(transform, false);
+            farBackgroundRenderer = go.AddComponent<SpriteRenderer>();
+        }
+
+        farBackgroundRenderer.sortingOrder = FarBackgroundSortingOrder;
+        return farBackgroundRenderer;
+    }
+
+    private void DisableWorldBackground()
+    {
+        DisableLayer(worldBackgroundRenderer);
+        DisableLayer(midBackgroundRenderer);
+        DisableLayer(farBackgroundRenderer);
+    }
+
+    private void DisableLayer(SpriteRenderer renderer)
+    {
+        if (renderer != null)
+            renderer.enabled = false;
+    }
+
+    private void AnimateBackgroundLayers()
+    {
+        Camera targetCam = ResolveTargetCamera();
+        if (targetCam == null)
+            return;
+
+        StageBackgroundStyle style = ResolveStyle(Mathf.Max(0, lastStageIndex));
+        float midSpeed = style.scrollSpeedMid > 0f ? style.scrollSpeedMid : DefaultMidLayerSpeed;
+        float farSpeed = style.scrollSpeedFar > 0f ? style.scrollSpeedFar : DefaultFarLayerSpeed;
+
+        UpdateLayerParallax(worldBackgroundRenderer, targetCam, WorldBackgroundZ, MainLayerParallaxFactor, Mathf.Max(midSpeed, 0.05f));
+        UpdateLayerParallax(midBackgroundRenderer, targetCam, MidBackgroundZ, DefaultMidLayerParallaxFactor, midSpeed);
+        UpdateLayerParallax(farBackgroundRenderer, targetCam, FarBackgroundZ, DefaultFarLayerParallaxFactor, farSpeed);
+    }
+
+    private void UpdateLayerParallax(SpriteRenderer renderer, Camera targetCam, float baseZ, float amplitudeFactor, float speed)
+    {
+        if (renderer == null || !renderer.enabled || renderer.sprite == null)
+            return;
+
+        Vector3 camPos = targetCam.transform.position;
+        float t = Time.time;
+        float bob = Mathf.Sin(t * speed * 0.75f) * LayerBobAmplitude * amplitudeFactor;
+        float scroll = Mathf.Cos(t * speed) * LayerScrollAmplitude * amplitudeFactor;
+        renderer.transform.position = new Vector3(camPos.x + scroll, camPos.y + bob, baseZ);
+    }
+
+    private Transform EnsureAmbientVfxRoot()
+    {
+        if (ambientVfxRoot != null)
+            return ambientVfxRoot;
+
+        Transform existing = transform.Find("StageAmbientVfx");
+        if (existing != null)
+        {
+            ambientVfxRoot = existing;
+            return ambientVfxRoot;
+        }
+
+        GameObject root = new GameObject("StageAmbientVfx");
+        root.transform.SetParent(transform, false);
+        ambientVfxRoot = root.transform;
+        return ambientVfxRoot;
+    }
+
+    private void ReplaceAmbientVfx(GameObject vfxPrefab)
+    {
+        if (ambientVfxInstance != null)
+            Destroy(ambientVfxInstance);
+
+        ambientVfxInstance = null;
+        if (vfxPrefab == null)
+            return;
+
+        Transform root = EnsureAmbientVfxRoot();
+        ambientVfxInstance = Instantiate(vfxPrefab, root);
+        ambientVfxInstance.name = vfxPrefab.name;
+        ambientVfxInstance.transform.localPosition = Vector3.zero;
+        ambientVfxInstance.transform.localRotation = Quaternion.identity;
+        ambientVfxInstance.transform.localScale = Vector3.one;
+
+        if (enforceAmbientVfxBehindGameplay)
+            ConfigureAmbientVfxSorting(ambientVfxInstance);
+    }
+
+    private void ConfigureAmbientVfxSorting(GameObject root)
+    {
+        if (root == null)
+            return;
+
+        SpriteRenderer baseRenderer = EnsureWorldBackgroundRenderer();
+        int sortingLayerId = baseRenderer != null ? baseRenderer.sortingLayerID : 0;
+
+        Renderer[] renderers = root.GetComponentsInChildren<Renderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            Renderer renderer = renderers[i];
+            if (renderer == null)
+                continue;
+
+            renderer.sortingLayerID = sortingLayerId;
+            renderer.sortingOrder = AmbientVfxSortingOrder;
+        }
+    }
 
     private bool IsValidBackgroundImage(Image img)
     {

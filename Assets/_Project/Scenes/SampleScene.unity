@@ -3698,13 +3698,29 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::StageBackgroundController
   backgroundImage: {fileID: 2050000003}
   applyOnStart: 1
+  enforceAmbientVfxBehindGameplay: 1
   stageStyles:
   - sprite: {fileID: 4741783903038332501, guid: afa55779e6f7ba54e957401a57941aae, type: 3}
+    midLayer: {fileID: 0}
+    farLayer: {fileID: 0}
     tint: {r: 1, g: 1, b: 1, a: 1}
+    scrollSpeedFar: 0.08
+    scrollSpeedMid: 0.16
+    ambientVfxPrefab: {fileID: 0}
   - sprite: {fileID: 647671454982661556, guid: f1b1ab8a500ac64499517e211e81bee1, type: 3}
+    midLayer: {fileID: 0}
+    farLayer: {fileID: 0}
     tint: {r: 1, g: 1, b: 1, a: 1}
+    scrollSpeedFar: 0.08
+    scrollSpeedMid: 0.16
+    ambientVfxPrefab: {fileID: 0}
   - sprite: {fileID: -4837096037484145439, guid: bfae312ebd6372745818766373a5d4f3, type: 3}
+    midLayer: {fileID: 0}
+    farLayer: {fileID: 0}
     tint: {r: 1, g: 1, b: 1, a: 1}
+    scrollSpeedFar: 0.08
+    scrollSpeedMid: 0.16
+    ambientVfxPrefab: {fileID: 0}
 --- !u!1 &613728784
 GameObject:
   m_ObjectHideFlags: 0
