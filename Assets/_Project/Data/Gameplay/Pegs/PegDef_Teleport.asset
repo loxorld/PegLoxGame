@@ -18,7 +18,7 @@ MonoBehaviour:
   idleColor: {r: 1, g: 1, b: 1, a: 1}
   hitColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   animatorController: {fileID: 9100000, guid: e710e5cf336379c4c8002a7b0733cbb2, type: 2}
-  consumeHideDelay: 0.12
+  consumeHideDelay: 0.25
   hitVfxPrefab: {fileID: 0}
   consumeVfxPrefab: {fileID: 0}
   restoreVfxPrefab: {fileID: 0}
