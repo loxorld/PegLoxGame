@@ -25,11 +25,12 @@ public class MainMenuAmbientAnimator : MonoBehaviour
         [Tooltip("Factor de parallax para variar la sensación de profundidad (0.2-1.5).")]
         public float parallaxFactor = 1f;
 
-        [Tooltip("Distancia horizontal para reiniciar el desplazamiento (loop).")]
+        [Tooltip("Rango horizontal total de oscilación en unidades UI.")]
         public float loopDistance = 220f;
 
         [NonSerialized] public Vector3 baseLocalPosition;
         [NonSerialized] public float horizontalOffset;
+        [NonSerialized] public float horizontalPhase;
         [NonSerialized] public float verticalPhase;
     }
 
@@ -80,11 +81,11 @@ public class MainMenuAmbientAnimator : MonoBehaviour
             }
 
             float parallax = Mathf.Max(0f, layer.parallaxFactor);
-            float speed = layer.speedX * parallax * intensity;
-            float loopDistance = Mathf.Max(1f, layer.loopDistance);
-
-            layer.horizontalOffset += speed * deltaTime;
-            layer.horizontalOffset = Mathf.Repeat(layer.horizontalOffset + (loopDistance * 0.5f), loopDistance) - (loopDistance * 0.5f);
+            float speed = Mathf.Abs(layer.speedX * parallax * intensity);
+            float oscillationRange = Mathf.Max(1f, layer.loopDistance);
+            float oscillationRadius = oscillationRange * 0.5f;
+            float horizontalOmega = (speed / oscillationRadius) * Mathf.PI;
+            layer.horizontalOffset = Mathf.Sin((elapsedTime * horizontalOmega) + layer.horizontalPhase) * oscillationRadius;
 
             float yOffset = Mathf.Sin((elapsedTime * Mathf.PI * 2f * layer.frequencyY) + layer.verticalPhase) * layer.amplitudeY * intensity;
 
@@ -114,6 +115,7 @@ public class MainMenuAmbientAnimator : MonoBehaviour
                 layer.horizontalOffset = 0f;
             }
 
+            layer.horizontalPhase = i * 0.6f;
             layer.verticalPhase = i * 0.9f;
         }
     }
