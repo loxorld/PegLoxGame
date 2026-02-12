@@ -93,7 +93,8 @@ public class MapManager : MonoBehaviour
                 flow.SetCurrentStageIndex(stageIndex);
         }
 
-        MapDomainService.NodeResolution nodeResolution = domainService.ResolveCurrentNode(stage, flow != null ? flow.SavedMapNode : null);
+        MapNodeData savedNode = ShouldResumeFromSavedNode(flow) ? flow.SavedMapNode : null;
+        MapDomainService.NodeResolution nodeResolution = domainService.ResolveCurrentNode(stage, savedNode);
         if (nodeResolution.ShouldClearSavedNode)
             flow?.SaveMapNode(null);
 
@@ -107,6 +108,16 @@ public class MapManager : MonoBehaviour
         OpenNode(currentNode);
     }
 
+
+    private static bool ShouldResumeFromSavedNode(GameFlowManager flow)
+    {
+        if (flow == null || flow.SavedMapNode == null)
+            return false;
+
+        // En una run fresca (an sin nodos elegidos) siempre queremos arrancar desde
+        // el nodo inicial del stage, aunque exista un save viejo cargado en memoria.
+        return flow.NodesVisited > 0;
+    }
     public void OpenNode(MapNodeData node)
     {
         if (node == null)
