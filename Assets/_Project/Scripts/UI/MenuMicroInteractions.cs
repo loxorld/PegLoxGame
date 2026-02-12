@@ -185,6 +185,7 @@ public class MenuMicroInteractions : MonoBehaviour
     {
         Sequence intro = DOTween.Sequence();
         intro.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
+        intro.SetUpdate(true);
 
         float cumulativeDelay = 0f;
 
@@ -307,6 +308,7 @@ public class MenuMicroInteractions : MonoBehaviour
         entry.idleTween = entry.rect.DOScale(entry.baseScale * idlePulseScale, idlePulseHalfCycle)
             .SetEase(Ease.InOutSine)
             .SetLoops(-1, LoopType.Yoyo)
+            .SetUpdate(true)
             .SetLink(entry.rect.gameObject, LinkBehaviour.KillOnDestroy);
     }
 

@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.SceneManagement;
+using System;
 
 public class GameBootstrap : MonoBehaviour
 {
@@ -41,10 +42,11 @@ public class GameBootstrap : MonoBehaviour
 
     private void RegisterCoreServices()
     {
-        gameFlowManager = gameFlowManager != null ? gameFlowManager : GameFlowManager.Instance;
-        mapManager = mapManager != null ? mapManager : ServiceRegistry.ResolveWithFallback(nameof(GameBootstrap), nameof(mapManager), () => ServiceRegistry.LegacyFind<MapManager>(true));
-        orbManager = orbManager != null ? orbManager : OrbManager.Instance;
-        relicManager = relicManager != null ? relicManager : RelicManager.Instance;
+        gameFlowManager = ResolveSceneComponent(gameFlowManager, () => GameFlowManager.Instance ?? ServiceRegistry.LegacyFind<GameFlowManager>(true));
+        mapManager = ResolveSceneComponent(mapManager, () => ServiceRegistry.LegacyFind<MapManager>(true));
+        orbManager = ResolveSceneComponent(orbManager, () => OrbManager.Instance ?? ServiceRegistry.LegacyFind<OrbManager>(true));
+        relicManager = ResolveSceneComponent(relicManager, () => RelicManager.Instance ?? ServiceRegistry.LegacyFind<RelicManager>(true));
+        mapNodeModalView = ResolveMapNodeModalView();
 
         ServiceRegistry.Register(gameFlowManager);
         ServiceRegistry.Register(mapManager);
@@ -65,5 +67,41 @@ public class GameBootstrap : MonoBehaviour
 
         if (mapManager != null)
             mapManager.InjectDependencies(gameFlowManager, shopService, mapNodeModalView as IMapNodeModalView);
+    }
+
+    private static T ResolveSceneComponent<T>(T current, Func<T> resolver) where T : Component
+    {
+        if (IsSceneObject(current))
+            return current;
+
+        T resolved = resolver != null ? resolver.Invoke() : null;
+        return IsSceneObject(resolved) ? resolved : null;
+    }
+
+    private MonoBehaviour ResolveMapNodeModalView()
+    {
+        if (mapNodeModalView != null && IsSceneObject(mapNodeModalView) && mapNodeModalView is IMapNodeModalView)
+            return mapNodeModalView;
+
+        if (ServiceRegistry.TryResolve(out IMapNodeModalView registeredModalView) && registeredModalView is MonoBehaviour registeredMono && IsSceneObject(registeredMono))
+            return registeredMono;
+
+        MonoBehaviour[] candidates = ServiceRegistry.LegacyFindAll<MonoBehaviour>(true);
+        for (int i = 0; i < candidates.Length; i++)
+        {
+            MonoBehaviour candidate = candidates[i];
+            if (!IsSceneObject(candidate))
+                continue;
+
+            if (candidate is IMapNodeModalView)
+                return candidate;
+        }
+
+        return null;
+    }
+
+    private static bool IsSceneObject(Component component)
+    {
+        return component != null && component.gameObject.scene.IsValid();
     }
 }

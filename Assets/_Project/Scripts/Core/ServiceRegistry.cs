@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public static class ServiceRegistry
 {
@@ -9,7 +10,7 @@ public static class ServiceRegistry
 
     public static void Register<T>(T service) where T : class
     {
-        if (service == null)
+        if (!IsValidService(service))
             return;
 
         Services[typeof(T)] = service;
@@ -19,6 +20,13 @@ public static class ServiceRegistry
     {
         if (Services.TryGetValue(typeof(T), out object candidate) && candidate is T typed)
         {
+            if (!IsValidService(typed))
+            {
+                Services.Remove(typeof(T));
+                service = null;
+                return false;
+            }
+
             service = typed;
             return true;
         }
@@ -84,5 +92,30 @@ public static class ServiceRegistry
     {
         Services.Clear();
         ReportedFallbackKeys.Clear();
+    }
+    private static bool IsValidService(object service)
+    {
+        if (service == null)
+            return false;
+
+        if (!(service is UnityEngine.Object))
+            return true;
+
+        UnityEngine.Object unityObject = (UnityEngine.Object)service;
+        if (unityObject == null)
+            return false;
+
+        if (unityObject is Component component)
+            return IsRuntimeSceneObject(component.gameObject.scene);
+
+        if (unityObject is GameObject gameObject)
+            return IsRuntimeSceneObject(gameObject.scene);
+
+        return true;
+    }
+
+    private static bool IsRuntimeSceneObject(Scene scene)
+    {
+        return scene.IsValid();
     }
 }

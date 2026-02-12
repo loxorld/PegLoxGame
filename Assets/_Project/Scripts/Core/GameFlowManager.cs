@@ -47,6 +47,7 @@ public class GameFlowManager : MonoBehaviour
     private string pendingMapNodeId;
     private bool pendingOrbApply;
     private bool pendingRelicApply;
+    private GameState stateBeforePause = GameState.Combat;
 
     [Header("Scene References (DI)")]
     [SerializeField] private MapManager mapManager;
@@ -96,7 +97,10 @@ public class GameFlowManager : MonoBehaviour
     private void OnDestroy()
     {
         if (Instance == this)
+        {
             SceneManager.sceneLoaded -= OnSceneLoaded;
+            Instance = null;
+        }
     }
 
     private void Start()
@@ -586,10 +590,12 @@ public class GameFlowManager : MonoBehaviour
 
     public void Pause()
     {
-        // No pausamos si ya est game over o en rewards
+        // No pausamos si ya está game over o en rewards
         if (State == GameState.GameOver) return;
         if (State == GameState.RewardChoice) return;
+        if (State == GameState.Paused) return;
 
+        stateBeforePause = State;
         SaveRun();
         SetState(GameState.Paused);
     }
@@ -597,7 +603,12 @@ public class GameFlowManager : MonoBehaviour
     public void Resume()
     {
         if (State != GameState.Paused) return;
-        SetState(GameState.Combat);
+
+        GameState resumeState = stateBeforePause == GameState.Paused
+            ? GameState.Combat
+            : stateBeforePause;
+
+        SetState(resumeState);
     }
 
     public void TogglePause()
