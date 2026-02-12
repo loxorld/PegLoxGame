@@ -78,6 +78,8 @@ public class MapPresentationController : MonoBehaviour
 
     private IMapNodeModalView ResolveMapNodeModalView()
     {
+        bool isMigratedMapScene = IsMigratedMapSceneActive();
+
         if (mapNodeModalView != null && mapNodeModalView is IMapNodeModalView view)
             return view;
 
@@ -90,12 +92,8 @@ public class MapPresentationController : MonoBehaviour
 
         ServiceRegistry.LogFallback(nameof(MapPresentationController), nameof(mapNodeModalView), "missing-injected-reference");
 
-        if (IsMigratedMapSceneActive())
-        {
+        if (isMigratedMapScene)
             ServiceRegistry.LogFallbackMetric(nameof(MapPresentationController), nameof(mapNodeModalView), "strict-missing-reference");
-            Debug.LogError("[MapPresentationController] DI estricto: falta IMapNodeModalView en escena migrada. Revisa el cableado de dependencias.");
-            return null;
-        }
 
         MonoBehaviour[] behaviours = ServiceRegistry.LegacyFindAll<MonoBehaviour>(true);
         for (int i = 0; i < behaviours.Length; i++)
@@ -104,7 +102,8 @@ public class MapPresentationController : MonoBehaviour
             {
                 mapNodeModalView = behaviours[i];
                 ServiceRegistry.Register(candidate);
-                ServiceRegistry.LogFallbackMetric(nameof(MapPresentationController), nameof(mapNodeModalView), "findobjectsoftype");
+                string source = isMigratedMapScene ? "strict-recovered-findobjectsoftype" : "findobjectsoftype";
+                ServiceRegistry.LogFallbackMetric(nameof(MapPresentationController), nameof(mapNodeModalView), source);
                 return candidate;
             }
         }
@@ -114,9 +113,13 @@ public class MapPresentationController : MonoBehaviour
         {
             mapNodeModalView = modalUI;
             ServiceRegistry.Register<IMapNodeModalView>(modalUI);
-            ServiceRegistry.LogFallbackMetric(nameof(MapPresentationController), nameof(mapNodeModalView), "mapnodemodalui-getorcreate");
+            string source = isMigratedMapScene ? "strict-recovered-mapnodemodalui-getorcreate" : "mapnodemodalui-getorcreate";
+            ServiceRegistry.LogFallbackMetric(nameof(MapPresentationController), nameof(mapNodeModalView), source);
             return modalUI;
         }
+
+        if (isMigratedMapScene)
+            Debug.LogError("[MapPresentationController] DI estricto: falta IMapNodeModalView en escena migrada. Revisa el cableado de dependencias.");
 
         return null;
     }
