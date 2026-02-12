@@ -239,17 +239,21 @@ public class MapManager : MonoBehaviour
             eventOutcome,
             option =>
             {
-                flow.AddCoins(option.CoinDelta);
-                flow.ModifySavedHP(option.HpDelta);
+                float roll = option.Probability.HasValue ? UnityEngine.Random.value : 0f;
+                MapDomainService.EventResolutionOutcome resolvedOutcome = domainService.ResolveEventOptionOutcome(option, roll);
+
+                flow.AddCoins(resolvedOutcome.CoinDelta);
+                flow.ModifySavedHP(resolvedOutcome.HpDelta);
                 flow.SaveRun();
 
                 presentationController?.ShowGenericResult(
                     eventOutcome.Title,
-                    option.ResultDescription,
+                    resolvedOutcome.ResultDescription,
                     () => OpenNode(currentNode));
             },
             () => OpenNode(currentNode));
     }
+
 
     private void HandleShopNode()
     {

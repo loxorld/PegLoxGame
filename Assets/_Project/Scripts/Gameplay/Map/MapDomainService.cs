@@ -20,17 +20,37 @@ public class MapDomainService
         public EventOptionOutcome(string optionLabel, int coinDelta, int hpDelta, string resultDescription, float? probability = null)
         {
             OptionLabel = optionLabel;
-            CoinDelta = coinDelta;
-            HpDelta = hpDelta;
-            ResultDescription = resultDescription;
             Probability = probability;
+            SuccessOutcome = new EventResolutionOutcome(coinDelta, hpDelta, resultDescription);
+            FailureOutcome = SuccessOutcome;
+        }
+
+        public EventOptionOutcome(string optionLabel, float probability, EventResolutionOutcome successOutcome, EventResolutionOutcome failureOutcome)
+        {
+            OptionLabel = optionLabel;
+            Probability = Mathf.Clamp01(probability);
+            SuccessOutcome = successOutcome;
+            FailureOutcome = failureOutcome;
         }
 
         public string OptionLabel { get; }
+        public float? Probability { get; }
+        public EventResolutionOutcome SuccessOutcome { get; }
+        public EventResolutionOutcome FailureOutcome { get; }
+    }
+
+    public readonly struct EventResolutionOutcome
+    {
+        public EventResolutionOutcome(int coinDelta, int hpDelta, string resultDescription)
+        {
+            CoinDelta = coinDelta;
+            HpDelta = hpDelta;
+            ResultDescription = resultDescription;
+        }
+
         public int CoinDelta { get; }
         public int HpDelta { get; }
         public string ResultDescription { get; }
-        public float? Probability { get; }
     }
 
     public readonly struct EventScenarioOutcome
@@ -156,10 +176,15 @@ public class MapDomainService
                 $"Encuentras suministros útiles. +{safeRewardCoins} monedas."),
             new EventOptionOutcome(
                 "Tomar un atajo arriesgado",
-                riskyRewardCoins,
-                riskyPenaltyHp,
-                $"Avanzas rápido, pero pagas el precio. +{riskyRewardCoins} monedas, {riskyPenaltyHp} HP.",
-                0.6f),
+                 0.6f,
+                new EventResolutionOutcome(
+                    riskyRewardCoins,
+                    0,
+                    $"El atajo funciona. +{riskyRewardCoins} monedas."),
+                new EventResolutionOutcome(
+                    0,
+                    riskyPenaltyHp,
+                    $"El atajo sale mal y terminas herido. {riskyPenaltyHp} HP.")),
             new EventOptionOutcome(
                 "Negociar con comerciantes",
                 bargainPenaltyCoins,
@@ -182,6 +207,13 @@ public class MapDomainService
             options);
     }
 
+    public EventResolutionOutcome ResolveEventOptionOutcome(EventOptionOutcome option, float roll)
+    {
+        if (!option.Probability.HasValue)
+            return option.SuccessOutcome;
+
+        return roll <= option.Probability.Value ? option.SuccessOutcome : option.FailureOutcome;
+    }
 
     public ShopOutcome BuildShopOutcome(
         MapNodeData currentNode,
