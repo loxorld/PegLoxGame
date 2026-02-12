@@ -15,20 +15,36 @@ public class MapDomainService
         public bool ShouldClearSavedNode { get; }
     }
 
-    public readonly struct EventOutcome
+    public readonly struct EventOptionOutcome
     {
-        public EventOutcome(string title, string description, int coinDelta, int hpDelta)
+        public EventOptionOutcome(string optionLabel, int coinDelta, int hpDelta, string resultDescription, float? probability = null)
+        {
+            OptionLabel = optionLabel;
+            CoinDelta = coinDelta;
+            HpDelta = hpDelta;
+            ResultDescription = resultDescription;
+            Probability = probability;
+        }
+
+        public string OptionLabel { get; }
+        public int CoinDelta { get; }
+        public int HpDelta { get; }
+        public string ResultDescription { get; }
+        public float? Probability { get; }
+    }
+
+    public readonly struct EventScenarioOutcome
+    {
+        public EventScenarioOutcome(string title, string description, IReadOnlyList<EventOptionOutcome> options)
         {
             Title = title;
             Description = description;
-            CoinDelta = coinDelta;
-            HpDelta = hpDelta;
+            Options = options;
         }
 
         public string Title { get; }
         public string Description { get; }
-        public int CoinDelta { get; }
-        public int HpDelta { get; }
+        public IReadOnlyList<EventOptionOutcome> Options { get; }
     }
 
     public readonly struct ShopOutcome
@@ -101,7 +117,7 @@ public class MapDomainService
         return -1;
     }
 
-    public EventOutcome BuildEventOutcome(
+    public EventScenarioOutcome BuildEventOutcome(
         MapNodeData currentNode,
         RunBalanceConfig balance,
         int stageIndex,
@@ -114,11 +130,6 @@ public class MapDomainService
         int eventDamageMin,
         int eventDamageMax)
     {
-        float goodEventChance = balance != null
-            ? balance.GetEventPositiveChance(stageIndex, 0.5f)
-            : 0.5f;
-        bool isGoodEvent = Random.value <= goodEventChance;
-
         int rewardMin = balance != null ? balance.GetEventCoinsRewardMin(stageIndex, eventCoinsRewardMin) : eventCoinsRewardMin;
         int rewardMax = balance != null ? balance.GetEventCoinsRewardMax(stageIndex, eventCoinsRewardMax) : eventCoinsRewardMax;
         int penaltyMin = balance != null ? balance.GetEventCoinsPenaltyMin(stageIndex, eventCoinsPenaltyMin) : eventCoinsPenaltyMin;
@@ -128,24 +139,49 @@ public class MapDomainService
         int damageMin = balance != null ? balance.GetEventDamageMin(stageIndex, eventDamageMin) : eventDamageMin;
         int damageMax = balance != null ? balance.GetEventDamageMax(stageIndex, eventDamageMax) : eventDamageMax;
 
-        int coinDelta = isGoodEvent
-            ? Random.Range(Mathf.Min(rewardMin, rewardMax), Mathf.Max(rewardMin, rewardMax) + 1)
-            : -Random.Range(Mathf.Min(penaltyMin, penaltyMax), Mathf.Max(penaltyMin, penaltyMax) + 1);
+        int safeRewardCoins = Random.Range(Mathf.Min(rewardMin, rewardMax), Mathf.Max(rewardMin, rewardMax) + 1);
+        int riskyRewardCoins = Random.Range(Mathf.Min(rewardMin, rewardMax), Mathf.Max(rewardMin, rewardMax) + 1);
+        int riskyPenaltyHp = -Random.Range(Mathf.Min(damageMin, damageMax), Mathf.Max(damageMin, damageMax) + 1);
+        int bargainPenaltyCoins = -Random.Range(Mathf.Min(penaltyMin, penaltyMax), Mathf.Max(penaltyMin, penaltyMax) + 1);
+        int bargainHeal = Random.Range(Mathf.Min(healMin, healMax), Mathf.Max(healMin, healMax) + 1);
+        int restCoinPenalty = -Random.Range(Mathf.Min(penaltyMin, penaltyMax), Mathf.Max(penaltyMin, penaltyMax) + 1);
+        int restHeal = Random.Range(Mathf.Min(healMin, healMax), Mathf.Max(healMin, healMax) + 1);
 
-        int hpDelta = isGoodEvent
-            ? Random.Range(Mathf.Min(healMin, healMax), Mathf.Max(healMin, healMax) + 1)
-            : -Random.Range(Mathf.Min(damageMin, damageMax), Mathf.Max(damageMin, damageMax) + 1);
+        var options = new List<EventOptionOutcome>
+        {
+            new EventOptionOutcome(
+                "Investigar con cuidado",
+                safeRewardCoins,
+                0,
+                $"Encuentras suministros útiles. +{safeRewardCoins} monedas."),
+            new EventOptionOutcome(
+                "Tomar un atajo arriesgado",
+                riskyRewardCoins,
+                riskyPenaltyHp,
+                $"Avanzas rápido, pero pagas el precio. +{riskyRewardCoins} monedas, {riskyPenaltyHp} HP.",
+                0.6f),
+            new EventOptionOutcome(
+                "Negociar con comerciantes",
+                bargainPenaltyCoins,
+                bargainHeal,
+                $"El trato drena tus bolsillos, pero recuperas energía. {bargainPenaltyCoins} monedas, +{bargainHeal} HP.")
+        };
 
-        string outcome = isGoodEvent
-            ? $"Encontraste algo útil. +{coinDelta} monedas, +{hpDelta} HP."
-            : $"La expedición salió mal. {coinDelta} monedas, {hpDelta} HP.";
+        if (Random.value > 0.4f)
+        {
+            options.Add(new EventOptionOutcome(
+                "Descansar antes de seguir",
+                restCoinPenalty,
+                restHeal,
+                $"Descansar cuesta recursos, pero te repones. {restCoinPenalty} monedas, +{restHeal} HP."));
+        }
 
-        return new EventOutcome(
+        return new EventScenarioOutcome(
             currentNode != null ? currentNode.title : "Evento",
-            $"{currentNode?.description}\n\n{outcome}",
-            coinDelta,
-            hpDelta);
+            currentNode?.description ?? string.Empty,
+            options);
     }
+
 
     public ShopOutcome BuildShopOutcome(
         MapNodeData currentNode,

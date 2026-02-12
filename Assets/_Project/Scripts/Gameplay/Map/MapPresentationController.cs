@@ -32,7 +32,10 @@ public class MapPresentationController : MonoBehaviour
         MapNavigationUI.Instance.ShowNode(node);
     }
 
-    public void ShowEvent(MapDomainService.EventOutcome eventOutcome, Action onContinue)
+    public void ShowEvent(
+         MapDomainService.EventScenarioOutcome eventOutcome,
+         Action<MapDomainService.EventOptionOutcome> onSelectOption,
+         Action onContinue)
     {
         IMapNodeModalView modalView = ResolveMapNodeModalView();
         if (modalView == null)
@@ -41,10 +44,26 @@ public class MapPresentationController : MonoBehaviour
             return;
         }
 
-        var options = new List<MapNodeModalOption>
+        var options = new List<MapNodeModalOption>();
+        IReadOnlyList<MapDomainService.EventOptionOutcome> eventOptions = eventOutcome.Options;
+        if (eventOptions != null)
         {
-            new MapNodeModalOption("Continuar", onContinue, true)
-        };
+            for (int i = 0; i < eventOptions.Count; i++)
+            {
+                MapDomainService.EventOptionOutcome option = eventOptions[i];
+                if (string.IsNullOrWhiteSpace(option.OptionLabel))
+                    continue;
+
+                string label = option.OptionLabel;
+                if (option.Probability.HasValue)
+                    label = $"{label} ({Mathf.RoundToInt(option.Probability.Value * 100f)}%)";
+
+                options.Add(new MapNodeModalOption(label, () => onSelectOption?.Invoke(option), true));
+            }
+        }
+
+        if (options.Count == 0)
+            options.Add(new MapNodeModalOption("Continuar", onContinue, true));
 
         modalView.ShowEvent(eventOutcome.Title, eventOutcome.Description, options);
     }

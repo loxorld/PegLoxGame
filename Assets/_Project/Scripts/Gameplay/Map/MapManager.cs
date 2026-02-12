@@ -216,12 +216,12 @@ public class MapManager : MonoBehaviour
         GameFlowManager flow = ResolveGameFlowManager();
         if (flow == null)
         {
-            Debug.LogWarning("[MapManager] No se encontró GameFlowManager en la escena.");
+            Debug.LogWarning("[MapManager] No se encontr GameFlowManager en la escena.");
             return;
         }
 
         int balanceStageIndex = GetStageIndexForBalance(flow);
-        MapDomainService.EventOutcome eventOutcome = domainService.BuildEventOutcome(
+        MapDomainService.EventScenarioOutcome eventOutcome = domainService.BuildEventOutcome(
             currentNode,
             ResolveBalanceConfig(),
             balanceStageIndex,
@@ -234,15 +234,21 @@ public class MapManager : MonoBehaviour
             eventDamageMin,
             eventDamageMax);
 
-        if (eventOutcome.CoinDelta != 0)
-            flow.AddCoins(eventOutcome.CoinDelta);
-        if (eventOutcome.HpDelta != 0)
-            flow.ModifySavedHP(eventOutcome.HpDelta);
-
-        flow.SaveRun();
-
         EnsurePresentationController();
-        presentationController?.ShowEvent(eventOutcome, () => OpenNode(currentNode));
+        presentationController?.ShowEvent(
+            eventOutcome,
+            option =>
+            {
+                if (option.CoinDelta != 0)
+                    flow.AddCoins(option.CoinDelta);
+
+                if (option.HpDelta != 0)
+                    flow.ModifySavedHP(option.HpDelta);
+
+                flow.SaveRun();
+                OpenNode(currentNode);
+            },
+            () => OpenNode(currentNode));
     }
 
     private void HandleShopNode()
