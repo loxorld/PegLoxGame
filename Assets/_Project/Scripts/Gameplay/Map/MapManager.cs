@@ -239,14 +239,14 @@ public class MapManager : MonoBehaviour
             eventOutcome,
             option =>
             {
-                if (option.CoinDelta != 0)
-                    flow.AddCoins(option.CoinDelta);
-
-                if (option.HpDelta != 0)
-                    flow.ModifySavedHP(option.HpDelta);
-
+                flow.AddCoins(option.CoinDelta);
+                flow.ModifySavedHP(option.HpDelta);
                 flow.SaveRun();
-                OpenNode(currentNode);
+
+                presentationController?.ShowGenericResult(
+                    eventOutcome.Title,
+                    option.ResultDescription,
+                    () => OpenNode(currentNode));
             },
             () => OpenNode(currentNode));
     }

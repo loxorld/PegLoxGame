@@ -139,8 +139,9 @@ public class MapNodeModalUI : MonoBehaviour, IMapNodeModalView
             button.interactable = option.IsEnabled;
             button.onClick.AddListener(() =>
             {
-                option.Callback?.Invoke();
+                
                 Close();
+                option.Callback?.Invoke();
             });
 
             var text = button.GetComponentInChildren<TMP_Text>();

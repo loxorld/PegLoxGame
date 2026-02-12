@@ -87,6 +87,23 @@ public class MapPresentationController : MonoBehaviour
         modalView.ShowShop(shopOutcome.Title, shopOutcome.Description, options);
     }
 
+    public void ShowGenericResult(string title, string description, Action onContinue)
+    {
+        IMapNodeModalView modalView = ResolveMapNodeModalView();
+        if (modalView == null)
+        {
+            Debug.LogWarning("[MapPresentationController] No se encontró IMapNodeModalView en la escena.");
+            return;
+        }
+
+        var options = new List<MapNodeModalOption>
+        {
+            new MapNodeModalOption("Continuar", onContinue, true)
+        };
+
+        modalView.ShowGeneric(title, description, options);
+    }
+
     private IEnumerator WaitForMapUIAndShow(MapNodeData node)
     {
         while (MapNavigationUI.Instance == null)
