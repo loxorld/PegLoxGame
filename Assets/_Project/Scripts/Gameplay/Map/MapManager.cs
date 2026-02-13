@@ -289,9 +289,14 @@ public class MapManager : MonoBehaviour
             shopOrbUpgradeCost,
             extraMessage);
 
-        List<ShopService.ShopOptionData> shopOptions = resolvedShopService.GetShopOptions(
+        string shopId = BuildShopId(currentNode, flow, balanceStageIndex);
+
+        List<ShopService.ShopOptionData> shopOptions = resolvedShopService.GetShopOptionsForNode(
             flow,
             orbManager,
+            ResolveBalanceConfig(),
+            balanceStageIndex,
+            shopId,
             shopOutcome.HealCost,
             shopOutcome.HealAmount,
             shopOutcome.OrbUpgradeCost,
@@ -300,6 +305,13 @@ public class MapManager : MonoBehaviour
 
         EnsurePresentationController();
         presentationController?.ShowShopModal(shopOutcome, shopOptions);
+    }
+
+    private static string BuildShopId(MapNodeData node, GameFlowManager flow, int stageIndex)
+    {
+        string nodeId = node != null && !string.IsNullOrWhiteSpace(node.name) ? node.name : "unknown-node";
+        int encounterIndex = flow != null ? flow.EncounterIndex : 0;
+        return $"shop_{stageIndex}_{encounterIndex}_{nodeId}";
     }
     private void HandleBossNode()
     {
