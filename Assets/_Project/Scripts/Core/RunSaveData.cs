@@ -11,6 +11,26 @@ public class RunSaveData
         public int Level;
     }
 
+    [Serializable]
+    public class ShopOfferSaveData
+    {
+        public string OfferId;
+        public int OfferType;
+        public int Cost;
+        public int RemainingStock;
+        public int Rarity;
+        public bool RequiresMissingHp;
+        public bool RequiresUpgradableOrb;
+        public bool RequiresAnyOrb;
+    }
+
+    [Serializable]
+    public class ShopCatalogSaveData
+    {
+        public string ShopId;
+        public List<ShopOfferSaveData> Offers = new List<ShopOfferSaveData>();
+    }
+
     public string SavedMapNodeId;
     public int EncounterIndex;
     public int EncounterInStageIndex;
@@ -24,4 +44,5 @@ public class RunSaveData
     public string CurrentOrbId;
     public List<OrbSaveData> Orbs = new List<OrbSaveData>();
     public List<string> Relics = new List<string>();
+    public List<ShopCatalogSaveData> ShopCatalogs = new List<ShopCatalogSaveData>();
 }

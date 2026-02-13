@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -6,6 +7,18 @@ using UnityEngine.SceneManagement;
 
 public class GameFlowManager : MonoBehaviour
 {
+    public sealed class ShopOfferRunData
+    {
+        public string OfferId;
+        public ShopService.ShopOfferType OfferType;
+        public int Cost;
+        public int RemainingStock;
+        public ShopService.ShopOfferRarity Rarity;
+        public bool RequiresMissingHp;
+        public bool RequiresUpgradableOrb;
+        public bool RequiresAnyOrb;
+    }
+
     public static GameFlowManager Instance { get; private set; }
 
     public GameState State { get; private set; } = GameState.Combat;
@@ -48,6 +61,7 @@ public class GameFlowManager : MonoBehaviour
     private bool pendingOrbApply;
     private bool pendingRelicApply;
     private GameState stateBeforePause = GameState.Combat;
+    private readonly Dictionary<string, List<ShopOfferRunData>> shopCatalogsById = new Dictionary<string, List<ShopOfferRunData>>();
 
     [Header("Scene References (DI)")]
     [SerializeField] private MapManager mapManager;
@@ -211,8 +225,73 @@ public class GameFlowManager : MonoBehaviour
         ClearBossEncounter();
         SavedPlayerHP = PlayerMaxHP;
         HasSavedPlayerHP = true;
+        shopCatalogsById.Clear();
         ValidateEncounterState("ResetRunState");
     }
+
+    public List<ShopOfferRunData> GetShopCatalog(string shopId)
+    {
+        if (string.IsNullOrWhiteSpace(shopId))
+            return null;
+
+        if (!shopCatalogsById.TryGetValue(shopId, out List<ShopOfferRunData> catalog) || catalog == null)
+            return null;
+
+        return CloneCatalog(catalog);
+    }
+
+    public void SaveShopCatalog(string shopId, IReadOnlyList<ShopService.ShopOfferData> offers)
+    {
+        if (string.IsNullOrWhiteSpace(shopId) || offers == null)
+            return;
+
+        var snapshot = new List<ShopOfferRunData>(offers.Count);
+        for (int i = 0; i < offers.Count; i++)
+        {
+            ShopService.ShopOfferData offer = offers[i];
+            if (offer == null || string.IsNullOrWhiteSpace(offer.OfferId))
+                continue;
+
+            snapshot.Add(new ShopOfferRunData
+            {
+                OfferId = offer.OfferId,
+                OfferType = offer.Type,
+                Cost = Mathf.Max(0, offer.Cost),
+                RemainingStock = Mathf.Max(0, offer.Stock),
+                Rarity = offer.Rarity,
+                RequiresMissingHp = offer.RequiresMissingHp,
+                RequiresUpgradableOrb = offer.RequiresUpgradableOrb,
+                RequiresAnyOrb = offer.RequiresAnyOrb
+            });
+        }
+
+        shopCatalogsById[shopId] = snapshot;
+    }
+
+    public bool TryConsumeShopOffer(string shopId, string offerId)
+    {
+        if (string.IsNullOrWhiteSpace(shopId) || string.IsNullOrWhiteSpace(offerId))
+            return false;
+
+        if (!shopCatalogsById.TryGetValue(shopId, out List<ShopOfferRunData> catalog) || catalog == null)
+            return false;
+
+        for (int i = 0; i < catalog.Count; i++)
+        {
+            ShopOfferRunData offer = catalog[i];
+            if (offer == null || !string.Equals(offer.OfferId, offerId, StringComparison.Ordinal))
+                continue;
+
+            if (offer.RemainingStock <= 0)
+                return false;
+
+            offer.RemainingStock--;
+            return true;
+        }
+
+        return false;
+    }
+
 
     public void SaveRun()
     {
@@ -259,6 +338,7 @@ public class GameFlowManager : MonoBehaviour
         RelicManager relicManagerInstance = ResolveRelicManager();
         if (relicManagerInstance != null)
             data.Relics = relicManagerInstance.SerializeRelics();
+        data.ShopCatalogs = SerializeShopCatalogs();
 
         return data;
     }
@@ -299,6 +379,7 @@ public class GameFlowManager : MonoBehaviour
         PlayerMaxHP = Mathf.Max(1, data.PlayerMaxHP);
         SavedPlayerHP = Mathf.Clamp(data.SavedPlayerHP, 0, PlayerMaxHP);
         HasSavedPlayerHP = data.HasSavedPlayerHP;
+        DeserializeShopCatalogs(data.ShopCatalogs);
 
         ValidateEncounterState("ApplyRunData");
     }
@@ -368,6 +449,106 @@ public class GameFlowManager : MonoBehaviour
 
         return null;
     }
+
+    private List<RunSaveData.ShopCatalogSaveData> SerializeShopCatalogs()
+    {
+        var serialized = new List<RunSaveData.ShopCatalogSaveData>();
+        foreach (KeyValuePair<string, List<ShopOfferRunData>> entry in shopCatalogsById)
+        {
+            if (string.IsNullOrWhiteSpace(entry.Key) || entry.Value == null)
+                continue;
+
+            var catalogData = new RunSaveData.ShopCatalogSaveData { ShopId = entry.Key };
+            for (int i = 0; i < entry.Value.Count; i++)
+            {
+                ShopOfferRunData offer = entry.Value[i];
+                if (offer == null || string.IsNullOrWhiteSpace(offer.OfferId))
+                    continue;
+
+                catalogData.Offers.Add(new RunSaveData.ShopOfferSaveData
+                {
+                    OfferId = offer.OfferId,
+                    OfferType = (int)offer.OfferType,
+                    Cost = Mathf.Max(0, offer.Cost),
+                    RemainingStock = Mathf.Max(0, offer.RemainingStock),
+                    Rarity = (int)offer.Rarity,
+                    RequiresMissingHp = offer.RequiresMissingHp,
+                    RequiresUpgradableOrb = offer.RequiresUpgradableOrb,
+                    RequiresAnyOrb = offer.RequiresAnyOrb
+                });
+            }
+
+            serialized.Add(catalogData);
+        }
+
+        return serialized;
+    }
+
+    private void DeserializeShopCatalogs(List<RunSaveData.ShopCatalogSaveData> serialized)
+    {
+        shopCatalogsById.Clear();
+        if (serialized == null)
+            return;
+
+        for (int i = 0; i < serialized.Count; i++)
+        {
+            RunSaveData.ShopCatalogSaveData catalogData = serialized[i];
+            if (catalogData == null || string.IsNullOrWhiteSpace(catalogData.ShopId))
+                continue;
+
+            var offers = new List<ShopOfferRunData>();
+            List<RunSaveData.ShopOfferSaveData> serializedOffers = catalogData.Offers;
+            if (serializedOffers != null)
+            {
+                for (int j = 0; j < serializedOffers.Count; j++)
+                {
+                    RunSaveData.ShopOfferSaveData offer = serializedOffers[j];
+                    if (offer == null || string.IsNullOrWhiteSpace(offer.OfferId))
+                        continue;
+
+                    offers.Add(new ShopOfferRunData
+                    {
+                        OfferId = offer.OfferId,
+                        OfferType = (ShopService.ShopOfferType)Mathf.Max(0, offer.OfferType),
+                        Cost = Mathf.Max(0, offer.Cost),
+                        RemainingStock = Mathf.Max(0, offer.RemainingStock),
+                        Rarity = (ShopService.ShopOfferRarity)Mathf.Clamp(offer.Rarity, 0, (int)ShopService.ShopOfferRarity.Legendary),
+                        RequiresMissingHp = offer.RequiresMissingHp,
+                        RequiresUpgradableOrb = offer.RequiresUpgradableOrb,
+                        RequiresAnyOrb = offer.RequiresAnyOrb
+                    });
+                }
+            }
+
+            shopCatalogsById[catalogData.ShopId] = offers;
+        }
+    }
+
+    private static List<ShopOfferRunData> CloneCatalog(List<ShopOfferRunData> source)
+    {
+        var clone = new List<ShopOfferRunData>(source.Count);
+        for (int i = 0; i < source.Count; i++)
+        {
+            ShopOfferRunData offer = source[i];
+            if (offer == null)
+                continue;
+
+            clone.Add(new ShopOfferRunData
+            {
+                OfferId = offer.OfferId,
+                OfferType = offer.OfferType,
+                Cost = offer.Cost,
+                RemainingStock = offer.RemainingStock,
+                Rarity = offer.Rarity,
+                RequiresMissingHp = offer.RequiresMissingHp,
+                RequiresUpgradableOrb = offer.RequiresUpgradableOrb,
+                RequiresAnyOrb = offer.RequiresAnyOrb
+            });
+        }
+
+        return clone;
+    }
+
 
     public void RestartCombatScene()
     {
