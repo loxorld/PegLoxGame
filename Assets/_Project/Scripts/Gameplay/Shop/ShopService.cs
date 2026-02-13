@@ -446,19 +446,19 @@ public class ShopService
         switch (offer.Type)
         {
             case ShopOfferType.Heal:
-                text = $"[{rarity}] Curar +{offer.PrimaryValue} HP ({offer.Cost} monedas, stock {offer.Stock})";
+                text = $"[{rarity}] Curar +{offer.PrimaryValue} HP - {offer.Cost} monedas";
                 break;
             case ShopOfferType.OrbUpgrade:
-                text = $"[{rarity}] Mejorar Orbe aleatorio ({offer.Cost} monedas, stock {offer.Stock})";
+                text = $"[{rarity}] Mejorar Orbe - {offer.Cost} monedas";
                 break;
             case ShopOfferType.OrbUpgradeDiscount:
-                text = $"[{rarity}] Mejorar Orbe con descuento ({offer.Cost} monedas, stock {offer.Stock})";
+                text = $"[{rarity}] Mejora con descuento - {offer.Cost} monedas";
                 break;
             case ShopOfferType.CoinCache:
-                text = $"[{rarity}] Cofre temporal (+{offer.PrimaryValue} monedas por {offer.Cost}, stock {offer.Stock})";
+                text = $"[{rarity}] Cofre +{offer.PrimaryValue} monedas - {offer.Cost} monedas";
                 break;
             case ShopOfferType.VitalityBoost:
-                text = $"[{rarity}] Tnico Vital (+{offer.PrimaryValue} HP mx, {offer.Cost} monedas, stock {offer.Stock})";
+                text = $"[{rarity}] Tnico Vital +{offer.PrimaryValue} HP mx - {offer.Cost} monedas";
                 break;
             default:
                 text = $"Oferta desconocida ({offer.Cost} monedas)";
@@ -466,10 +466,11 @@ public class ShopService
         }
 
         if (!enabled && !string.IsNullOrWhiteSpace(disabledReason))
-            text += $" - {disabledReason}";
+            text += " (No disponible)";
 
         return text;
     }
+
 
     private static List<ShopOfferData> GenerateOffersByVisit(
         RunBalanceConfig balance,
