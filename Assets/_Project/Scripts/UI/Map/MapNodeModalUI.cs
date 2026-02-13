@@ -28,9 +28,6 @@ public class MapNodeModalUI : MonoBehaviour, IMapNodeModalView
     [SerializeField] private TMP_Text bodyText;
     [SerializeField] private Transform buttonsContainer;
     [SerializeField] private Button buttonTemplate;
-    [SerializeField, Min(48f)] private float buttonHeight = 120f;
-    [SerializeField, Min(16f)] private float buttonFontMinSize = 32f;
-    [SerializeField, Min(16f)] private float buttonFontMaxSize = 46f;
 
     private readonly List<Button> buttons = new();
 
@@ -137,13 +134,12 @@ public class MapNodeModalUI : MonoBehaviour, IMapNodeModalView
         foreach (var option in options)
         {
             var button = Instantiate(buttonTemplate, buttonsContainer);
-            EnsureReadableButtonStyle(button);
             button.gameObject.SetActive(true);
             button.onClick.RemoveAllListeners();
             button.interactable = option.IsEnabled;
             button.onClick.AddListener(() =>
             {
-                
+
                 Close();
                 option.Callback?.Invoke();
             });
@@ -156,41 +152,6 @@ public class MapNodeModalUI : MonoBehaviour, IMapNodeModalView
         }
     }
 
-    private void EnsureReadableButtonStyle(Button button)
-    {
-        if (button == null)
-            return;
-
-        if (button.transform is RectTransform buttonRect)
-        {
-            buttonRect.localScale = Vector3.one;
-            buttonRect.anchorMin = new Vector2(0f, buttonRect.anchorMin.y);
-            buttonRect.anchorMax = new Vector2(1f, buttonRect.anchorMax.y);
-            buttonRect.offsetMin = new Vector2(0f, buttonRect.offsetMin.y);
-            buttonRect.offsetMax = new Vector2(0f, buttonRect.offsetMax.y);
-
-            Vector2 sizeDelta = buttonRect.sizeDelta;
-            sizeDelta.y = Mathf.Max(buttonHeight, 0f);
-            buttonRect.sizeDelta = sizeDelta;
-        }
-
-        LayoutElement layoutElement = button.GetComponent<LayoutElement>();
-        if (layoutElement == null)
-            layoutElement = button.gameObject.AddComponent<LayoutElement>();
-
-        layoutElement.minHeight = buttonHeight;
-        layoutElement.preferredHeight = buttonHeight;
-        layoutElement.flexibleHeight = 0f;
-
-        TMP_Text text = button.GetComponentInChildren<TMP_Text>();
-        if (text == null)
-            return;
-
-        text.enableAutoSizing = true;
-        text.alignment = TextAlignmentOptions.Center;
-        text.fontSizeMin = buttonFontMinSize;
-        text.fontSizeMax = Mathf.Max(buttonFontMaxSize, buttonFontMinSize);
-    }
 
     private void Close()
     {
