@@ -8,6 +8,8 @@ public class MapPresentationController : MonoBehaviour
 {
     [SerializeField] private MonoBehaviour mapNodeModalView;
     [SerializeField] private MonoBehaviour mapShopView;
+    [SerializeField] private bool loadShopSceneAdditively = true;
+    [SerializeField] private string shopSceneName = "ShopScene";
 
     public void InjectModalView(IMapNodeModalView injectedMapNodeModalView)
     {
@@ -71,12 +73,26 @@ public class MapPresentationController : MonoBehaviour
 
     public void ShowShop(ShopScene.OpenParams openParams)
     {
+        StartCoroutine(ShowShopRoutine(openParams));
+    }
+
+    private IEnumerator ShowShopRoutine(ShopScene.OpenParams openParams)
+    {
         IMapShopView shopView = ResolveMapShopView();
+        if (shopView == null && loadShopSceneAdditively)
+        {
+            yield return EnsureShopSceneLoaded();
+            shopView = ResolveMapShopView();
+        }
+
         if (shopView == null)
         {
             Debug.LogWarning("[MapPresentationController] No se encontró IMapShopView en la escena.");
-            return;
+            yield break;
         }
+
+        if (openParams != null && loadShopSceneAdditively && IsShopSceneLoaded())
+            openParams = WrapOpenParamsWithShopSceneUnload(openParams);
 
         shopView.ShowShop(openParams);
     }
@@ -166,7 +182,22 @@ public class MapPresentationController : MonoBehaviour
             return registryView;
         }
 
+        MonoBehaviour[] behaviours = ServiceRegistry.LegacyFindAll<MonoBehaviour>(true);
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            if (behaviours[i] is IMapShopView candidate)
+            {
+                mapShopView = behaviours[i];
+                ServiceRegistry.Register(candidate);
+                ServiceRegistry.LogFallbackMetric(nameof(MapPresentationController), nameof(mapShopView), "findobjectsoftype");
+                return candidate;
+            }
+        }
+
         ServiceRegistry.LogFallback(nameof(MapPresentationController), nameof(mapShopView), "missing-injected-reference");
+
+        if (loadShopSceneAdditively && !IsShopSceneLoaded())
+            return null;
 
         ShopScene scene = ShopScene.GetOrCreate();
         if (scene != null)
@@ -180,6 +211,68 @@ public class MapPresentationController : MonoBehaviour
         return null;
     }
 
+    private IEnumerator EnsureShopSceneLoaded()
+    {
+        if (IsShopSceneLoaded())
+            yield break;
+
+        if (string.IsNullOrWhiteSpace(shopSceneName))
+            yield break;
+
+        AsyncOperation loadOp = SceneManager.LoadSceneAsync(shopSceneName, LoadSceneMode.Additive);
+        if (loadOp == null)
+        {
+            Debug.LogWarning($"[MapPresentationController] No se pudo cargar la escena de shop '{shopSceneName}' en modo aditivo.");
+            yield break;
+        }
+
+        while (!loadOp.isDone)
+            yield return null;
+    }
+
+    private ShopScene.OpenParams WrapOpenParamsWithShopSceneUnload(ShopScene.OpenParams openParams)
+    {
+        Action originalExit = openParams.OnExit;
+
+        return new ShopScene.OpenParams
+        {
+            ShopOutcome = openParams.ShopOutcome,
+            Config = openParams.Config,
+            Service = openParams.Service,
+            Flow = openParams.Flow,
+            OrbManager = openParams.OrbManager,
+            Balance = openParams.Balance,
+            StageIndex = openParams.StageIndex,
+            ShopId = openParams.ShopId,
+            OnRefreshMessage = openParams.OnRefreshMessage,
+            OnExit = () => StartCoroutine(CloseShopSceneAndContinue(originalExit))
+        };
+    }
+
+    private IEnumerator CloseShopSceneAndContinue(Action onExit)
+    {
+        if (IsShopSceneLoaded())
+        {
+            AsyncOperation unloadOp = SceneManager.UnloadSceneAsync(shopSceneName);
+            if (unloadOp != null)
+            {
+                while (!unloadOp.isDone)
+                    yield return null;
+            }
+        }
+
+        mapShopView = null;
+        onExit?.Invoke();
+    }
+
+    private bool IsShopSceneLoaded()
+    {
+        if (string.IsNullOrWhiteSpace(shopSceneName))
+            return false;
+
+        Scene scene = SceneManager.GetSceneByName(shopSceneName);
+        return scene.IsValid() && scene.isLoaded;
+    }
 
     private static bool IsMigratedMapSceneActive()
     {
