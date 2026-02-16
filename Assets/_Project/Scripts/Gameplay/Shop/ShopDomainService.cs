@@ -102,8 +102,8 @@ public sealed class ShopDomainService
             case ShopService.ShopOfferType.OrbUpgrade:
             case ShopService.ShopOfferType.OrbUpgradeDiscount:
                 return RunResult(ShopService.TryUpgradeOrb(flow, orbManager, offer.Cost, out string upgrade), upgrade);
-            case ShopService.ShopOfferType.CoinCache:
-                return RunResult(TryCoinCache(flow, offer.Cost, offer.PrimaryValue, out string cache), cache);
+            case ShopService.ShopOfferType.RecoveryPack:
+                return RunResult(TryRecoveryPack(flow, offer.Cost, offer.PrimaryValue, out string pack), pack);
             case ShopService.ShopOfferType.VitalityBoost:
                 return RunResult(TryVitalityBoost(flow, offer.Cost, offer.PrimaryValue, out string vitality), vitality);
             default:
@@ -187,7 +187,7 @@ public sealed class ShopDomainService
         return filtered[UnityEngine.Random.Range(0, filtered.Count)];
     }
 
-    private static bool TryCoinCache(GameFlowManager flow, int cost, int reward, out string message)
+    private static bool TryRecoveryPack(GameFlowManager flow, int cost, int healAmount, out string message)
     {
         message = null;
         if (flow == null)
@@ -202,8 +202,11 @@ public sealed class ShopDomainService
             return false;
         }
 
-        flow.AddCoins(reward);
-        message = $"Recibiste +{reward} monedas.";
+        int safeHeal = Mathf.Max(1, healAmount);
+        flow.ModifySavedHP(safeHeal);
+        flow.SavePlayerMaxHP(flow.PlayerMaxHP + 1);
+        flow.ModifySavedHP(1);
+        message = $"Recuperaste +{safeHeal} HP y +1 de vida máxima.";
         return true;
     }
 
@@ -247,7 +250,7 @@ public sealed class ShopDomainService
             new ShopService.ShopOfferData { OfferId = "heal_rare", Type = ShopService.ShopOfferType.Heal, Cost = Mathf.Max(0, healCost + 4), Stock = 1, Rarity = ShopService.ShopOfferRarity.Rare, PrimaryValue = healAmount + 4, RequiresMissingHp = true },
             new ShopService.ShopOfferData { OfferId = "upgrade_standard", Type = ShopService.ShopOfferType.OrbUpgrade, Cost = upgradeCost, Stock = 1, Rarity = ShopService.ShopOfferRarity.Common, PrimaryValue = 1, RequiresUpgradableOrb = true, RequiresAnyOrb = true },
             new ShopService.ShopOfferData { OfferId = "upgrade_discount", Type = ShopService.ShopOfferType.OrbUpgradeDiscount, Cost = Mathf.Max(0, upgradeCost - 4), Stock = 1, Rarity = ShopService.ShopOfferRarity.Epic, PrimaryValue = 1, RequiresUpgradableOrb = true, RequiresAnyOrb = true },
-            new ShopService.ShopOfferData { OfferId = "coin_cache", Type = ShopService.ShopOfferType.CoinCache, Cost = Mathf.Max(0, healCost - 2), Stock = 1, Rarity = ShopService.ShopOfferRarity.Rare, PrimaryValue = Mathf.Max(5, healCost + 5) },
+            new ShopService.ShopOfferData { OfferId = "recovery_pack", Type = ShopService.ShopOfferType.RecoveryPack, Cost = Mathf.Max(0, healCost + 1), Stock = 1, Rarity = ShopService.ShopOfferRarity.Rare, PrimaryValue = Mathf.Max(6, healAmount - 1) },
             new ShopService.ShopOfferData { OfferId = "vitality_boost", Type = ShopService.ShopOfferType.VitalityBoost, Cost = Mathf.Max(0, upgradeCost - 3), Stock = 1, Rarity = ShopService.ShopOfferRarity.Legendary, PrimaryValue = 3 + stageIndex }
         };
 

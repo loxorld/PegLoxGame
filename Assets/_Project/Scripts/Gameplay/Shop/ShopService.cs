@@ -9,7 +9,7 @@ public class ShopService
         Heal,
         OrbUpgrade,
         OrbUpgradeDiscount,
-        CoinCache,
+        RecoveryPack,
         VitalityBoost
     }
 
@@ -163,8 +163,8 @@ public class ShopService
         {
             case ShopOfferType.Heal:
                 return Mathf.Max(1, fallbackHealAmount);
-            case ShopOfferType.CoinCache:
-                return 10;
+            case ShopOfferType.RecoveryPack:
+                return 8;
             case ShopOfferType.VitalityBoost:
                 return 4;
             default:

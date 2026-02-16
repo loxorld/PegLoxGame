@@ -31,12 +31,12 @@ MonoBehaviour:
     requiresMissingHp: 0
     requiresUpgradableOrb: 1
     requiresAnyOrb: 1
-  - offerId: coin_cache
+  - offerId: recovery_pack
     type: 3
     rarity: 1
-    baseCost: 8
+    baseCost: 11
     baseStock: 1
-    primaryValue: 16
+    primaryValue: 7
     requiresMissingHp: 0
     requiresUpgradableOrb: 0
     requiresAnyOrb: 0

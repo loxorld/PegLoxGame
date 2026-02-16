@@ -272,7 +272,27 @@ public class ShopScene : MonoBehaviour, IMapShopView
 
     private static string BuildShortLabel(ShopService.ShopOfferData offer)
     {
-        return $"{GetRarityPrefix(offer.Rarity)} {offer.Type} · {offer.Cost}g";
+        return $"{GetRarityPrefix(offer.Rarity)} {GetOfferTypeLabel(offer.Type)} · {offer.Cost}g";
+    }
+
+
+    private static string GetOfferTypeLabel(ShopService.ShopOfferType type)
+    {
+        switch (type)
+        {
+            case ShopService.ShopOfferType.Heal:
+                return "Curación";
+            case ShopService.ShopOfferType.OrbUpgrade:
+                return "Mejora de orbe";
+            case ShopService.ShopOfferType.OrbUpgradeDiscount:
+                return "Mejora barata";
+            case ShopService.ShopOfferType.RecoveryPack:
+                return "Botiquín";
+            case ShopService.ShopOfferType.VitalityBoost:
+                return "Vitalidad";
+            default:
+                return "Oferta";
+        }
     }
 
     private static string BuildDetail(ShopService.ShopOfferData offer)
@@ -289,8 +309,8 @@ public class ShopScene : MonoBehaviour, IMapShopView
             case ShopService.ShopOfferType.OrbUpgradeDiscount:
                 description = "Mejora un orbe con precio reducido.";
                 break;
-            case ShopService.ShopOfferType.CoinCache:
-                description = $"Entrega {offer.PrimaryValue} monedas instantáneamente.";
+            case ShopService.ShopOfferType.RecoveryPack:
+                description = $"Recupera {offer.PrimaryValue} HP y además suma +1 de vida máxima.";
                 break;
             case ShopService.ShopOfferType.VitalityBoost:
                 description = $"Aumenta HP máximo en {offer.PrimaryValue}.";
