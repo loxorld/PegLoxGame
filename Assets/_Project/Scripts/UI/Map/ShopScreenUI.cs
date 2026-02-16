@@ -25,7 +25,6 @@ public class ShopScreenUI : MonoBehaviour, IMapShopView
 
         GameObject root = new GameObject("ShopScreenUI");
         instance = root.AddComponent<ShopScreenUI>();
-        instance.BuildUi();
         return instance;
     }
 
@@ -40,6 +39,9 @@ public class ShopScreenUI : MonoBehaviour, IMapShopView
 
     private void BuildUi()
     {
+        if (rootCanvas != null)
+            return;
+
         DontDestroyOnLoad(gameObject);
 
         rootCanvas = gameObject.AddComponent<Canvas>();
