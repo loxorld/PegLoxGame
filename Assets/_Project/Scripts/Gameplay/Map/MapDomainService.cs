@@ -69,10 +69,11 @@ public class MapDomainService
 
     public readonly struct ShopOutcome
     {
-        public ShopOutcome(string title, string description, int healCost, int healAmount, int orbUpgradeCost)
+        public ShopOutcome(string title, string description, int currentCoins, int healCost, int healAmount, int orbUpgradeCost)
         {
             Title = title;
             Description = description;
+            CurrentCoins = currentCoins;
             HealCost = healCost;
             HealAmount = healAmount;
             OrbUpgradeCost = orbUpgradeCost;
@@ -80,6 +81,7 @@ public class MapDomainService
 
         public string Title { get; }
         public string Description { get; }
+        public int CurrentCoins { get; }
         public int HealCost { get; }
         public int HealAmount { get; }
         public int OrbUpgradeCost { get; }
@@ -229,13 +231,14 @@ public class MapDomainService
         int healAmount = balance != null ? balance.GetShopHealAmount(stageIndex, fallbackHealAmount) : fallbackHealAmount;
         int orbUpgradeCost = balance != null ? balance.GetShopOrbUpgradeCost(stageIndex, fallbackOrbUpgradeCost) : fallbackOrbUpgradeCost;
 
-        string description = $"{currentNode?.description}\n\nMonedas: {coins}";
+        string description = currentNode?.description ?? string.Empty;
         if (!string.IsNullOrWhiteSpace(extraMessage))
             description += $"\n{extraMessage}";
 
         return new ShopOutcome(
             currentNode != null ? currentNode.title : "Tienda",
             description,
+            coins,
             healCost,
             healAmount,
             orbUpgradeCost);

@@ -36,16 +36,20 @@ public class ShopService
 
     public sealed class ShopOptionData
     {
-        public ShopOptionData(string label, bool isEnabled, Action onSelect)
+        public ShopOptionData(string label, bool isEnabled, Action onSelect, ShopOfferRarity? rarity = null, bool isExitOption = false)
         {
             Label = label;
             IsEnabled = isEnabled;
             OnSelect = onSelect;
+            Rarity = rarity;
+            IsExitOption = isExitOption;
         }
 
         public string Label { get; }
         public bool IsEnabled { get; }
         public Action OnSelect { get; }
+        public ShopOfferRarity? Rarity { get; }
+        public bool IsExitOption { get; }
     }
 
     public List<ShopOptionData> GetShopOptionsForNode(
@@ -236,10 +240,10 @@ public class ShopService
 
             bool enabled = IsOfferEnabled(flow, orbManager, offer, out string disableReason);
             string label = BuildOfferLabel(offer, enabled, disableReason);
-            options.Add(new ShopOptionData(label, enabled, () => ExecuteOffer(flow, orbManager, shopId, offer, refreshAction, exitAction)));
+            options.Add(new ShopOptionData(label, enabled, () => ExecuteOffer(flow, orbManager, shopId, offer, refreshAction, exitAction), offer.Rarity));
         }
 
-        options.Add(new ShopOptionData("Salir", true, exitAction));
+        options.Add(new ShopOptionData("Salir", true, exitAction, null, true));
         return options;
     }
 
@@ -441,29 +445,29 @@ public class ShopService
 
     private static string BuildOfferLabel(ShopOfferData offer, bool enabled, string disabledReason)
     {
-        string rarity = offer.Rarity.ToString();
         string text;
         switch (offer.Type)
         {
             case ShopOfferType.Heal:
-                text = $"[{rarity}] Curar +{offer.PrimaryValue} HP ({offer.Cost} monedas, stock {offer.Stock})";
+                text = $"Curar +{offer.PrimaryValue} HP ({offer.Cost} monedas, stock {offer.Stock})";
                 break;
             case ShopOfferType.OrbUpgrade:
-                text = $"[{rarity}] Mejorar Orbe aleatorio ({offer.Cost} monedas, stock {offer.Stock})";
+                text = $"Mejorar Orbe aleatorio ({offer.Cost} monedas, stock {offer.Stock})";
                 break;
             case ShopOfferType.OrbUpgradeDiscount:
-                text = $"[{rarity}] Mejorar Orbe con descuento ({offer.Cost} monedas, stock {offer.Stock})";
+                text = $"Mejorar Orbe con descuento ({offer.Cost} monedas, stock {offer.Stock})";
                 break;
             case ShopOfferType.CoinCache:
-                text = $"[{rarity}] Cofre temporal (+{offer.PrimaryValue} monedas por {offer.Cost}, stock {offer.Stock})";
+                text = $"Cofre temporal (+{offer.PrimaryValue} monedas por {offer.Cost}, stock {offer.Stock})";
                 break;
             case ShopOfferType.VitalityBoost:
-                text = $"[{rarity}] Tnico Vital (+{offer.PrimaryValue} HP mx, {offer.Cost} monedas, stock {offer.Stock})";
+                text = $"Tónico Vital (+{offer.PrimaryValue} HP máx, {offer.Cost} monedas, stock {offer.Stock})";
                 break;
             default:
                 text = $"Oferta desconocida ({offer.Cost} monedas)";
                 break;
         }
+
 
         if (!enabled && !string.IsNullOrWhiteSpace(disabledReason))
             text += $" - {disabledReason}";
