@@ -26,6 +26,9 @@ public class ShopScene : MonoBehaviour, IMapShopView
     [SerializeField, Min(1)] private int fallbackHealAmount = 4;
     [SerializeField, Min(0)] private int fallbackUpgradeCost = 15;
 
+    [Header("Scene Wiring")]
+    [SerializeField] private bool preferSceneLayout = true;
+
     [Header("Nodes")]
     [SerializeField] private TMP_Text titleLabel;
     [SerializeField] private TMP_Text coinLabel;
@@ -52,15 +55,17 @@ public class ShopScene : MonoBehaviour, IMapShopView
         if (found != null)
             return found;
 
-        GameObject root = new GameObject("ShopScene");
-        ShopScene created = root.AddComponent<ShopScene>();
-        created.BuildRuntimeUi();
-        return created;
+        Debug.LogError("[ShopScene] No se encontró ShopScene en la escena activa. Instanciá/copiá el layout de ShopScene.unity dentro de la escena de mapa.");
+        return null;
     }
 
     public void ShowShop(OpenParams openParams)
     {
         if (openParams == null)
+            return;
+
+        EnsureUiReady();
+        if (!HasAllReferences())
             return;
 
         current = openParams;
@@ -130,7 +135,17 @@ public class ShopScene : MonoBehaviour, IMapShopView
             ShopService.ShopOfferData offer = activeCatalog[i];
             Button button = Instantiate(itemButtonTemplate, itemSlotsRoot);
             button.gameObject.SetActive(true);
-            button.GetComponentInChildren<TMP_Text>().text = BuildShortLabel(offer);
+            TMP_Text label = button.GetComponentInChildren<TMP_Text>();
+            if (label != null)
+            {
+                label.text = BuildShortLabel(offer);
+                label.color = GetRarityTextColor(offer.Rarity);
+            }
+
+            Image buttonImage = button.GetComponent<Image>();
+            if (buttonImage != null)
+                buttonImage.color = GetRarityButtonColor(offer.Rarity);
+
             button.onClick.RemoveAllListeners();
             button.onClick.AddListener(() => SelectIndex(idx));
             spawnedButtons.Add(button);
@@ -156,9 +171,12 @@ public class ShopScene : MonoBehaviour, IMapShopView
         detailLabel.text = BuildDetail(offer);
         priceLabel.text = $"Precio: {offer.Cost}";
         rarityLabel.text = $"Rareza: {offer.Rarity}";
+        rarityLabel.color = GetRarityTextColor(offer.Rarity);
         buyButton.interactable = enabled;
         if (!enabled && !string.IsNullOrWhiteSpace(reason))
             detailLabel.text += $"\n\n{reason}";
+
+        UpdateSelectionVisual();
     }
 
     private void BuySelected()
@@ -218,122 +236,154 @@ public class ShopScene : MonoBehaviour, IMapShopView
 
         bool canRefresh = shopConfig != null
             && shopConfig.AllowManualRefresh
-            && refreshesUsed < shopConfig.MaxRefreshesPerVisit;
+            && refreshesUsed < shopConfig.MaxRefreshesPerVisit
+            && (current?.Flow == null || current.Flow.Coins >= shopConfig.RefreshCost);
         refreshButton.interactable = canRefresh;
+
+        int refreshesRemaining = shopConfig != null ? Mathf.Max(0, shopConfig.MaxRefreshesPerVisit - refreshesUsed) : 0;
+        if (refreshButton != null)
+        {
+            TMP_Text refreshText = refreshButton.GetComponentInChildren<TMP_Text>();
+            if (refreshText != null)
+            {
+                int refreshCost = shopConfig != null ? Mathf.Max(0, shopConfig.RefreshCost) : 0;
+                refreshText.text = $"Refrescar ({refreshCost}g) [{refreshesRemaining}]";
+            }
+        }
     }
 
     private static string BuildShortLabel(ShopService.ShopOfferData offer)
     {
-        return $"[{offer.Rarity}] {offer.Type} - {offer.Cost}g";
+        return $"{GetRarityPrefix(offer.Rarity)} {offer.Type} · {offer.Cost}g";
     }
 
     private static string BuildDetail(ShopService.ShopOfferData offer)
     {
-        return $"{offer.Type}\nValor: {offer.PrimaryValue}\nStock: {offer.Stock}";
+        string description;
+        switch (offer.Type)
+        {
+            case ShopService.ShopOfferType.Heal:
+                description = $"Recupera {offer.PrimaryValue} HP del personaje.";
+                break;
+            case ShopService.ShopOfferType.OrbUpgrade:
+                description = "Mejora un orbe aleatorio que todavía pueda subir de nivel.";
+                break;
+            case ShopService.ShopOfferType.OrbUpgradeDiscount:
+                description = "Mejora un orbe con precio reducido.";
+                break;
+            case ShopService.ShopOfferType.CoinCache:
+                description = $"Entrega {offer.PrimaryValue} monedas instantáneamente.";
+                break;
+            case ShopService.ShopOfferType.VitalityBoost:
+                description = $"Aumenta HP máximo en {offer.PrimaryValue}.";
+                break;
+            default:
+                description = "Oferta especial.";
+                break;
+        }
+
+        return $"{description}\n\nValor: {offer.PrimaryValue}\nStock disponible: {offer.Stock}";
     }
 
     private void Awake()
     {
-        if (titleLabel == null)
-            BuildRuntimeUi();
-
+        EnsureUiReady();
         gameObject.SetActive(false);
     }
 
-    private void BuildRuntimeUi()
+    private void EnsureUiReady()
     {
-        Canvas canvas = GetComponent<Canvas>();
-        if (canvas == null)
+        if (HasAllReferences())
+            return;
+
+        Debug.LogError("[ShopScene] Falta cablear la escena de shop. Asigná todos los campos del componente ShopScene en ShopScene.unity.");
+    }
+
+    private bool HasAllReferences()
+    {
+        bool hasRefs = titleLabel != null
+            && coinLabel != null
+            && stockLabel != null
+            && itemSlotsRoot != null
+            && itemButtonTemplate != null
+            && detailLabel != null
+            && priceLabel != null
+            && rarityLabel != null
+            && buyButton != null
+            && refreshButton != null
+            && exitButton != null;
+
+        return hasRefs;
+    }
+
+    private static Color GetRarityTextColor(ShopService.ShopOfferRarity rarity)
+    {
+        switch (rarity)
         {
-            canvas = gameObject.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            gameObject.AddComponent<GraphicRaycaster>();
-            CanvasScaler scaler = gameObject.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            case ShopService.ShopOfferRarity.Common:
+                return Color.white;
+            case ShopService.ShopOfferRarity.Rare:
+                return Color.cyan;
+            case ShopService.ShopOfferRarity.Epic:
+                return new Color(0.6f, 0.2f, 1f); // violeta
+            case ShopService.ShopOfferRarity.Legendary:
+                return Color.yellow;
+            default:
+                return Color.white;
         }
-
-        GameObject panel = CreateUi("Panel", transform);
-        Image panelImage = panel.AddComponent<Image>();
-        panelImage.color = new Color(0.08f, 0.08f, 0.1f, 0.95f);
-        RectTransform panelRect = panel.GetComponent<RectTransform>();
-        panelRect.anchorMin = new Vector2(0.5f, 0.5f);
-        panelRect.anchorMax = new Vector2(0.5f, 0.5f);
-        panelRect.sizeDelta = new Vector2(1200f, 700f);
-
-        titleLabel = CreateText("Title", panel.transform, new Vector2(0f, 300f), 42);
-        coinLabel = CreateText("Coins", panel.transform, new Vector2(-430f, 245f), 28);
-        stockLabel = CreateText("Stock", panel.transform, new Vector2(-430f, 205f), 24);
-
-        itemSlotsRoot = CreateUi("Items", panel.transform).transform;
-        RectTransform listRect = ((GameObject)itemSlotsRoot.gameObject).GetComponent<RectTransform>();
-        listRect.anchoredPosition = new Vector2(-330f, -20f);
-        listRect.sizeDelta = new Vector2(460f, 460f);
-        VerticalLayoutGroup vlg = itemSlotsRoot.gameObject.AddComponent<VerticalLayoutGroup>();
-        vlg.spacing = 8f;
-        vlg.childControlHeight = true;
-        vlg.childForceExpandHeight = false;
-
-        itemButtonTemplate = CreateButton("ItemTemplate", itemSlotsRoot, "Item");
-        itemButtonTemplate.gameObject.SetActive(false);
-
-        detailLabel = CreateText("Detail", panel.transform, new Vector2(260f, 120f), 24);
-        priceLabel = CreateText("Price", panel.transform, new Vector2(260f, -40f), 24);
-        rarityLabel = CreateText("Rarity", panel.transform, new Vector2(260f, -90f), 24);
-
-        buyButton = CreateButton("BuyButton", panel.transform, "Comprar");
-        SetPos(buyButton.GetComponent<RectTransform>(), new Vector2(260f, -210f), new Vector2(240f, 60f));
-
-        refreshButton = CreateButton("RefreshButton", panel.transform, "Refresh");
-        SetPos(refreshButton.GetComponent<RectTransform>(), new Vector2(10f, -290f), new Vector2(240f, 60f));
-
-        exitButton = CreateButton("ExitButton", panel.transform, "Salir");
-        SetPos(exitButton.GetComponent<RectTransform>(), new Vector2(510f, -290f), new Vector2(240f, 60f));
     }
 
-    private static GameObject CreateUi(string name, Transform parent)
+    private static Color GetRarityButtonColor(ShopService.ShopOfferRarity rarity)
     {
-        GameObject go = new GameObject(name, typeof(RectTransform));
-        go.transform.SetParent(parent, false);
-        return go;
+        switch (rarity)
+        {
+            case ShopService.ShopOfferRarity.Common:
+                return new Color(0.9f, 0.9f, 0.9f); // Gris claro
+            case ShopService.ShopOfferRarity.Rare:
+                return new Color(0.7f, 0.95f, 1f); // Celeste claro
+            case ShopService.ShopOfferRarity.Epic:
+                return new Color(0.8f, 0.7f, 1f); // Violeta claro
+            case ShopService.ShopOfferRarity.Legendary:
+                return new Color(1f, 1f, 0.7f); // Amarillo claro
+            default:
+                return Color.white;
+        }
     }
 
-    private static TMP_Text CreateText(string name, Transform parent, Vector2 anchoredPos, int size)
+    // Agregar este método privado para resolver CS0103
+    private static string GetRarityPrefix(ShopService.ShopOfferRarity rarity)
     {
-        GameObject go = CreateUi(name, parent);
-        TMP_Text text = go.AddComponent<TextMeshProUGUI>();
-        text.fontSize = size;
-        text.alignment = TextAlignmentOptions.Center;
-        SetPos(go.GetComponent<RectTransform>(), anchoredPos, new Vector2(460f, 50f));
-        return text;
+        switch (rarity)
+        {
+            case ShopService.ShopOfferRarity.Common:
+                return "[Común]";
+            case ShopService.ShopOfferRarity.Rare:
+                return "[Rara]";
+            case ShopService.ShopOfferRarity.Epic:
+                return "[Épica]";
+            case ShopService.ShopOfferRarity.Legendary:
+                return "[Legendaria]";
+            default:
+                return "[?]";
+        }
     }
 
-    private static Button CreateButton(string name, Transform parent, string label)
+    // Agregar este método privado a la clase ShopScene para resolver CS0103
+    private void UpdateSelectionVisual()
     {
-        GameObject go = CreateUi(name, parent);
-        Image image = go.AddComponent<Image>();
-        image.color = new Color(0.2f, 0.3f, 0.45f, 1f);
-        Button button = go.AddComponent<Button>();
-        SetPos(go.GetComponent<RectTransform>(), Vector2.zero, new Vector2(430f, 56f));
-
-        TMP_Text text = CreateText("Label", go.transform, Vector2.zero, 22);
-        text.text = label;
-        text.color = Color.white;
-        text.alignment = TextAlignmentOptions.Center;
-        RectTransform textRect = text.GetComponent<RectTransform>();
-        textRect.anchorMin = Vector2.zero;
-        textRect.anchorMax = Vector2.one;
-        textRect.offsetMin = Vector2.zero;
-        textRect.offsetMax = Vector2.zero;
-
-        return button;
-    }
-
-    private static void SetPos(RectTransform rect, Vector2 anchoredPos, Vector2 size)
-    {
-        rect.anchorMin = new Vector2(0.5f, 0.5f);
-        rect.anchorMax = new Vector2(0.5f, 0.5f);
-        rect.anchoredPosition = anchoredPos;
-        rect.sizeDelta = size;
+        // Si deseas resaltar el botón seleccionado, puedes implementar aquí la lógica.
+        // Por ejemplo, cambiar el color de fondo del botón seleccionado y restaurar los demás.
+        for (int i = 0; i < spawnedButtons.Count; i++)
+        {
+            var button = spawnedButtons[i];
+            var image = button.GetComponent<UnityEngine.UI.Image>();
+            if (image != null)
+            {
+                if (i == selectedIndex)
+                    image.color = Color.green; // O el color que prefieras para selección
+                else
+                    image.color = GetRarityButtonColor(activeCatalog[i].Rarity);
+            }
+        }
     }
 }
