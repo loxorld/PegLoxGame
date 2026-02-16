@@ -310,8 +310,8 @@ public class MapManager : MonoBehaviour
     private static string BuildShopId(MapNodeData node, GameFlowManager flow, int stageIndex)
     {
         string nodeId = node != null && !string.IsNullOrWhiteSpace(node.name) ? node.name : "unknown-node";
-        int encounterIndex = flow != null ? flow.EncounterIndex : 0;
-        return $"shop_{stageIndex}_{encounterIndex}_{nodeId}";
+        int nodeVisitIndex = flow != null ? flow.NodesVisited : 0;
+        return $"shop_{stageIndex}_{nodeVisitIndex}_{nodeId}";
     }
     private void HandleBossNode()
     {

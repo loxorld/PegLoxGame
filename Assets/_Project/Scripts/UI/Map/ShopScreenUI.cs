@@ -15,6 +15,8 @@ public class ShopScreenUI : MonoBehaviour, IMapShopView
     private TMP_Text descriptionText;
     private Transform buttonsContainer;
     private Button buttonTemplate;
+    private RectTransform optionsRootRect;
+    private VerticalLayoutGroup optionsLayoutGroup;
 
     private readonly List<Button> optionButtons = new List<Button>();
 
@@ -80,7 +82,7 @@ public class ShopScreenUI : MonoBehaviour, IMapShopView
         VerticalLayoutGroup frameLayout = frameObject.AddComponent<VerticalLayoutGroup>();
         frameLayout.padding = new RectOffset(50, 50, 36, 36);
         frameLayout.spacing = 16f;
-        frameLayout.childControlHeight = false;
+        frameLayout.childControlHeight = true;
         frameLayout.childControlWidth = true;
         frameLayout.childForceExpandHeight = false;
 
@@ -126,7 +128,7 @@ public class ShopScreenUI : MonoBehaviour, IMapShopView
         descriptionText.enableWordWrapping = true;
         descriptionText.color = new Color(0.88f, 0.9f, 0.95f);
         LayoutElement descriptionLayout = descriptionObject.AddComponent<LayoutElement>();
-        descriptionLayout.preferredHeight = 120f;
+        descriptionLayout.preferredHeight = 100f;
 
         GameObject optionsRoot = CreateUiObject("OptionsRoot", frameObject.transform);
         LayoutElement optionsRootLayout = optionsRoot.AddComponent<LayoutElement>();
@@ -136,36 +138,24 @@ public class ShopScreenUI : MonoBehaviour, IMapShopView
         Image optionsBackground = optionsRoot.AddComponent<Image>();
         optionsBackground.color = new Color(0.07f, 0.08f, 0.11f, 0.85f);
 
-        Mask viewportMask = optionsRoot.AddComponent<Mask>();
-        viewportMask.showMaskGraphic = true;
-
-        ScrollRect scrollRect = optionsRoot.AddComponent<ScrollRect>();
-        scrollRect.horizontal = false;
-        scrollRect.vertical = true;
-        scrollRect.movementType = ScrollRect.MovementType.Clamped;
-        scrollRect.scrollSensitivity = 30f;
-
         GameObject contentObject = CreateUiObject("OptionsContent", optionsRoot.transform);
         RectTransform contentRect = contentObject.GetComponent<RectTransform>();
-        contentRect.anchorMin = new Vector2(0f, 1f);
+        contentRect.anchorMin = new Vector2(0f, 0f);
         contentRect.anchorMax = new Vector2(1f, 1f);
-        contentRect.pivot = new Vector2(0.5f, 1f);
+        contentRect.pivot = new Vector2(0.5f, 0.5f);
         contentRect.anchoredPosition = Vector2.zero;
         contentRect.sizeDelta = new Vector2(0f, 0f);
 
         VerticalLayoutGroup optionsLayout = contentObject.AddComponent<VerticalLayoutGroup>();
         optionsLayout.padding = new RectOffset(18, 18, 20, 20);
         optionsLayout.spacing = 12f;
-        optionsLayout.childControlHeight = false;
+        optionsLayout.childControlHeight = true;
         optionsLayout.childControlWidth = true;
         optionsLayout.childForceExpandHeight = false;
         optionsLayout.childForceExpandWidth = true;
 
-        ContentSizeFitter optionsFitter = contentObject.AddComponent<ContentSizeFitter>();
-        optionsFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-        scrollRect.viewport = optionsRoot.GetComponent<RectTransform>();
-        scrollRect.content = contentRect;
+        optionsRootRect = optionsRoot.GetComponent<RectTransform>();
+        optionsLayoutGroup = optionsLayout;
         buttonsContainer = contentObject.transform;
 
         buttonTemplate = CreateButtonTemplate(contentObject.transform);
@@ -192,11 +182,14 @@ public class ShopScreenUI : MonoBehaviour, IMapShopView
         LayoutElement layout = buttonObject.AddComponent<LayoutElement>();
         layout.preferredHeight = 82f;
 
-        GameObject labelObject = CreateText("Label", buttonObject.transform, 29, FontStyles.Bold);
+        GameObject labelObject = CreateText("Label", buttonObject.transform, 24, FontStyles.Bold);
         TMP_Text labelText = labelObject.GetComponent<TMP_Text>();
         labelText.alignment = TextAlignmentOptions.Center;
         labelText.color = Color.white;
         labelText.enableWordWrapping = true;
+        labelText.enableAutoSizing = true;
+        labelText.fontSizeMin = 14f;
+        labelText.fontSizeMax = 24f;
         StretchRect(labelObject.GetComponent<RectTransform>());
 
         return button;
@@ -240,12 +233,50 @@ public class ShopScreenUI : MonoBehaviour, IMapShopView
 
             optionButtons.Add(button);
         }
+
+        ResizeOptionButtons(optionButtons.Count);
+    }
+
+    private void ResizeOptionButtons(int optionCount)
+    {
+        if (optionCount <= 0 || optionsRootRect == null || optionsLayoutGroup == null)
+            return;
+
+        LayoutRebuilder.ForceRebuildLayoutImmediate(optionsRootRect);
+
+        float availableHeight = optionsRootRect.rect.height
+            - optionsLayoutGroup.padding.top
+            - optionsLayoutGroup.padding.bottom
+            - optionsLayoutGroup.spacing * Mathf.Max(0, optionCount - 1);
+
+        if (availableHeight <= 0f)
+            return;
+
+        float targetHeight = Mathf.Clamp(availableHeight / optionCount, 54f, 82f);
+
+        for (int i = 0; i < optionButtons.Count; i++)
+        {
+            Button button = optionButtons[i];
+            if (button == null)
+                continue;
+
+            LayoutElement layout = button.GetComponent<LayoutElement>();
+            if (layout != null)
+            {
+                layout.preferredHeight = targetHeight;
+                layout.minHeight = targetHeight;
+            }
+
+            RectTransform rect = button.GetComponent<RectTransform>();
+            if (rect != null)
+                rect.sizeDelta = new Vector2(rect.sizeDelta.x, targetHeight);
+        }
     }
 
     private static string GetRarityIcon(ShopService.ShopOptionData option)
     {
         if (option.IsExitOption)
-            return "↩";
+            return "<";
 
         if (!option.Rarity.HasValue)
             return string.Empty;
@@ -253,13 +284,13 @@ public class ShopScreenUI : MonoBehaviour, IMapShopView
         switch (option.Rarity.Value)
         {
             case ShopService.ShopOfferRarity.Common:
-                return "◈";
+                return "[C]";
             case ShopService.ShopOfferRarity.Rare:
-                return "◆";
+                return "[R]";
             case ShopService.ShopOfferRarity.Epic:
-                return "⬢";
+                return "[E]";
             case ShopService.ShopOfferRarity.Legendary:
-                return "✦";
+                return "[L]";
             default:
                 return string.Empty;
         }
