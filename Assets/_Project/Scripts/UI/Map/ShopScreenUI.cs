@@ -4,7 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class ShopScreenUI : MonoBehaviour, IMapShopView
+public class ShopScreenUI : MonoBehaviour
 {
     private static ShopScreenUI instance;
 

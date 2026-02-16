@@ -69,7 +69,7 @@ public class MapPresentationController : MonoBehaviour
         modalView.ShowEvent(eventOutcome.Title, eventOutcome.Description, options);
     }
 
-    public void ShowShop(MapDomainService.ShopOutcome shopOutcome, IReadOnlyList<ShopService.ShopOptionData> shopOptions)
+    public void ShowShop(ShopScene.OpenParams openParams)
     {
         IMapShopView shopView = ResolveMapShopView();
         if (shopView == null)
@@ -78,8 +78,7 @@ public class MapPresentationController : MonoBehaviour
             return;
         }
 
-        shopView.ShowShop(shopOutcome, shopOptions);
-
+        shopView.ShowShop(openParams);
     }
 
     public void ShowGenericResult(string title, string description, Action onContinue)
@@ -169,13 +168,13 @@ public class MapPresentationController : MonoBehaviour
 
         ServiceRegistry.LogFallback(nameof(MapPresentationController), nameof(mapShopView), "missing-injected-reference");
 
-        ShopScreenUI screen = ShopScreenUI.GetOrCreate();
-        if (screen != null)
+        ShopScene scene = ShopScene.GetOrCreate();
+        if (scene != null)
         {
-            mapShopView = screen;
-            ServiceRegistry.Register<IMapShopView>(screen);
-            ServiceRegistry.LogFallbackMetric(nameof(MapPresentationController), nameof(mapShopView), "shopscreenui-getorcreate");
-            return screen;
+            mapShopView = scene;
+            ServiceRegistry.Register<IMapShopView>(scene);
+            ServiceRegistry.LogFallbackMetric(nameof(MapPresentationController), nameof(mapShopView), "shopscene-getorcreate");
+            return scene;
         }
 
         return null;

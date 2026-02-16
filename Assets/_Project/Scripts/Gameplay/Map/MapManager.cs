@@ -25,6 +25,7 @@ public class MapManager : MonoBehaviour
     [SerializeField] private MonoBehaviour mapNodeModalView;
 
     [Header("Shop Settings")]
+    [SerializeField] private ShopConfig shopConfig;
     [SerializeField, Min(0)] private int shopHealCost = 10;
     [SerializeField, Min(1)] private int shopHealAmount = 8;
     [SerializeField, Min(0)] private int shopOrbUpgradeCost = 15;
@@ -37,6 +38,9 @@ public class MapManager : MonoBehaviour
 
     private void Awake()
     {
+        if (shopConfig == null)
+            shopConfig = Resources.Load<ShopConfig>("ShopConfig_Default");
+
         ServiceRegistry.Register(this);
     }
 
@@ -291,20 +295,20 @@ public class MapManager : MonoBehaviour
 
         string shopId = BuildShopId(currentNode, flow, balanceStageIndex);
 
-        List<ShopService.ShopOptionData> shopOptions = resolvedShopService.GetShopOptionsForNode(
-            flow,
-            orbManager,
-            ResolveBalanceConfig(),
-            balanceStageIndex,
-            shopId,
-            shopOutcome.HealCost,
-            shopOutcome.HealAmount,
-            shopOutcome.OrbUpgradeCost,
-            ShowShopScreen,
-            () => OpenNode(currentNode));
-
         EnsurePresentationController();
-        presentationController?.ShowShop(shopOutcome, shopOptions);
+        presentationController?.ShowShop(new ShopScene.OpenParams
+        {
+            ShopOutcome = shopOutcome,
+            Config = shopConfig,
+            Service = resolvedShopService,
+            Flow = flow,
+            OrbManager = orbManager,
+            Balance = ResolveBalanceConfig(),
+            StageIndex = balanceStageIndex,
+            ShopId = shopId,
+            OnRefreshMessage = ShowShopScreen,
+            OnExit = () => OpenNode(currentNode)
+        });
     }
 
     private static string BuildShopId(MapNodeData node, GameFlowManager flow, int stageIndex)

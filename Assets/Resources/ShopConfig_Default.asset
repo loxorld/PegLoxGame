@@ -1,0 +1,69 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 58a40af3c1bc47768ce60698fdaec57a, type: 3}
+  m_Name: ShopConfig_Default
+  m_EditorClassIdentifier: 
+  offerTable:
+  - offerId: heal_common
+    type: 0
+    rarity: 0
+    baseCost: 10
+    baseStock: 2
+    primaryValue: 8
+    requiresMissingHp: 1
+    requiresUpgradableOrb: 0
+    requiresAnyOrb: 0
+  - offerId: upgrade_standard
+    type: 1
+    rarity: 0
+    baseCost: 15
+    baseStock: 1
+    primaryValue: 1
+    requiresMissingHp: 0
+    requiresUpgradableOrb: 1
+    requiresAnyOrb: 1
+  - offerId: coin_cache
+    type: 3
+    rarity: 1
+    baseCost: 8
+    baseStock: 1
+    primaryValue: 16
+    requiresMissingHp: 0
+    requiresUpgradableOrb: 0
+    requiresAnyOrb: 0
+  - offerId: vitality_boost
+    type: 4
+    rarity: 3
+    baseCost: 18
+    baseStock: 1
+    primaryValue: 4
+    requiresMissingHp: 0
+    requiresUpgradableOrb: 0
+    requiresAnyOrb: 0
+  rarityWeights:
+  - rarity: 0
+    weight: 55
+  - rarity: 1
+    weight: 27
+  - rarity: 2
+    weight: 12
+  - rarity: 3
+    weight: 6
+  minOffersPerVisit: 3
+  maxOffersPerVisit: 6
+  commonPriceMultiplier: 1
+  rarePriceMultiplier: 1.2
+  epicPriceMultiplier: 1.35
+  legendaryPriceMultiplier: 1.6
+  allowManualRefresh: 1
+  refreshCost: 5
+  maxRefreshesPerVisit: 2
