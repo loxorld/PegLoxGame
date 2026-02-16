@@ -103,6 +103,10 @@ public class ShopScene : MonoBehaviour, IMapShopView
             gameObject.SetActive(false);
             current?.OnExit?.Invoke();
         });
+
+        ApplyStandardButtonTextStyle(buyButton);
+        ApplyStandardButtonTextStyle(refreshButton);
+        ApplyStandardButtonTextStyle(exitButton);
     }
 
     private void LoadCatalog(bool forceRefresh)
@@ -147,6 +151,11 @@ public class ShopScene : MonoBehaviour, IMapShopView
             {
                 label.text = BuildShortLabel(offer);
                 label.color = GetRarityTextColor(offer.Rarity);
+                label.alignment = TextAlignmentOptions.MidlineLeft;
+                label.margin = new Vector4(8f, 0f, 8f, 0f);
+                label.enableAutoSizing = true;
+                label.fontSizeMin = 14f;
+                label.fontSizeMax = 24f;
             }
 
             Image buttonImage = button.GetComponent<Image>();
@@ -257,6 +266,8 @@ public class ShopScene : MonoBehaviour, IMapShopView
                 refreshText.text = $"Refrescar ({refreshCost}g) [{refreshesRemaining}]";
             }
         }
+
+        ApplyStandardButtonTextStyle(refreshButton);
     }
 
     private static string BuildShortLabel(ShopService.ShopOfferData offer)
@@ -513,16 +524,33 @@ public class ShopScene : MonoBehaviour, IMapShopView
         switch (rarity)
         {
             case ShopService.ShopOfferRarity.Common:
-                return Color.white;
+                return new Color(0.08f, 0.1f, 0.12f);
             case ShopService.ShopOfferRarity.Rare:
-                return Color.cyan;
+                return new Color(0.07f, 0.18f, 0.22f);
             case ShopService.ShopOfferRarity.Epic:
-                return new Color(0.6f, 0.2f, 1f); // violeta
+                return new Color(0.2f, 0.1f, 0.35f);
             case ShopService.ShopOfferRarity.Legendary:
-                return Color.yellow;
+                return new Color(0.25f, 0.2f, 0.02f);
             default:
-                return Color.white;
+                return new Color(0.08f, 0.1f, 0.12f);
         }
+    }
+
+    private static void ApplyStandardButtonTextStyle(Button button)
+    {
+        if (button == null)
+            return;
+
+        TMP_Text text = button.GetComponentInChildren<TMP_Text>();
+        if (text == null)
+            return;
+
+        text.alignment = TextAlignmentOptions.Center;
+        text.margin = Vector4.zero;
+        text.enableWordWrapping = false;
+        text.enableAutoSizing = true;
+        text.fontSizeMin = 14f;
+        text.fontSizeMax = 24f;
     }
 
     private static Color GetRarityButtonColor(ShopService.ShopOfferRarity rarity)

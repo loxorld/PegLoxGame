@@ -78,12 +78,10 @@ public class MapPresentationController : MonoBehaviour
 
     private IEnumerator ShowShopRoutine(ShopScene.OpenParams openParams)
     {
-        IMapShopView shopView = ResolveMapShopView();
-        if (shopView == null && loadShopSceneAdditively)
-        {
+        if (loadShopSceneAdditively && !IsShopSceneLoaded())
             yield return EnsureShopSceneLoaded();
-            shopView = ResolveMapShopView();
-        }
+
+        IMapShopView shopView = ResolveMapShopView();
 
         if (shopView == null)
         {
@@ -194,8 +192,6 @@ public class MapPresentationController : MonoBehaviour
             }
         }
 
-        ServiceRegistry.LogFallback(nameof(MapPresentationController), nameof(mapShopView), "missing-injected-reference");
-
         if (loadShopSceneAdditively && !IsShopSceneLoaded())
             return null;
 
@@ -208,6 +204,7 @@ public class MapPresentationController : MonoBehaviour
             return scene;
         }
 
+        ServiceRegistry.LogFallback(nameof(MapPresentationController), nameof(mapShopView), "missing-injected-reference");
         return null;
     }
 
