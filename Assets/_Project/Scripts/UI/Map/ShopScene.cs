@@ -79,7 +79,7 @@ public class ShopScene : MonoBehaviour, IMapShopView
     private List<ShopService.ShopOfferData> activeCatalog = new List<ShopService.ShopOfferData>();
     private int selectedIndex = -1;
     private int refreshesUsed;
-
+    private readonly Dictionary<string, int> refreshesByShopId = new Dictionary<string, int>();
     public static ShopScene GetOrCreate()
     {
         ShopScene found = FindObjectOfType<ShopScene>(true);
@@ -115,8 +115,7 @@ public class ShopScene : MonoBehaviour, IMapShopView
         PlayShopMusic();
 
         titleLabel.text = string.IsNullOrWhiteSpace(current.ShopOutcome.Title) ? "Tienda" : current.ShopOutcome.Title;
-        refreshesUsed = 0;
-
+        refreshesUsed = GetRefreshesForCurrentShop();
         LoadCatalog(forceRefresh: false);
         BindStaticButtons();
     }
@@ -260,7 +259,8 @@ public class ShopScene : MonoBehaviour, IMapShopView
             return;
         }
 
-        if (refreshesUsed >= shopConfig.MaxRefreshesPerVisit)
+        int currentRefreshesUsed = GetRefreshesForCurrentShop();
+        if (currentRefreshesUsed >= shopConfig.MaxRefreshesPerVisit)
         {
             current?.OnRefreshMessage?.Invoke("No quedan refreshes disponibles.");
             return;
@@ -272,7 +272,7 @@ public class ShopScene : MonoBehaviour, IMapShopView
             return;
         }
 
-        refreshesUsed++;
+        SetRefreshesForCurrentShop(currentRefreshesUsed + 1);
         LoadCatalog(forceRefresh: true);
         current?.OnRefreshMessage?.Invoke("Tienda refrescada.");
     }
@@ -288,6 +288,7 @@ public class ShopScene : MonoBehaviour, IMapShopView
 
         stockLabel.text = $"Stock total: {stock}";
 
+        refreshesUsed = GetRefreshesForCurrentShop();
         bool canRefresh = shopConfig != null
             && shopConfig.AllowManualRefresh
             && refreshesUsed < shopConfig.MaxRefreshesPerVisit
@@ -311,6 +312,29 @@ public class ShopScene : MonoBehaviour, IMapShopView
     private static string BuildShortLabel(ShopService.ShopOfferData offer)
     {
         return $"{GetRarityPrefix(offer.Rarity)} {GetOfferTypeLabel(offer.Type)} · {offer.Cost}g";
+    }
+
+    private int GetRefreshesForCurrentShop()
+    {
+        string shopId = current?.ShopId;
+        if (string.IsNullOrWhiteSpace(shopId))
+            return refreshesUsed;
+
+        if (refreshesByShopId.TryGetValue(shopId, out int savedRefreshes))
+            return Mathf.Max(0, savedRefreshes);
+
+        return 0;
+    }
+
+    private void SetRefreshesForCurrentShop(int value)
+    {
+        refreshesUsed = Mathf.Max(0, value);
+
+        string shopId = current?.ShopId;
+        if (string.IsNullOrWhiteSpace(shopId))
+            return;
+
+        refreshesByShopId[shopId] = refreshesUsed;
     }
 
 
