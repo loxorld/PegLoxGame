@@ -183,6 +183,8 @@ public class GameFlowManager : MonoBehaviour
     public void SavePlayerMaxHP(int maxHP)
     {
         PlayerMaxHP = Mathf.Max(1, maxHP);
+        if (HasSavedPlayerHP)
+            SavedPlayerHP = Mathf.Clamp(SavedPlayerHP, 0, PlayerMaxHP);
     }
 
     public void ModifySavedHP(int delta)

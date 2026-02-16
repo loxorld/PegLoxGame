@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 
 public class PlayerStats : MonoBehaviour
@@ -15,13 +15,25 @@ public class PlayerStats : MonoBehaviour
     private void Awake()
     {
         GameFlowManager flow = GameFlowManager.Instance;
-        flow?.SavePlayerMaxHP(maxHP);
-        if (flow != null && flow.HasSavedPlayerHP)
-            CurrentHP = Mathf.Clamp(flow.SavedPlayerHP, 0, maxHP);
-        else
-            CurrentHP = maxHP;
+        if (flow != null)
+        {
+            
+            maxHP = Mathf.Max(1, flow.PlayerMaxHP);
 
-        flow?.SavePlayerHP(CurrentHP);
+            if (flow.HasSavedPlayerHP)
+                CurrentHP = Mathf.Clamp(flow.SavedPlayerHP, 0, maxHP);
+            else
+                CurrentHP = maxHP;
+
+            flow.SavePlayerMaxHP(maxHP);
+            flow.SavePlayerHP(CurrentHP);
+        }
+        else
+        {
+            maxHP = Mathf.Max(1, maxHP);
+            CurrentHP = maxHP;
+        }
+
         isDead = false;
         Debug.Log($"Player HP: {CurrentHP}/{maxHP}");
     }
