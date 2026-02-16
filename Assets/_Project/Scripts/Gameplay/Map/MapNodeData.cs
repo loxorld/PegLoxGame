@@ -7,6 +7,10 @@ public class MapNodeData : ScriptableObject
     public string title;
     [TextArea] public string description;
 
+    [Header("Event Settings")]
+    public EventDefinition eventDefinition;
+    public EventDefinition[] eventDefinitionPool;
+
     public MapNodeConnection[] nextNodes;
 
     [Header("Boss Settings")]

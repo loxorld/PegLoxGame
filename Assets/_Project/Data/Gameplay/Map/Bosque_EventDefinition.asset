@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f3b76b3dac74688b52e5728ec59bf91, type: 3}
+  m_Name: Bosque_EventDefinition
+  m_EditorClassIdentifier: Assembly-CSharp::EventDefinition
+  title: Santuario Oculto
+  description: Encuentras un claro cubierto de runas antiguas y rastros de caravanas.
+  conditions:
+    useStageRange: 1
+    minStageIndex: 0
+    maxStageIndex: 0
+  options:
+  - optionLabel: Explorar el altar
+    successProbability: 1
+    useSuccessProbability: 0
+    successOutcome:
+      coinDelta: 12
+      hpDelta: 0
+      resultDescription: Recuperas reliquias olvidadas. +12 monedas.
+    failureOutcome:
+      coinDelta: 0
+      hpDelta: 0
+      resultDescription: ''
+  - optionLabel: Cruzar por la maleza
+    successProbability: 0.65
+    useSuccessProbability: 1
+    successOutcome:
+      coinDelta: 20
+      hpDelta: 0
+      resultDescription: Encuentras una bolsa abandonada. +20 monedas.
+    failureOutcome:
+      coinDelta: 0
+      hpDelta: -7
+      resultDescription: Espinas venenosas te hieren. -7 HP.

@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f3b76b3dac74688b52e5728ec59bf91, type: 3}
+  m_Name: Castillo_EventDefinition
+  m_EditorClassIdentifier: Assembly-CSharp::EventDefinition
+  title: Camara Antigua
+  description: Las paredes del castillo susurran secretos protegidos por sellos arcanos.
+  conditions:
+    useStageRange: 1
+    minStageIndex: 2
+    maxStageIndex: 2
+  options:
+  - optionLabel: Estudiar las inscripciones
+    successProbability: 1
+    useSuccessProbability: 0
+    successOutcome:
+      coinDelta: 18
+      hpDelta: 0
+      resultDescription: Descifras una ruta al tesoro real. +18 monedas.
+    failureOutcome:
+      coinDelta: 0
+      hpDelta: 0
+      resultDescription: ''
+  - optionLabel: Romper el sello principal
+    successProbability: 0.45
+    useSuccessProbability: 1
+    successOutcome:
+      coinDelta: 30
+      hpDelta: 0
+      resultDescription: El sello cae y reclamas una fortuna. +30 monedas.
+    failureOutcome:
+      coinDelta: 0
+      hpDelta: -9
+      resultDescription: Una descarga arcana te castiga. -9 HP.

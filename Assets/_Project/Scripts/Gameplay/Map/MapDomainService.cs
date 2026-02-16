@@ -152,6 +152,9 @@ public class MapDomainService
         int eventDamageMin,
         int eventDamageMax)
     {
+        EventScenarioOutcome? definitionOutcome = BuildEventOutcomeFromDefinition(currentNode, stageIndex);
+        if (definitionOutcome.HasValue)
+            return definitionOutcome.Value;
         int rewardMin = balance != null ? balance.GetEventCoinsRewardMin(stageIndex, eventCoinsRewardMin) : eventCoinsRewardMin;
         int rewardMax = balance != null ? balance.GetEventCoinsRewardMax(stageIndex, eventCoinsRewardMax) : eventCoinsRewardMax;
         int penaltyMin = balance != null ? balance.GetEventCoinsPenaltyMin(stageIndex, eventCoinsPenaltyMin) : eventCoinsPenaltyMin;
@@ -209,6 +212,86 @@ public class MapDomainService
             options);
     }
 
+
+    private EventScenarioOutcome? BuildEventOutcomeFromDefinition(MapNodeData node, int stageIndex)
+    {
+        EventDefinition definition = ResolveEventDefinition(node, stageIndex);
+        if (definition == null || definition.options == null || definition.options.Length == 0)
+            return null;
+
+        var options = new List<EventOptionOutcome>(definition.options.Length);
+        for (int i = 0; i < definition.options.Length; i++)
+        {
+            EventDefinition.EventOptionDefinition option = definition.options[i];
+            if (string.IsNullOrWhiteSpace(option.optionLabel))
+                continue;
+
+            EventResolutionOutcome successOutcome = new EventResolutionOutcome(
+                option.successOutcome.coinDelta,
+                option.successOutcome.hpDelta,
+                option.successOutcome.resultDescription ?? string.Empty);
+
+            EventResolutionOutcome failureOutcome = new EventResolutionOutcome(
+                option.failureOutcome.coinDelta,
+                option.failureOutcome.hpDelta,
+                option.failureOutcome.resultDescription ?? string.Empty);
+
+            if (option.useSuccessProbability)
+            {
+                options.Add(new EventOptionOutcome(
+                    option.optionLabel,
+                    Mathf.Clamp01(option.successProbability),
+                    successOutcome,
+                    failureOutcome));
+                continue;
+            }
+
+            options.Add(new EventOptionOutcome(
+                option.optionLabel,
+                successOutcome.CoinDelta,
+                successOutcome.HpDelta,
+                successOutcome.ResultDescription));
+        }
+
+        if (options.Count == 0)
+            return null;
+
+        string title = string.IsNullOrWhiteSpace(definition.title) ? node != null ? node.title : "Evento" : definition.title;
+        string description = string.IsNullOrWhiteSpace(definition.description) ? node?.description ?? string.Empty : definition.description;
+
+        return new EventScenarioOutcome(title, description, options);
+    }
+
+    private static EventDefinition ResolveEventDefinition(MapNodeData node, int stageIndex)
+    {
+        if (node == null)
+            return null;
+
+        if (IsValidForStage(node.eventDefinition, stageIndex))
+            return node.eventDefinition;
+
+        if (node.eventDefinitionPool == null || node.eventDefinitionPool.Length == 0)
+            return null;
+
+        var validPool = new List<EventDefinition>();
+        for (int i = 0; i < node.eventDefinitionPool.Length; i++)
+        {
+            EventDefinition poolDefinition = node.eventDefinitionPool[i];
+            if (IsValidForStage(poolDefinition, stageIndex))
+                validPool.Add(poolDefinition);
+        }
+
+        if (validPool.Count == 0)
+            return null;
+
+        int randomIndex = Random.Range(0, validPool.Count);
+        return validPool[randomIndex];
+    }
+
+    private static bool IsValidForStage(EventDefinition definition, int stageIndex)
+    {
+        return definition != null && definition.conditions.Matches(stageIndex);
+    }
     public EventResolutionOutcome ResolveEventOptionOutcome(EventOptionOutcome option, float roll)
     {
         if (!option.Probability.HasValue)

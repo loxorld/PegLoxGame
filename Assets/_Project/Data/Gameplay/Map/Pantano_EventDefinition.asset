@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f3b76b3dac74688b52e5728ec59bf91, type: 3}
+  m_Name: Pantano_EventDefinition
+  m_EditorClassIdentifier: Assembly-CSharp::EventDefinition
+  title: Ruinas Hundidas
+  description: Un puente roto cruje sobre aguas turbias cargadas de tesoros perdidos.
+  conditions:
+    useStageRange: 1
+    minStageIndex: 1
+    maxStageIndex: 1
+  options:
+  - optionLabel: Revisar cofres semisumergidos
+    successProbability: 1
+    useSuccessProbability: 0
+    successOutcome:
+      coinDelta: 16
+      hpDelta: 0
+      resultDescription: Encuentras monedas entre el barro. +16 monedas.
+    failureOutcome:
+      coinDelta: 0
+      hpDelta: 0
+      resultDescription: ''
+  - optionLabel: Nadar hacia la torre inclinada
+    successProbability: 0.55
+    useSuccessProbability: 1
+    successOutcome:
+      coinDelta: 24
+      hpDelta: 0
+      resultDescription: Hallas un cofre intacto. +24 monedas.
+    failureOutcome:
+      coinDelta: -10
+      hpDelta: -5
+      resultDescription: Una corriente te golpea y pierdes recursos. -10 monedas, -5 HP.
