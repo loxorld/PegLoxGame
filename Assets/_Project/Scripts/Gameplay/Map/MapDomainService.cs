@@ -3,6 +3,46 @@ using UnityEngine;
 
 public class MapDomainService
 {
+    public readonly struct EventOptionRequirement
+    {
+        public EventOptionRequirement(int minCoins, int minHp, string requiredRelicId)
+        {
+            MinCoins = Mathf.Max(0, minCoins);
+            MinHp = Mathf.Max(0, minHp);
+            RequiredRelicId = requiredRelicId ?? string.Empty;
+        }
+
+        public int MinCoins { get; }
+        public int MinHp { get; }
+        public string RequiredRelicId { get; }
+        public bool HasRequirements => MinCoins > 0 || MinHp > 0 || !string.IsNullOrWhiteSpace(RequiredRelicId);
+    }
+
+    public readonly struct EventOptionContext
+    {
+        public EventOptionContext(int coins, int currentHp, IReadOnlyCollection<string> relicIds)
+        {
+            Coins = Mathf.Max(0, coins);
+            CurrentHp = Mathf.Max(0, currentHp);
+            RelicIds = relicIds;
+        }
+
+        public int Coins { get; }
+        public int CurrentHp { get; }
+        public IReadOnlyCollection<string> RelicIds { get; }
+    }
+
+    public readonly struct EventOptionAvailability
+    {
+        public EventOptionAvailability(bool isAvailable, string missingRequirementText)
+        {
+            IsAvailable = isAvailable;
+            MissingRequirementText = missingRequirementText ?? string.Empty;
+        }
+
+        public bool IsAvailable { get; }
+        public string MissingRequirementText { get; }
+    }
     public readonly struct NodeResolution
     {
         public NodeResolution(MapNodeData node, bool shouldClearSavedNode)
@@ -17,26 +57,29 @@ public class MapDomainService
 
     public readonly struct EventOptionOutcome
     {
-        public EventOptionOutcome(string optionLabel, int coinDelta, int hpDelta, string resultDescription, float? probability = null)
+        public EventOptionOutcome(string optionLabel, int coinDelta, int hpDelta, string resultDescription, float? probability = null, EventOptionRequirement? requirement = null)
         {
             OptionLabel = optionLabel;
             Probability = probability;
             SuccessOutcome = new EventResolutionOutcome(coinDelta, hpDelta, resultDescription);
             FailureOutcome = SuccessOutcome;
+            Requirement = requirement ?? default;
         }
 
-        public EventOptionOutcome(string optionLabel, float probability, EventResolutionOutcome successOutcome, EventResolutionOutcome failureOutcome)
+        public EventOptionOutcome(string optionLabel, float probability, EventResolutionOutcome successOutcome, EventResolutionOutcome failureOutcome, EventOptionRequirement? requirement = null)
         {
             OptionLabel = optionLabel;
             Probability = Mathf.Clamp01(probability);
             SuccessOutcome = successOutcome;
             FailureOutcome = failureOutcome;
+            Requirement = requirement ?? default;
         }
 
         public string OptionLabel { get; }
         public float? Probability { get; }
         public EventResolutionOutcome SuccessOutcome { get; }
         public EventResolutionOutcome FailureOutcome { get; }
+        public EventOptionRequirement Requirement { get; }
     }
 
     public readonly struct EventResolutionOutcome
@@ -61,6 +104,7 @@ public class MapDomainService
             Description = description;
             Options = options;
         }
+
 
         public string Title { get; }
         public string Description { get; }
@@ -242,7 +286,8 @@ public class MapDomainService
                     option.optionLabel,
                     Mathf.Clamp01(option.successProbability),
                     successOutcome,
-                    failureOutcome));
+                    failureOutcome,
+                    BuildRequirement(option)));
                 continue;
             }
 
@@ -250,7 +295,9 @@ public class MapDomainService
                 option.optionLabel,
                 successOutcome.CoinDelta,
                 successOutcome.HpDelta,
-                successOutcome.ResultDescription));
+                successOutcome.ResultDescription,
+                null,
+                BuildRequirement(option)));
         }
 
         if (options.Count == 0)
@@ -300,6 +347,51 @@ public class MapDomainService
 
         return roll <= option.Probability.Value ? option.SuccessOutcome : option.FailureOutcome;
     }
+    public EventOptionAvailability EvaluateEventOptionAvailability(EventOptionOutcome option, EventOptionContext context)
+    {
+        EventOptionRequirement requirement = option.Requirement;
+        if (!requirement.HasRequirements)
+            return new EventOptionAvailability(true, string.Empty);
+
+        var missingRequirements = new List<string>();
+        if (requirement.MinCoins > 0 && context.Coins < requirement.MinCoins)
+            missingRequirements.Add($"{requirement.MinCoins} monedas");
+
+        if (requirement.MinHp > 0 && context.CurrentHp < requirement.MinHp)
+            missingRequirements.Add($"{requirement.MinHp} HP");
+
+        if (!string.IsNullOrWhiteSpace(requirement.RequiredRelicId) && !HasRelic(context.RelicIds, requirement.RequiredRelicId))
+            missingRequirements.Add($"Reliquia '{requirement.RequiredRelicId}'");
+
+        if (missingRequirements.Count == 0)
+            return new EventOptionAvailability(true, string.Empty);
+
+        string feedback = "Requiere: " + string.Join(", ", missingRequirements);
+        return new EventOptionAvailability(false, feedback);
+    }
+
+    private static EventOptionRequirement? BuildRequirement(EventDefinition.EventOptionDefinition option)
+    {
+        if (!option.useRequirements)
+            return null;
+
+        return new EventOptionRequirement(option.minCoins, option.minHp, option.requiredRelicId);
+    }
+
+    private static bool HasRelic(IReadOnlyCollection<string> relicIds, string requiredRelicId)
+    {
+        if (relicIds == null || string.IsNullOrWhiteSpace(requiredRelicId))
+            return false;
+
+        foreach (string relicId in relicIds)
+        {
+            if (string.Equals(relicId, requiredRelicId, System.StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
+    }
+
 
     public ShopOutcome BuildShopOutcome(
         MapNodeData currentNode,

@@ -11,6 +11,8 @@ public class MapPresentationController : MonoBehaviour
     [SerializeField] private bool loadShopSceneAdditively = true;
     [SerializeField] private string shopSceneName = "ShopScene";
 
+    private readonly MapDomainService domainService = new MapDomainService();
+
     public void InjectModalView(IMapNodeModalView injectedMapNodeModalView)
     {
         if (injectedMapNodeModalView != null)
@@ -37,6 +39,7 @@ public class MapPresentationController : MonoBehaviour
 
     public void ShowEvent(
          MapDomainService.EventScenarioOutcome eventOutcome,
+         MapDomainService.EventOptionContext optionContext,
          Action<MapDomainService.EventOptionOutcome> onSelectOption,
          Action onContinue)
     {
@@ -61,7 +64,11 @@ public class MapPresentationController : MonoBehaviour
                 if (option.Probability.HasValue)
                     label = $"{label} ({Mathf.RoundToInt(option.Probability.Value * 100f)}%)";
 
-                options.Add(new MapNodeModalOption(label, () => onSelectOption?.Invoke(option), true));
+                MapDomainService.EventOptionAvailability availability = domainService.EvaluateEventOptionAvailability(option, optionContext);
+                if (!availability.IsAvailable)
+                    label = $"{label}\n<color=#FF8A8A>{availability.MissingRequirementText}</color>";
+
+                options.Add(new MapNodeModalOption(label, () => onSelectOption?.Invoke(option), availability.IsAvailable));
             }
         }
 
@@ -87,6 +94,7 @@ public class MapPresentationController : MonoBehaviour
         {
             Debug.LogWarning("[MapPresentationController] No se encontró IMapShopView en la escena.");
             yield break;
+
         }
 
         if (openParams != null && loadShopSceneAdditively && IsShopSceneLoaded())

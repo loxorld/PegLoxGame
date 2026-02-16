@@ -30,6 +30,7 @@ public class MapManager : MonoBehaviour
     [SerializeField, Min(1)] private int shopHealAmount = 8;
     [SerializeField, Min(0)] private int shopOrbUpgradeCost = 15;
     [SerializeField] private ShopService shopService;
+    [SerializeField] private RelicManager relicManager;
 
     private readonly MapDomainService domainService = new MapDomainService();
     private MapNodeData currentNode;
@@ -241,8 +242,19 @@ public class MapManager : MonoBehaviour
         EnsurePresentationController();
         presentationController?.ShowEvent(
             eventOutcome,
+            BuildEventOptionContext(flow),
             option =>
             {
+                MapDomainService.EventOptionAvailability availability = domainService.EvaluateEventOptionAvailability(option, BuildEventOptionContext(flow));
+                if (!availability.IsAvailable)
+                {
+                    presentationController?.ShowGenericResult(
+                        eventOutcome.Title,
+                        availability.MissingRequirementText,
+                        () => OpenNode(currentNode));
+                    return;
+                }
+
                 float roll = option.Probability.HasValue ? UnityEngine.Random.value : 0f;
                 MapDomainService.EventResolutionOutcome resolvedOutcome = domainService.ResolveEventOptionOutcome(option, roll);
 
@@ -262,6 +274,30 @@ public class MapManager : MonoBehaviour
             });
     }
 
+    private MapDomainService.EventOptionContext BuildEventOptionContext(GameFlowManager flow)
+    {
+        int currentHp = flow != null
+            ? (flow.HasSavedPlayerHP ? flow.SavedPlayerHP : flow.PlayerMaxHP)
+            : 0;
+
+        var relicIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        RelicManager activeRelicManager = ResolveRelicManager();
+        if (activeRelicManager != null)
+        {
+            IReadOnlyList<ShotEffectBase> activeRelics = activeRelicManager.ActiveRelics;
+            for (int i = 0; i < activeRelics.Count; i++)
+            {
+                ShotEffectBase relic = activeRelics[i];
+                if (relic == null || string.IsNullOrWhiteSpace(relic.name))
+                    continue;
+
+                relicIds.Add(relic.name);
+            }
+        }
+
+        int currentCoins = flow != null ? flow.Coins : 0;
+        return new MapDomainService.EventOptionContext(currentCoins, currentHp, relicIds);
+    }
 
     private void HandleShopNode()
     {
@@ -449,6 +485,20 @@ public class MapManager : MonoBehaviour
         return orbManager;
     }
 
+    private RelicManager ResolveRelicManager()
+    {
+        if (relicManager != null)
+            return relicManager;
+
+        if (ServiceRegistry.TryResolve(out relicManager))
+            return relicManager;
+
+        relicManager = RelicManager.Instance;
+        if (relicManager != null)
+            ServiceRegistry.Register(relicManager);
+
+        return relicManager;
+    }
     private static bool IsMigratedMapSceneActive()
     {
         SceneCatalog catalog = SceneCatalog.Load();

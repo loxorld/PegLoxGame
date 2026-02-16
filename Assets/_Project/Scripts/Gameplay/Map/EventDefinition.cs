@@ -41,6 +41,11 @@ public class EventDefinition : ScriptableObject
         public string optionLabel;
         [Range(0f, 1f)] public float successProbability;
         public bool useSuccessProbability;
+        [Header("Requisitos")]
+        public bool useRequirements;
+        [Min(0)] public int minCoins;
+        [Min(0)] public int minHp;
+        public string requiredRelicId;
         public EventOutcomeDefinition successOutcome;
         public EventOutcomeDefinition failureOutcome;
     }
