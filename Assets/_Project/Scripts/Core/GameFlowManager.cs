@@ -12,6 +12,7 @@ public class GameFlowManager : MonoBehaviour
         public string OfferId;
         public ShopService.ShopOfferType OfferType;
         public int Cost;
+        public int PrimaryValue;
         public int RemainingStock;
         public ShopService.ShopOfferRarity Rarity;
         public bool RequiresMissingHp;
@@ -259,6 +260,7 @@ public class GameFlowManager : MonoBehaviour
                 OfferId = offer.OfferId,
                 OfferType = offer.Type,
                 Cost = Mathf.Max(0, offer.Cost),
+                PrimaryValue = offer.PrimaryValue,
                 RemainingStock = Mathf.Max(0, offer.Stock),
                 Rarity = offer.Rarity,
                 RequiresMissingHp = offer.RequiresMissingHp,
@@ -472,6 +474,7 @@ public class GameFlowManager : MonoBehaviour
                     OfferId = offer.OfferId,
                     OfferType = (int)offer.OfferType,
                     Cost = Mathf.Max(0, offer.Cost),
+                    PrimaryValue = offer.PrimaryValue,
                     RemainingStock = Mathf.Max(0, offer.RemainingStock),
                     Rarity = (int)offer.Rarity,
                     RequiresMissingHp = offer.RequiresMissingHp,
@@ -513,6 +516,7 @@ public class GameFlowManager : MonoBehaviour
                         OfferId = offer.OfferId,
                         OfferType = (ShopService.ShopOfferType)Mathf.Max(0, offer.OfferType),
                         Cost = Mathf.Max(0, offer.Cost),
+                        PrimaryValue = offer.PrimaryValue,
                         RemainingStock = Mathf.Max(0, offer.RemainingStock),
                         Rarity = (ShopService.ShopOfferRarity)Mathf.Clamp(offer.Rarity, 0, (int)ShopService.ShopOfferRarity.Legendary),
                         RequiresMissingHp = offer.RequiresMissingHp,
@@ -540,6 +544,7 @@ public class GameFlowManager : MonoBehaviour
                 OfferId = offer.OfferId,
                 OfferType = offer.OfferType,
                 Cost = offer.Cost,
+                PrimaryValue = offer.PrimaryValue,
                 RemainingStock = offer.RemainingStock,
                 Rarity = offer.Rarity,
                 RequiresMissingHp = offer.RequiresMissingHp,

@@ -90,7 +90,9 @@ public class ShopService
                         Cost = data.Cost,
                         Stock = data.RemainingStock,
                         Rarity = data.Rarity,
-                        PrimaryValue = ResolveDefaultPrimaryValue(data.OfferType, fallbackHealAmount),
+                        PrimaryValue = data.PrimaryValue > 0
+                            ? data.PrimaryValue
+                            : ResolveDefaultPrimaryValue(data.OfferType, fallbackHealAmount),
                         RequiresMissingHp = data.RequiresMissingHp,
                         RequiresUpgradableOrb = data.RequiresUpgradableOrb,
                         RequiresAnyOrb = data.RequiresAnyOrb
