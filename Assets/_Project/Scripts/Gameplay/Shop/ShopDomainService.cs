@@ -16,18 +16,37 @@ public sealed class ShopDomainService
         int stageIndex,
         int fallbackHealCost,
         int fallbackHealAmount,
-        int fallbackUpgradeCost)
+        int fallbackUpgradeCost,
+        bool allowDuplicateOffersWhenStockAvailable = false)
     {
         if (config == null || config.OfferTable == null || config.OfferTable.Count == 0)
             return GenerateLegacyOffers(balance, stageIndex, fallbackHealCost, fallbackHealAmount, fallbackUpgradeCost);
 
         int amount = UnityEngine.Random.Range(config.MinOffersPerVisit, config.MaxOffersPerVisit + 1);
         var generated = new List<ShopService.ShopOfferData>(amount);
+        var usedOfferIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        int maxAttemptsPerOffer = Mathf.Max(4, config.OfferTable.Count * 3);
+
         for (int i = 0; i < amount; i++)
         {
-            ShopConfig.OfferTemplate template = PickTemplateByRarity(config);
+            ShopConfig.OfferTemplate template = null;
+            for (int attempt = 0; attempt < maxAttemptsPerOffer; attempt++)
+            {
+                ShopConfig.OfferTemplate candidate = PickTemplateByRarity(config);
+                if (candidate == null)
+                    break;
+
+                if (CanUseTemplate(candidate, usedOfferIds, allowDuplicateOffersWhenStockAvailable))
+                {
+                    template = candidate;
+                    break;
+                }
+            }
+
             if (template == null)
-                continue;
+                break;
+
+            usedOfferIds.Add(NormalizeOfferId(template.OfferId));
 
             int baseCost = ResolveTemplateCost(template, balance, stageIndex, fallbackHealCost, fallbackUpgradeCost);
             int adjustedCost = Mathf.Max(0, Mathf.RoundToInt(baseCost * config.GetPriceMultiplier(template.Rarity)));
@@ -43,6 +62,14 @@ public sealed class ShopDomainService
                 RequiresUpgradableOrb = template.RequiresUpgradableOrb,
                 RequiresAnyOrb = template.RequiresAnyOrb
             });
+        }
+
+        if (generated.Count < amount)
+        {
+            int distinctTemplateCount = CountDistinctOfferIds(config.OfferTable);
+            Debug.LogWarning($"[ShopDomainService] Configuración insuficiente para generar {amount} ofertas únicas. " +
+                             $"Se generaron {generated.Count}. Plantillas distintas disponibles: {distinctTemplateCount}. " +
+                             "Revisa ShopConfig o habilita duplicados de forma explícita cuando corresponda.");
         }
 
         return generated;
@@ -118,8 +145,7 @@ public sealed class ShopDomainService
 
     private static string BuildOfferId(string baseId, int index)
     {
-        string safeId = string.IsNullOrWhiteSpace(baseId) ? "offer" : baseId.Trim();
-        return $"{safeId}_{index}";
+        return $"{NormalizeOfferId(baseId)}_{index}";
     }
 
     private static int ResolvePrimaryValue(ShopConfig.OfferTemplate template, int fallbackHealAmount)
@@ -145,6 +171,29 @@ public sealed class ShopDomainService
 
                 return Mathf.Max(fallbackHealCost, fallbackUpgradeCost);
         }
+    }
+
+    private static bool CanUseTemplate(ShopConfig.OfferTemplate template, HashSet<string> usedOfferIds, bool allowDuplicateOffersWhenStockAvailable)
+    {
+        string normalizedOfferId = NormalizeOfferId(template.OfferId);
+        if (!usedOfferIds.Contains(normalizedOfferId))
+            return true;
+
+        return allowDuplicateOffersWhenStockAvailable && template.BaseStock > 1;
+    }
+
+    private static int CountDistinctOfferIds(IReadOnlyList<ShopConfig.OfferTemplate> offers)
+    {
+        var distinctIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        for (int i = 0; i < offers.Count; i++)
+            distinctIds.Add(NormalizeOfferId(offers[i].OfferId));
+
+        return distinctIds.Count;
+    }
+
+    private static string NormalizeOfferId(string offerId)
+    {
+        return string.IsNullOrWhiteSpace(offerId) ? "offer" : offerId.Trim();
     }
 
     private static ShopConfig.OfferTemplate PickTemplateByRarity(ShopConfig config)
