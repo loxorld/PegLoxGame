@@ -17,6 +17,7 @@ public class RunSaveData
         public string OfferId;
         public int OfferType;
         public int Cost;
+        public int PrimaryValue;
         public int RemainingStock;
         public int Rarity;
         public bool RequiresMissingHp;

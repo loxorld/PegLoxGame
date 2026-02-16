@@ -18,7 +18,8 @@ public class ShopScene : MonoBehaviour, IMapShopView
         public RunBalanceConfig Balance;
         public int StageIndex;
         public string ShopId;
-        public Action<string> OnRefreshMessage;
+        public Action<string> OnShopMessage;
+        public Action OnRequestReopen;
         public Action OnExit;
     }
 
@@ -239,7 +240,7 @@ public class ShopScene : MonoBehaviour, IMapShopView
 
         ShopService.ShopOfferData offer = activeCatalog[selectedIndex];
         bool ok = current.Service.TryPurchaseOffer(current.Flow, current.OrbManager, current.ShopId, offer, out string result);
-        current?.OnRefreshMessage?.Invoke(result);
+        current?.OnShopMessage?.Invoke(result);
 
         if (!ok)
         {
@@ -255,26 +256,26 @@ public class ShopScene : MonoBehaviour, IMapShopView
     {
         if (shopConfig == null || !shopConfig.AllowManualRefresh)
         {
-            current?.OnRefreshMessage?.Invoke("Refresh deshabilitado por configuración.");
+            current?.OnShopMessage?.Invoke("Refresh deshabilitado por configuración.");
             return;
         }
 
         int currentRefreshesUsed = GetRefreshesForCurrentShop();
         if (currentRefreshesUsed >= shopConfig.MaxRefreshesPerVisit)
         {
-            current?.OnRefreshMessage?.Invoke("No quedan refreshes disponibles.");
+            current?.OnShopMessage?.Invoke("No quedan refreshes disponibles.");
             return;
         }
 
         if (current.Flow != null && !current.Flow.SpendCoins(shopConfig.RefreshCost))
         {
-            current?.OnRefreshMessage?.Invoke("No alcanzan las monedas para refrescar.");
+            current?.OnShopMessage?.Invoke("No alcanzan las monedas para refrescar.");
             return;
         }
 
         SetRefreshesForCurrentShop(currentRefreshesUsed + 1);
         LoadCatalog(forceRefresh: true);
-        current?.OnRefreshMessage?.Invoke("Tienda refrescada.");
+        current?.OnShopMessage?.Invoke("Tienda refrescada.");
     }
 
     private void UpdateMetaLabels()

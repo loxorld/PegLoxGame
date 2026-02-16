@@ -241,7 +241,8 @@ public class MapPresentationController : MonoBehaviour
             Balance = openParams.Balance,
             StageIndex = openParams.StageIndex,
             ShopId = openParams.ShopId,
-            OnRefreshMessage = openParams.OnRefreshMessage,
+            OnShopMessage = openParams.OnShopMessage,
+            OnRequestReopen = openParams.OnRequestReopen,
             OnExit = () => StartCoroutine(CloseShopSceneAndContinue(originalExit))
         };
     }

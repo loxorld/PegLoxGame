@@ -306,17 +306,22 @@ public class MapManager : MonoBehaviour
             Balance = ResolveBalanceConfig(),
             StageIndex = balanceStageIndex,
             ShopId = shopId,
-            OnRefreshMessage = HandleShopMessage,
+            OnShopMessage = ShowNonDestructiveShopFeedback,
             OnExit = () => OpenNode(currentNode)
         });
     }
 
-    private static void HandleShopMessage(string message)
+    private void ShowNonDestructiveShopFeedback(string message)
     {
         if (string.IsNullOrWhiteSpace(message))
             return;
 
         Debug.Log($"[MapManager][Shop] {message}");
+
+        if (MapNodeModalUI.Instance == null)
+            return;
+
+        MapNodeModalUI.Show("Tienda", message, new MapNodeModalUI.Option("Cerrar", null, true));
     }
 
     private static string BuildShopId(MapNodeData node, GameFlowManager flow, int stageIndex)
