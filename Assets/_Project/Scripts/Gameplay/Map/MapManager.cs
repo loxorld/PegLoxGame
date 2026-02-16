@@ -224,12 +224,6 @@ public class MapManager : MonoBehaviour
             return;
         }
 
-        if (flow.IsEventNodeResolved(currentNode))
-        {
-            OpenNode(currentNode);
-            return;
-        }
-
         int balanceStageIndex = GetStageIndexForBalance(flow);
         MapDomainService.EventScenarioOutcome eventOutcome = domainService.BuildEventOutcome(
             currentNode,
@@ -254,7 +248,6 @@ public class MapManager : MonoBehaviour
 
                 flow.AddCoins(resolvedOutcome.CoinDelta);
                 flow.ModifySavedHP(resolvedOutcome.HpDelta);
-                flow.MarkEventNodeResolved(currentNode);
                 flow.SaveRun();
 
                 presentationController?.ShowGenericResult(
@@ -262,12 +255,11 @@ public class MapManager : MonoBehaviour
                     resolvedOutcome.ResultDescription,
                     () => OpenNode(currentNode));
             },
-             () =>
-             {
-                 flow.MarkEventNodeResolved(currentNode);
-                 flow.SaveRun();
-                 OpenNode(currentNode);
-             });
+            () =>
+            {
+                flow.SaveRun();
+                OpenNode(currentNode);
+            });
     }
 
 
