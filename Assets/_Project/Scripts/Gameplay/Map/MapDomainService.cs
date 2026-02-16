@@ -292,6 +292,7 @@ public class MapDomainService
     {
         return definition != null && definition.conditions.Matches(stageIndex);
     }
+
     public EventResolutionOutcome ResolveEventOptionOutcome(EventOptionOutcome option, float roll)
     {
         if (!option.Probability.HasValue)

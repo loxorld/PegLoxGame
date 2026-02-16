@@ -46,4 +46,5 @@ public class RunSaveData
     public List<OrbSaveData> Orbs = new List<OrbSaveData>();
     public List<string> Relics = new List<string>();
     public List<ShopCatalogSaveData> ShopCatalogs = new List<ShopCatalogSaveData>();
+    public List<string> ResolvedEventNodeIds = new List<string>();
 }

@@ -63,6 +63,7 @@ public class GameFlowManager : MonoBehaviour
     private bool pendingRelicApply;
     private GameState stateBeforePause = GameState.Combat;
     private readonly Dictionary<string, List<ShopOfferRunData>> shopCatalogsById = new Dictionary<string, List<ShopOfferRunData>>();
+    private readonly HashSet<string> resolvedEventNodeIds = new HashSet<string>(StringComparer.Ordinal);
 
     [Header("Scene References (DI)")]
     [SerializeField] private MapManager mapManager;
@@ -229,7 +230,24 @@ public class GameFlowManager : MonoBehaviour
         SavedPlayerHP = PlayerMaxHP;
         HasSavedPlayerHP = true;
         shopCatalogsById.Clear();
+        resolvedEventNodeIds.Clear();
         ValidateEncounterState("ResetRunState");
+    }
+
+    public bool IsEventNodeResolved(MapNodeData node)
+    {
+        if (!TryBuildMapNodeId(node, out string nodeId))
+            return false;
+
+        return resolvedEventNodeIds.Contains(nodeId);
+    }
+
+    public void MarkEventNodeResolved(MapNodeData node)
+    {
+        if (!TryBuildMapNodeId(node, out string nodeId))
+            return;
+
+        resolvedEventNodeIds.Add(nodeId);
     }
 
     public List<ShopOfferRunData> GetShopCatalog(string shopId)
@@ -343,6 +361,7 @@ public class GameFlowManager : MonoBehaviour
         if (relicManagerInstance != null)
             data.Relics = relicManagerInstance.SerializeRelics();
         data.ShopCatalogs = SerializeShopCatalogs();
+        data.ResolvedEventNodeIds = new List<string>(resolvedEventNodeIds);
 
         return data;
     }
@@ -384,6 +403,7 @@ public class GameFlowManager : MonoBehaviour
         SavedPlayerHP = Mathf.Clamp(data.SavedPlayerHP, 0, PlayerMaxHP);
         HasSavedPlayerHP = data.HasSavedPlayerHP;
         DeserializeShopCatalogs(data.ShopCatalogs);
+        DeserializeResolvedEventNodes(data.ResolvedEventNodeIds);
 
         ValidateEncounterState("ApplyRunData");
     }
@@ -554,6 +574,36 @@ public class GameFlowManager : MonoBehaviour
         }
 
         return clone;
+    }
+
+    private void DeserializeResolvedEventNodes(List<string> serializedNodeIds)
+    {
+        resolvedEventNodeIds.Clear();
+        if (serializedNodeIds == null)
+            return;
+
+        for (int i = 0; i < serializedNodeIds.Count; i++)
+        {
+            string nodeId = serializedNodeIds[i];
+            if (!string.IsNullOrWhiteSpace(nodeId))
+                resolvedEventNodeIds.Add(nodeId);
+        }
+    }
+
+    private static bool TryBuildMapNodeId(MapNodeData node, out string nodeId)
+    {
+        nodeId = null;
+        if (node == null)
+            return false;
+
+        nodeId = string.IsNullOrWhiteSpace(node.name) ? null : node.name.Trim();
+        if (string.IsNullOrWhiteSpace(nodeId))
+        {
+            Debug.LogWarning("[GameFlow] No se pudo generar un id estable para MapNodeData (name vaco).");
+            return false;
+        }
+
+        return true;
     }
 
 
