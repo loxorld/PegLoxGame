@@ -7,6 +7,7 @@ using UnityEngine.SceneManagement;
 public class MapPresentationController : MonoBehaviour
 {
     [SerializeField] private MonoBehaviour mapNodeModalView;
+    [SerializeField] private MonoBehaviour mapShopView;
 
     public void InjectModalView(IMapNodeModalView injectedMapNodeModalView)
     {
@@ -68,23 +69,17 @@ public class MapPresentationController : MonoBehaviour
         modalView.ShowEvent(eventOutcome.Title, eventOutcome.Description, options);
     }
 
-    public void ShowShopModal(MapDomainService.ShopOutcome shopOutcome, IReadOnlyList<ShopService.ShopOptionData> shopOptions)
+    public void ShowShop(MapDomainService.ShopOutcome shopOutcome, IReadOnlyList<ShopService.ShopOptionData> shopOptions)
     {
-        IMapNodeModalView modalView = ResolveMapNodeModalView();
-        if (modalView == null)
+        IMapShopView shopView = ResolveMapShopView();
+        if (shopView == null)
         {
-            Debug.LogWarning("[MapPresentationController] No se encontró IMapNodeModalView en la escena.");
+            Debug.LogWarning("[MapPresentationController] No se encontró IMapShopView en la escena.");
             return;
         }
 
-        var options = new List<MapNodeModalOption>();
-        for (int i = 0; i < shopOptions.Count; i++)
-        {
-            ShopService.ShopOptionData option = shopOptions[i];
-            options.Add(new MapNodeModalOption(option.Label, option.OnSelect, option.IsEnabled));
-        }
+        shopView.ShowShop(shopOutcome, shopOptions);
 
-        modalView.ShowShop(shopOutcome.Title, shopOutcome.Description, options);
     }
 
     public void ShowGenericResult(string title, string description, Action onContinue)
@@ -159,6 +154,33 @@ public class MapPresentationController : MonoBehaviour
 
         return null;
     }
+
+    private IMapShopView ResolveMapShopView()
+    {
+        if (mapShopView != null && mapShopView is IMapShopView view)
+            return view;
+
+        IMapShopView registryView = ServiceRegistry.Resolve<IMapShopView>();
+        if (registryView != null)
+        {
+            mapShopView = registryView as MonoBehaviour;
+            return registryView;
+        }
+
+        ServiceRegistry.LogFallback(nameof(MapPresentationController), nameof(mapShopView), "missing-injected-reference");
+
+        ShopScreenUI screen = ShopScreenUI.GetOrCreate();
+        if (screen != null)
+        {
+            mapShopView = screen;
+            ServiceRegistry.Register<IMapShopView>(screen);
+            ServiceRegistry.LogFallbackMetric(nameof(MapPresentationController), nameof(mapShopView), "shopscreenui-getorcreate");
+            return screen;
+        }
+
+        return null;
+    }
+
 
     private static bool IsMigratedMapSceneActive()
     {

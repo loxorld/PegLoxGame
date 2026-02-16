@@ -257,10 +257,10 @@ public class MapManager : MonoBehaviour
 
     private void HandleShopNode()
     {
-        ShowShopModal(null);
+        ShowShopScreen(null);
     }
 
-    private void ShowShopModal(string extraMessage)
+    private void ShowShopScreen(string extraMessage)
     {
         GameFlowManager flow = ResolveGameFlowManager();
         if (flow == null)
@@ -300,11 +300,11 @@ public class MapManager : MonoBehaviour
             shopOutcome.HealCost,
             shopOutcome.HealAmount,
             shopOutcome.OrbUpgradeCost,
-            ShowShopModal,
+            ShowShopScreen,
             () => OpenNode(currentNode));
 
         EnsurePresentationController();
-        presentationController?.ShowShopModal(shopOutcome, shopOptions);
+        presentationController?.ShowShop(shopOutcome, shopOptions);
     }
 
     private static string BuildShopId(MapNodeData node, GameFlowManager flow, int stageIndex)
