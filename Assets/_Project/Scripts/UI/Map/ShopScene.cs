@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class ShopScene : MonoBehaviour, IMapShopView
@@ -33,6 +34,12 @@ public class ShopScene : MonoBehaviour, IMapShopView
         public Color fallbackColor;
     }
 
+    private enum SelectionVisualMode
+    {
+        SelectableState,
+        Outline
+    }
+
     [Header("Shop Config")]
     [SerializeField] private ShopConfig shopConfig;
     [SerializeField, Min(0)] private int fallbackHealCost = 10;
@@ -56,6 +63,14 @@ public class ShopScene : MonoBehaviour, IMapShopView
     [Header("Button Art Customization")]
     [SerializeField] private ButtonArtTheme offerButtonTheme = new ButtonArtTheme { fallbackColor = new Color(0.2f, 0.31f, 0.48f, 1f) };
     [SerializeField] private ButtonArtTheme actionButtonTheme = new ButtonArtTheme { fallbackColor = new Color(0.19f, 0.3f, 0.48f, 1f) };
+
+    [Header("Selection Visual Customization")]
+    [SerializeField] private SelectionVisualMode selectionVisualMode = SelectionVisualMode.SelectableState;
+    [SerializeField] private Color selectionTintColor = new Color(0.55f, 0.95f, 0.85f, 1f);
+    [SerializeField] private Sprite selectionSprite;
+    [SerializeField] private Color selectionOutlineColor = new Color(0.25f, 1f, 0.85f, 1f);
+    [SerializeField] private Vector2 selectionOutlineDistance = new Vector2(3f, -3f);
+    [SerializeField] private bool selectionOutlineUseGraphicAlpha = true;
 
     [Header("Nodes")]
     [SerializeField] private TMP_Text titleLabel;
@@ -199,6 +214,8 @@ public class ShopScene : MonoBehaviour, IMapShopView
             Image buttonImage = button.GetComponent<Image>();
             if (buttonImage != null && offerButtonTheme.normalSprite == null)
                 buttonImage.color = GetRarityButtonColor(offer.Rarity);
+
+            SyncButtonColorBlockWithImage(button);
 
             button.onClick.RemoveAllListeners();
             button.onClick.AddListener(() => SelectIndex(idx));
@@ -652,6 +669,22 @@ public class ShopScene : MonoBehaviour, IMapShopView
 
         if (theme.highlightedSprite != null || theme.pressedSprite != null || theme.disabledSprite != null)
             button.transition = Selectable.Transition.SpriteSwap;
+
+        SyncButtonColorBlockWithImage(button);
+    }
+
+    private static void SyncButtonColorBlockWithImage(Button button)
+    {
+        if (button == null)
+            return;
+
+        Image image = button.GetComponent<Image>();
+        if (image == null)
+            return;
+
+        ColorBlock colors = button.colors;
+        colors.normalColor = image.color;
+        button.colors = colors;
     }
 
 
@@ -723,7 +756,6 @@ public class ShopScene : MonoBehaviour, IMapShopView
         }
     }
 
-    // Agregar este método privado para resolver CS0103
     private static string GetRarityPrefix(ShopService.ShopOfferRarity rarity)
     {
         switch (rarity)
@@ -740,23 +772,60 @@ public class ShopScene : MonoBehaviour, IMapShopView
                 return "[?]";
         }
     }
-
-    // Agregar este método privado a la clase ShopScene para resolver CS0103
+   
     private void UpdateSelectionVisual()
     {
-        // Si deseas resaltar el botón seleccionado, puedes implementar aquí la lógica.
-        // Por ejemplo, cambiar el color de fondo del botón seleccionado y restaurar los demás.
         for (int i = 0; i < spawnedButtons.Count; i++)
         {
-            var button = spawnedButtons[i];
-            var image = button.GetComponent<UnityEngine.UI.Image>();
-            if (image != null)
+            Button button = spawnedButtons[i];
+            bool isSelected = i == selectedIndex;
+            Outline outline = button.GetComponent<Outline>();
+
+            if (selectionVisualMode == SelectionVisualMode.Outline)
             {
-                if (i == selectedIndex)
-                    image.color = Color.green; // O el color que prefieras para selección
-                else
-                    image.color = GetRarityButtonColor(activeCatalog[i].Rarity);
+                if (outline == null)
+                    outline = button.gameObject.AddComponent<Outline>();
+
+                outline.effectColor = selectionOutlineColor;
+                outline.effectDistance = selectionOutlineDistance;
+                outline.useGraphicAlpha = selectionOutlineUseGraphicAlpha;
+                outline.enabled = isSelected;
+                continue;
             }
+
+            if (outline != null)
+                outline.enabled = false;
+
+            if (selectionSprite != null)
+            {
+                button.transition = Selectable.Transition.SpriteSwap;
+                SpriteState spriteState = button.spriteState;
+                spriteState.selectedSprite = selectionSprite;
+                button.spriteState = spriteState;
+            }
+            else
+            {
+                button.transition = Selectable.Transition.ColorTint;
+                ColorBlock colorBlock = button.colors;
+                colorBlock.selectedColor = selectionTintColor;
+                colorBlock.colorMultiplier = 1f;
+                button.colors = colorBlock;
+            }
+        }
+
+        EventSystem eventSystem = EventSystem.current;
+        if (eventSystem == null)
+            return;
+
+        if (selectedIndex >= 0 && selectedIndex < spawnedButtons.Count)
+        {
+            GameObject selectedObject = spawnedButtons[selectedIndex].gameObject;
+            if (eventSystem.currentSelectedGameObject != selectedObject)
+                eventSystem.SetSelectedGameObject(selectedObject);
+        }
+        else if (eventSystem.currentSelectedGameObject != null)
+        {
+            eventSystem.SetSelectedGameObject(null);
         }
     }
 }
