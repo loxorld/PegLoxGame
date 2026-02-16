@@ -22,6 +22,16 @@ public class ShopScene : MonoBehaviour, IMapShopView
         public Action OnExit;
     }
 
+    [Serializable]
+    private struct ButtonArtTheme
+    {
+        public Sprite normalSprite;
+        public Sprite highlightedSprite;
+        public Sprite pressedSprite;
+        public Sprite disabledSprite;
+        public Color fallbackColor;
+    }
+
     [Header("Shop Config")]
     [SerializeField] private ShopConfig shopConfig;
     [SerializeField, Min(0)] private int fallbackHealCost = 10;
@@ -30,6 +40,21 @@ public class ShopScene : MonoBehaviour, IMapShopView
 
     [Header("Scene Wiring")]
     [SerializeField] private bool preferSceneLayout = true;
+
+    [Header("Audio Customization")]
+    [SerializeField] private AudioClip shopMusicOverride;
+
+    [Header("Background Art Customization")]
+    [SerializeField] private Image dimmerBackgroundImage;
+    [SerializeField] private Sprite dimmerBackgroundSprite;
+    [SerializeField] private Image windowBackgroundImage;
+    [SerializeField] private Sprite windowBackgroundSprite;
+    [SerializeField] private Image offersBackgroundImage;
+    [SerializeField] private Sprite offersBackgroundSprite;
+
+    [Header("Button Art Customization")]
+    [SerializeField] private ButtonArtTheme offerButtonTheme = new ButtonArtTheme { fallbackColor = new Color(0.2f, 0.31f, 0.48f, 1f) };
+    [SerializeField] private ButtonArtTheme actionButtonTheme = new ButtonArtTheme { fallbackColor = new Color(0.19f, 0.3f, 0.48f, 1f) };
 
     [Header("Nodes")]
     [SerializeField] private TMP_Text titleLabel;
@@ -43,6 +68,10 @@ public class ShopScene : MonoBehaviour, IMapShopView
     [SerializeField] private Button buyButton;
     [SerializeField] private Button refreshButton;
     [SerializeField] private Button exitButton;
+
+    private Image runtimeDimmerImage;
+    private Image runtimeWindowImage;
+    private Image runtimeOffersImage;
 
     private readonly List<Button> spawnedButtons = new List<Button>();
 
@@ -82,6 +111,9 @@ public class ShopScene : MonoBehaviour, IMapShopView
             shopConfig = Resources.Load<ShopConfig>("ShopConfig_Default");
 
         gameObject.SetActive(true);
+        ApplyVisualCustomization();
+        PlayShopMusic();
+
         titleLabel.text = string.IsNullOrWhiteSpace(current.ShopOutcome.Title) ? "Tienda" : current.ShopOutcome.Title;
         refreshesUsed = 0;
 
@@ -103,6 +135,10 @@ public class ShopScene : MonoBehaviour, IMapShopView
             gameObject.SetActive(false);
             current?.OnExit?.Invoke();
         });
+
+        ApplyButtonArt(buyButton, actionButtonTheme);
+        ApplyButtonArt(refreshButton, actionButtonTheme);
+        ApplyButtonArt(exitButton, actionButtonTheme);
 
         ApplyStandardButtonTextStyle(buyButton);
         ApplyStandardButtonTextStyle(refreshButton);
@@ -158,8 +194,10 @@ public class ShopScene : MonoBehaviour, IMapShopView
                 label.fontSizeMax = 24f;
             }
 
+            ApplyButtonArt(button, offerButtonTheme);
+
             Image buttonImage = button.GetComponent<Image>();
-            if (buttonImage != null)
+            if (buttonImage != null && offerButtonTheme.normalSprite == null)
                 buttonImage.color = GetRarityButtonColor(offer.Rarity);
 
             button.onClick.RemoveAllListeners();
@@ -377,11 +415,13 @@ public class ShopScene : MonoBehaviour, IMapShopView
         GameObject dimmer = CreateUiObject("Dimmer", parent);
         Image dimmerImage = dimmer.AddComponent<Image>();
         dimmerImage.color = new Color(0f, 0f, 0f, 0.72f);
+        runtimeDimmerImage = dimmerImage;
         StretchRect(dimmer.GetComponent<RectTransform>());
 
         GameObject panel = CreateUiObject("Panel", dimmer.transform);
         Image panelImage = panel.AddComponent<Image>();
         panelImage.color = new Color(0.1f, 0.12f, 0.16f, 0.98f);
+        runtimeWindowImage = panelImage;
         RectTransform panelRect = panel.GetComponent<RectTransform>();
         panelRect.anchorMin = new Vector2(0.5f, 0.5f);
         panelRect.anchorMax = new Vector2(0.5f, 0.5f);
@@ -404,6 +444,7 @@ public class ShopScene : MonoBehaviour, IMapShopView
         GameObject itemsRoot = CreateUiObject("ItemsRoot", panel.transform);
         Image itemsBg = itemsRoot.AddComponent<Image>();
         itemsBg.color = new Color(0.05f, 0.07f, 0.1f, 0.92f);
+        runtimeOffersImage = itemsBg;
         RectTransform itemsRootRect = itemsRoot.GetComponent<RectTransform>();
         SetAnchors(itemsRootRect, new Vector2(0f, 0f), new Vector2(0.45f, 1f), new Vector2(30f, 95f), new Vector2(-10f, -150f));
 
@@ -519,6 +560,73 @@ public class ShopScene : MonoBehaviour, IMapShopView
         rect.anchorMax = anchorMax;
         rect.offsetMin = offsetMin;
         rect.offsetMax = offsetMax;
+    }
+
+
+    private void PlayShopMusic()
+    {
+        if (shopMusicOverride != null)
+        {
+            AudioManager.Instance?.PlayMusic(shopMusicOverride, true);
+            return;
+        }
+
+        AudioManager.Instance?.PlayShopMusic();
+    }
+
+    private void ApplyVisualCustomization()
+    {
+        if (dimmerBackgroundImage == null)
+            dimmerBackgroundImage = runtimeDimmerImage;
+        if (windowBackgroundImage == null)
+            windowBackgroundImage = runtimeWindowImage;
+        if (offersBackgroundImage == null)
+            offersBackgroundImage = runtimeOffersImage;
+
+        ApplyImageSprite(dimmerBackgroundImage, dimmerBackgroundSprite);
+        ApplyImageSprite(windowBackgroundImage, windowBackgroundSprite);
+        ApplyImageSprite(offersBackgroundImage, offersBackgroundSprite);
+    }
+
+    private static void ApplyImageSprite(Image target, Sprite sprite)
+    {
+        if (target == null || sprite == null)
+            return;
+
+        target.sprite = sprite;
+        target.type = Image.Type.Sliced;
+        target.color = Color.white;
+    }
+
+    private static void ApplyButtonArt(Button button, ButtonArtTheme theme)
+    {
+        if (button == null)
+            return;
+
+        Image image = button.GetComponent<Image>();
+        if (image == null)
+            return;
+
+        if (theme.normalSprite != null)
+        {
+            image.sprite = theme.normalSprite;
+            image.type = Image.Type.Sliced;
+            image.color = Color.white;
+        }
+        else
+        {
+            image.color = theme.fallbackColor;
+        }
+
+        SpriteState state = button.spriteState;
+        state.highlightedSprite = theme.highlightedSprite;
+        state.pressedSprite = theme.pressedSprite;
+        state.selectedSprite = theme.highlightedSprite;
+        state.disabledSprite = theme.disabledSprite;
+        button.spriteState = state;
+
+        if (theme.highlightedSprite != null || theme.pressedSprite != null || theme.disabledSprite != null)
+            button.transition = Selectable.Transition.SpriteSwap;
     }
 
 

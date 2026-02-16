@@ -39,6 +39,7 @@ public class AudioManager : MonoBehaviour
     [Header("Music Clips")]
     [SerializeField] private AudioClip menuMusic;
     [SerializeField] private AudioClip combatMusic;
+    [SerializeField] private AudioClip shopMusic;
 
     private const string MusicVolumeKey = "MusicVolume";
     private const string SfxVolumeKey = "SfxVolume";
@@ -132,6 +133,17 @@ public class AudioManager : MonoBehaviour
     public void PlayCombatMusic()
     {
         PlayMusic(combatMusic, true);
+    }
+
+    public void PlayShopMusic()
+    {
+        if (shopMusic != null)
+        {
+            PlayMusic(shopMusic, true);
+            return;
+        }
+
+        PlayCombatMusic();
     }
 
     private void RebuildSfxMap()

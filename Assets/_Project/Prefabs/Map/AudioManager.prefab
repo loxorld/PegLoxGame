@@ -61,6 +61,7 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: f080194d01c758e4ba889c93cb3bbc90, type: 3}
   menuMusic: {fileID: 8300000, guid: 613e52f5ce291e043a947d1656d9d872, type: 3}
   combatMusic: {fileID: 8300000, guid: 26f4bcbfab9f5a844b5b7753a73d1175, type: 3}
+  shopMusic: {fileID: 8300000, guid: b0b4d21b4f358c646ac90ea8fda4b6df, type: 3}
 --- !u!82 &5166021846090730621
 AudioSource:
   m_ObjectHideFlags: 0
