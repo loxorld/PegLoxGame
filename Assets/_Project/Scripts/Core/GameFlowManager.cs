@@ -64,6 +64,7 @@ public class GameFlowManager : MonoBehaviour
     private GameState stateBeforePause = GameState.Combat;
     private readonly Dictionary<string, List<ShopOfferRunData>> shopCatalogsById = new Dictionary<string, List<ShopOfferRunData>>();
     private readonly HashSet<string> resolvedEventNodeIds = new HashSet<string>(StringComparer.Ordinal);
+    private readonly Dictionary<string, int> eventOptionCounters = new Dictionary<string, int>(StringComparer.Ordinal);
 
     [Header("Scene References (DI)")]
     [SerializeField] private MapManager mapManager;
@@ -231,6 +232,7 @@ public class GameFlowManager : MonoBehaviour
         HasSavedPlayerHP = true;
         shopCatalogsById.Clear();
         resolvedEventNodeIds.Clear();
+        eventOptionCounters.Clear();
         ValidateEncounterState("ResetRunState");
     }
 
@@ -248,6 +250,18 @@ public class GameFlowManager : MonoBehaviour
             return;
 
         resolvedEventNodeIds.Add(nodeId);
+    }
+
+    public int IncrementEventOptionCounter(MapStage stage, MapNodeData node, string optionLabel, MapDomainService.EventResolutionOutcome appliedOutcome)
+    {
+        string counterKey = BuildEventOptionCounterKey(stage, node, optionLabel, appliedOutcome);
+        if (string.IsNullOrWhiteSpace(counterKey))
+            return 0;
+
+        eventOptionCounters.TryGetValue(counterKey, out int currentCount);
+        int nextCount = currentCount + 1;
+        eventOptionCounters[counterKey] = nextCount;
+        return nextCount;
     }
 
     public List<ShopOfferRunData> GetShopCatalog(string shopId)
@@ -362,6 +376,7 @@ public class GameFlowManager : MonoBehaviour
             data.Relics = relicManagerInstance.SerializeRelics();
         data.ShopCatalogs = SerializeShopCatalogs();
         data.ResolvedEventNodeIds = new List<string>(resolvedEventNodeIds);
+        data.EventOptionCounters = SerializeEventOptionCounters();
 
         return data;
     }
@@ -404,6 +419,7 @@ public class GameFlowManager : MonoBehaviour
         HasSavedPlayerHP = data.HasSavedPlayerHP;
         DeserializeShopCatalogs(data.ShopCatalogs);
         DeserializeResolvedEventNodes(data.ResolvedEventNodeIds);
+        DeserializeEventOptionCounters(data.EventOptionCounters);
 
         ValidateEncounterState("ApplyRunData");
     }
@@ -550,6 +566,23 @@ public class GameFlowManager : MonoBehaviour
         }
     }
 
+    private List<RunSaveData.EventOptionCounterSaveData> SerializeEventOptionCounters()
+    {
+        var serialized = new List<RunSaveData.EventOptionCounterSaveData>(eventOptionCounters.Count);
+        foreach (KeyValuePair<string, int> entry in eventOptionCounters)
+        {
+            if (string.IsNullOrWhiteSpace(entry.Key))
+                continue;
+
+            serialized.Add(new RunSaveData.EventOptionCounterSaveData
+            {
+                CounterKey = entry.Key,
+                Count = Mathf.Max(0, entry.Value)
+            });
+        }
+
+        return serialized;
+    }
     private static List<ShopOfferRunData> CloneCatalog(List<ShopOfferRunData> source)
     {
         var clone = new List<ShopOfferRunData>(source.Count);
@@ -588,6 +621,39 @@ public class GameFlowManager : MonoBehaviour
             if (!string.IsNullOrWhiteSpace(nodeId))
                 resolvedEventNodeIds.Add(nodeId);
         }
+    }
+
+    private void DeserializeEventOptionCounters(List<RunSaveData.EventOptionCounterSaveData> serializedCounters)
+    {
+        eventOptionCounters.Clear();
+        if (serializedCounters == null)
+            return;
+
+        for (int i = 0; i < serializedCounters.Count; i++)
+        {
+            RunSaveData.EventOptionCounterSaveData counterData = serializedCounters[i];
+            if (counterData == null || string.IsNullOrWhiteSpace(counterData.CounterKey))
+                continue;
+
+            eventOptionCounters[counterData.CounterKey] = Mathf.Max(0, counterData.Count);
+        }
+    }
+
+    private static string BuildEventOptionCounterKey(MapStage stage, MapNodeData node, string optionLabel, MapDomainService.EventResolutionOutcome appliedOutcome)
+    {
+        string stageId = stage != null && !string.IsNullOrWhiteSpace(stage.name) ? stage.name.Trim() : "unknown-stage";
+        string nodeId = node != null && !string.IsNullOrWhiteSpace(node.name) ? node.name.Trim() : "unknown-node";
+        string optionId = string.IsNullOrWhiteSpace(optionLabel) ? "unknown-option" : optionLabel.Trim();
+        string outcomeId = BuildOutcomeId(appliedOutcome);
+        return $"{stageId}|{nodeId}|{optionId}|{outcomeId}";
+    }
+
+    private static string BuildOutcomeId(MapDomainService.EventResolutionOutcome outcome)
+    {
+        string description = string.IsNullOrWhiteSpace(outcome.ResultDescription)
+            ? "no-description"
+            : outcome.ResultDescription.Trim();
+        return $"c{outcome.CoinDelta}_h{outcome.HpDelta}_{description}";
     }
 
     private static bool TryBuildMapNodeId(MapNodeData node, out string nodeId)

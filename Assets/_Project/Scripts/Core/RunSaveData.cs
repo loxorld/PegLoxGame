@@ -32,6 +32,13 @@ public class RunSaveData
         public List<ShopOfferSaveData> Offers = new List<ShopOfferSaveData>();
     }
 
+    [Serializable]
+    public class EventOptionCounterSaveData
+    {
+        public string CounterKey;
+        public int Count;
+    }
+
     public string SavedMapNodeId;
     public int EncounterIndex;
     public int EncounterInStageIndex;
@@ -47,4 +54,5 @@ public class RunSaveData
     public List<string> Relics = new List<string>();
     public List<ShopCatalogSaveData> ShopCatalogs = new List<ShopCatalogSaveData>();
     public List<string> ResolvedEventNodeIds = new List<string>();
+    public List<EventOptionCounterSaveData> EventOptionCounters = new List<EventOptionCounterSaveData>();
 }

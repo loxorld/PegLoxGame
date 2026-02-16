@@ -33,6 +33,7 @@ public class MapManager : MonoBehaviour
     [SerializeField] private RelicManager relicManager;
 
     private readonly MapDomainService domainService = new MapDomainService();
+    private IEventRngService eventRngService;
     private MapNodeData currentNode;
 
     public MapStage CurrentMapStage => currentMapStage;
@@ -42,12 +43,19 @@ public class MapManager : MonoBehaviour
         if (shopConfig == null)
             shopConfig = Resources.Load<ShopConfig>("ShopConfig_Default");
 
+        eventRngService ??= new UnityEventRngService();
         ServiceRegistry.Register(this);
     }
 
     private void Start()
     {
         StartStageForCurrentRun();
+    }
+
+    public void InjectEventRngService(IEventRngService injectedEventRngService)
+    {
+        if (injectedEventRngService != null)
+            eventRngService = injectedEventRngService;
     }
 
     public void InjectDependencies(GameFlowManager injectedGameFlowManager, ShopService injectedShopService, IMapNodeModalView injectedMapNodeModalView)
@@ -255,12 +263,16 @@ public class MapManager : MonoBehaviour
                     return;
                 }
 
-                float roll = option.Probability.HasValue ? UnityEngine.Random.value : 0f;
+                float roll = option.Probability.HasValue ? ResolveEventRngService().Roll01() : 0f;
                 MapDomainService.EventResolutionOutcome resolvedOutcome = domainService.ResolveEventOptionOutcome(option, roll);
+                string appliedOutcome = ResolveAppliedOutcomeLabel(option, roll);
+                int runCounter = flow.IncrementEventOptionCounter(currentMapStage, currentNode, option.OptionLabel, resolvedOutcome);
 
                 flow.AddCoins(resolvedOutcome.CoinDelta);
                 flow.ModifySavedHP(resolvedOutcome.HpDelta);
                 flow.SaveRun();
+
+                LogEventResolution(currentMapStage, currentNode, option, roll, appliedOutcome, resolvedOutcome, runCounter);
 
                 presentationController?.ShowGenericResult(
                     eventOutcome.Title,
@@ -274,6 +286,62 @@ public class MapManager : MonoBehaviour
             });
     }
 
+
+    private IEventRngService ResolveEventRngService()
+    {
+        eventRngService ??= new UnityEventRngService();
+        return eventRngService;
+    }
+
+    private static string ResolveAppliedOutcomeLabel(MapDomainService.EventOptionOutcome option, float roll)
+    {
+        if (!option.Probability.HasValue)
+            return "deterministic";
+
+        return roll <= option.Probability.Value ? "success" : "failure";
+    }
+
+    private static void LogEventResolution(
+        MapStage stage,
+        MapNodeData node,
+        MapDomainService.EventOptionOutcome option,
+        float roll,
+        string appliedOutcome,
+        MapDomainService.EventResolutionOutcome resolvedOutcome,
+        int runCounter)
+    {
+        var payload = new LogEventResolutionPayload
+        {
+            stage = stage != null ? stage.name : "unknown-stage",
+            node = node != null ? node.name : "unknown-node",
+            option = option.OptionLabel,
+            probability = option.Probability.HasValue ? option.Probability.Value : 1f,
+            roll = option.Probability.HasValue ? roll : -1f,
+            appliedOutcome = appliedOutcome,
+            coinDelta = resolvedOutcome.CoinDelta,
+            hpDelta = resolvedOutcome.HpDelta,
+            resultDescription = resolvedOutcome.ResultDescription,
+            runCounter = runCounter
+        };
+
+        Debug.Log($"[MapEventResolution] {JsonUtility.ToJson(payload)}");
+    }
+
+    [Serializable]
+    private sealed class LogEventResolutionPayload
+    {
+        public string stage;
+        public string node;
+        public string option;
+        public float probability;
+        public float roll;
+        public string appliedOutcome;
+        public int coinDelta;
+        public int hpDelta;
+        public string resultDescription;
+        public int runCounter;
+    }
+    
     private MapDomainService.EventOptionContext BuildEventOptionContext(GameFlowManager flow)
     {
         int currentHp = flow != null
