@@ -42,6 +42,7 @@ public class BattleManager : MonoBehaviour
     public bool WaitingForRewards => waitingForRewards;
     public bool LastEncounterWasBoss => lastEncounterWasBoss;
     public int EncounterIndex => encounterIndex;
+    public int EncounterInStage => encounterInStage;
     public int EnemiesToDefeat => enemiesToDefeat;
     public int CurrentStageIndex => currentStageIndex;
     public float EnemyHpMultiplier => currentEnemyHpMultiplier;

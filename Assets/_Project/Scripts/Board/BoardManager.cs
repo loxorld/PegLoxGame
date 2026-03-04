@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-
 [DefaultExecutionOrder(-100)]
 public class BoardManager : MonoBehaviour
 {
@@ -17,6 +16,7 @@ public class BoardManager : MonoBehaviour
 
     [Header("Config")]
     [SerializeField] private BoardConfig config;
+    [SerializeField] private BoardGenerationProfile generationProfile;
 
     [Header("Anti-Overlap")]
     [SerializeField] private LayerMask pegOverlapMask;
@@ -34,8 +34,16 @@ public class BoardManager : MonoBehaviour
     private Rect playableBounds;
     private bool hasPlayableBounds;
 
-    // Track de cuántos especiales spawneamos este board
     private readonly Dictionary<PegDefinition, int> specialCounts = new Dictionary<PegDefinition, int>();
+    private readonly Dictionary<PegDefinition, int> runtimeSpecialLimits = new Dictionary<PegDefinition, int>();
+    private readonly Dictionary<int, bool> densityDecisionByGroup = new Dictionary<int, bool>();
+
+    private float runtimeJitter;
+    private float runtimeCriticalChance;
+    private float runtimeSpecialChance;
+    private float runtimeTargetDensity;
+    private BoardGenerationProfile.SymmetryRule runtimeSymmetry;
+    private string runtimeProfileId;
 
     private void Awake()
     {
@@ -70,6 +78,8 @@ public class BoardManager : MonoBehaviour
     {
         ClearBoard();
         specialCounts.Clear();
+        runtimeSpecialLimits.Clear();
+        densityDecisionByGroup.Clear();
 
         if (cam == null || pegPrefab == null || config == null)
         {
@@ -89,7 +99,13 @@ public class BoardManager : MonoBehaviour
 
         var rng = new System.Random(seed);
 
-        BoardLayout layout = PickRandomLayout(rng);
+        int stageIndex = battle != null ? battle.CurrentStageIndex : -1;
+        int encounterIndex = battle != null ? battle.EncounterIndex : -1;
+        int encounterInStage = battle != null ? battle.EncounterInStage : -1;
+
+        ResolveRuntimeGenerationSettings(stageIndex, encounterIndex, encounterInStage);
+
+        BoardLayout layout = PickLayout(rng);
         int rows = config.rows;
         int cols = config.cols;
 
@@ -98,6 +114,8 @@ public class BoardManager : MonoBehaviour
             rows = layout.rows;
             cols = layout.cols;
         }
+
+        Debug.Log($"[BoardTelemetry] seed={seed} profile={(string.IsNullOrEmpty(runtimeProfileId) ? "BoardConfigFallback" : runtimeProfileId)} stage={stageIndex} encounter={encounterIndex} encounterInStage={encounterInStage} layout={(layout != null ? layout.name : "None")}");
 
         Rect bounds = CalculatePlayableBounds();
         float leftBound = bounds.xMin;
@@ -149,7 +167,8 @@ public class BoardManager : MonoBehaviour
         {
             for (int c = 0; c < cols; c++)
             {
-                bool cellActive = layout == null || layout.IsActive(r, c);
+                bool baseCellActive = layout == null || layout.IsActive(r, c);
+                bool cellActive = IsCellEnabled(r, c, rows, cols, baseCellActive, rng);
                 if (!cellActive) continue;
 
                 Vector2 basePos = new Vector2(
@@ -183,30 +202,107 @@ public class BoardManager : MonoBehaviour
         return hasPlayableBounds;
     }
 
-    // -------------------- NUEVO: selector data-driven --------------------
+    private void ResolveRuntimeGenerationSettings(int stageIndex, int encounterIndex, int encounterInStage)
+    {
+        runtimeJitter = config.jitter;
+        runtimeCriticalChance = config.criticalChance;
+        runtimeSpecialChance = config.specialChance;
+        runtimeTargetDensity = 1f;
+        runtimeSymmetry = BoardGenerationProfile.SymmetryRule.None;
+        runtimeProfileId = null;
+
+        if (generationProfile == null)
+            return;
+
+        if (!generationProfile.TryGetProfile(stageIndex, encounterIndex, encounterInStage, out BoardGenerationProfile.EncounterProfile profile))
+            return;
+
+        runtimeProfileId = string.IsNullOrWhiteSpace(profile.profileId) ? "unnamed" : profile.profileId;
+        runtimeJitter = profile.jitter;
+        runtimeCriticalChance = profile.criticalChance;
+        runtimeSpecialChance = profile.specialChance;
+        runtimeTargetDensity = profile.targetDensity;
+        runtimeSymmetry = profile.symmetryRule;
+
+        if (profile.specialLimits == null)
+            return;
+
+        for (int i = 0; i < profile.specialLimits.Length; i++)
+        {
+            BoardGenerationProfile.SpecialLimit limit = profile.specialLimits[i];
+            if (limit == null || limit.definition == null)
+                continue;
+
+            runtimeSpecialLimits[limit.definition] = Mathf.Max(0, limit.maxPerBoard);
+        }
+    }
+
+    private bool IsCellEnabled(int row, int col, int rows, int cols, bool baseCellActive, System.Random rng)
+    {
+        if (!baseCellActive)
+            return false;
+
+        if (runtimeTargetDensity >= 0.999f)
+            return true;
+
+        int key = GetSymmetryGroupKey(row, col, rows, cols, runtimeSymmetry);
+        if (!densityDecisionByGroup.TryGetValue(key, out bool enabled))
+        {
+            enabled = rng.NextDouble() <= runtimeTargetDensity;
+            densityDecisionByGroup[key] = enabled;
+        }
+
+        return enabled;
+    }
+
+    private int GetSymmetryGroupKey(int row, int col, int rows, int cols, BoardGenerationProfile.SymmetryRule rule)
+    {
+        int mirroredRow = rows - 1 - row;
+        int mirroredCol = cols - 1 - col;
+
+        switch (rule)
+        {
+            case BoardGenerationProfile.SymmetryRule.MirrorHorizontal:
+                return PackKey(Mathf.Min(row, mirroredRow), col);
+
+            case BoardGenerationProfile.SymmetryRule.MirrorVertical:
+                return PackKey(row, Mathf.Min(col, mirroredCol));
+
+            case BoardGenerationProfile.SymmetryRule.MirrorBoth:
+            case BoardGenerationProfile.SymmetryRule.Rotational180:
+                return PackKey(Mathf.Min(row, mirroredRow), Mathf.Min(col, mirroredCol));
+
+            default:
+                return PackKey(row, col);
+        }
+    }
+
+    private int PackKey(int a, int b)
+    {
+        unchecked
+        {
+            return (a * 397) ^ b;
+        }
+    }
 
     private PegDefinition ChoosePegDefinition(System.Random rng)
     {
-        // 1) Intentar especial
         if (config.specialPegs != null && config.specialPegs.Length > 0)
         {
             double roll = rng.NextDouble();
-            if (roll < config.specialChance)
+            if (roll < runtimeSpecialChance)
             {
                 PegDefinition special = PickWeightedSpecial(rng);
                 if (special != null) return special;
-                // si no se pudo (por límites), caemos a base normal/crit
             }
         }
 
-        // 2) Base: normal vs critical
-        bool isCrit = rng.NextDouble() < config.criticalChance;
+        bool isCrit = rng.NextDouble() < runtimeCriticalChance;
         return isCrit ? criticalPegDef : normalPegDef;
     }
 
     private PegDefinition PickWeightedSpecial(System.Random rng)
     {
-        // Filtramos los que están habilitados y no superaron maxPerBoard
         float totalWeight = 0f;
 
         for (int i = 0; i < config.specialPegs.Length; i++)
@@ -215,10 +311,11 @@ public class BoardManager : MonoBehaviour
             if (entry == null || entry.definition == null) continue;
             if (entry.weight <= 0f) continue;
 
-            if (entry.maxPerBoard > 0)
+            int maxPerBoard = GetMaxPerBoard(entry.definition, entry.maxPerBoard);
+            if (maxPerBoard > 0)
             {
                 int current = specialCounts.TryGetValue(entry.definition, out int v) ? v : 0;
-                if (current >= entry.maxPerBoard) continue;
+                if (current >= maxPerBoard) continue;
             }
 
             totalWeight += entry.weight;
@@ -227,7 +324,6 @@ public class BoardManager : MonoBehaviour
         if (totalWeight <= 0f)
             return null;
 
-        // Roulette wheel
         float pick = (float)(rng.NextDouble() * totalWeight);
         float acc = 0f;
 
@@ -237,16 +333,16 @@ public class BoardManager : MonoBehaviour
             if (entry == null || entry.definition == null) continue;
             if (entry.weight <= 0f) continue;
 
-            if (entry.maxPerBoard > 0)
+            int maxPerBoard = GetMaxPerBoard(entry.definition, entry.maxPerBoard);
+            if (maxPerBoard > 0)
             {
                 int current = specialCounts.TryGetValue(entry.definition, out int v) ? v : 0;
-                if (current >= entry.maxPerBoard) continue;
+                if (current >= maxPerBoard) continue;
             }
 
             acc += entry.weight;
             if (pick <= acc)
             {
-                // Registrar conteo
                 if (!specialCounts.ContainsKey(entry.definition)) specialCounts[entry.definition] = 0;
                 specialCounts[entry.definition]++;
 
@@ -257,10 +353,52 @@ public class BoardManager : MonoBehaviour
         return null;
     }
 
-    // -------------------------------------------------------------------
-
-    private BoardLayout PickRandomLayout(System.Random rng)
+    private int GetMaxPerBoard(PegDefinition definition, int configDefault)
     {
+        if (definition != null && runtimeSpecialLimits.TryGetValue(definition, out int runtimeLimit))
+            return runtimeLimit;
+
+        return configDefault;
+    }
+
+    private BoardLayout PickLayout(System.Random rng)
+    {
+        if (generationProfile != null && !string.IsNullOrEmpty(runtimeProfileId)
+            && generationProfile.TryGetProfile(
+                battle != null ? battle.CurrentStageIndex : -1,
+                battle != null ? battle.EncounterIndex : -1,
+                battle != null ? battle.EncounterInStage : -1,
+                out BoardGenerationProfile.EncounterProfile profile)
+            && profile.allowedLayouts != null
+            && profile.allowedLayouts.Length > 0)
+        {
+            float totalWeight = 0f;
+            for (int i = 0; i < profile.allowedLayouts.Length; i++)
+            {
+                BoardGenerationProfile.LayoutWeight entry = profile.allowedLayouts[i];
+                if (entry == null || entry.layout == null || entry.weight <= 0f)
+                    continue;
+
+                totalWeight += entry.weight;
+            }
+
+            if (totalWeight > 0f)
+            {
+                float pick = (float)(rng.NextDouble() * totalWeight);
+                float acc = 0f;
+                for (int i = 0; i < profile.allowedLayouts.Length; i++)
+                {
+                    BoardGenerationProfile.LayoutWeight entry = profile.allowedLayouts[i];
+                    if (entry == null || entry.layout == null || entry.weight <= 0f)
+                        continue;
+
+                    acc += entry.weight;
+                    if (pick <= acc)
+                        return entry.layout;
+                }
+            }
+        }
+
         if (config.layouts == null || config.layouts.Length == 0)
             return null;
 
@@ -288,8 +426,8 @@ public class BoardManager : MonoBehaviour
 
     private Vector2 ApplyJitter(Vector2 basePos, System.Random rng, float spacingX, float spacingY)
     {
-        float jx = (float)(rng.NextDouble() * 2.0 - 1.0) * config.jitter * spacingX;
-        float jy = (float)(rng.NextDouble() * 2.0 - 1.0) * config.jitter * spacingY;
+        float jx = (float)(rng.NextDouble() * 2.0 - 1.0) * runtimeJitter * spacingX;
+        float jy = (float)(rng.NextDouble() * 2.0 - 1.0) * runtimeJitter * spacingY;
         return new Vector2(basePos.x + jx, basePos.y + jy);
     }
 
@@ -310,6 +448,7 @@ public class BoardManager : MonoBehaviour
         }
         spawned.Clear();
     }
+
     private Rect CalculatePlayableBounds()
     {
         Rect visibleWorld = CameraWorldRect.GetVisibleWorldRect(cam);
