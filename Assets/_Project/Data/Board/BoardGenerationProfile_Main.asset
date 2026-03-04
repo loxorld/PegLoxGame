@@ -12,17 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7d56189e2d5b4a95b8efccf93a60d66f, type: 3}
   m_Name: BoardGenerationProfile_Main
   m_EditorClassIdentifier: Assembly-CSharp::BoardGenerationProfile
-  profiles:
-  - profileId: 1
-    stageIndex: -1
-    encounterIndex: -1
-    encounterInStage: -1
-    allowedLayouts: []
-    targetDensity: 0
-    jitter: 0.054
-    symmetryRule: 0
-    criticalChance: 0
-    specialChance: 0
-    specialLimits:
-    - definition: {fileID: 0}
-      maxPerBoard: 0
+  profiles: []
