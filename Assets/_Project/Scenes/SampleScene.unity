@@ -931,6 +931,7 @@ MonoBehaviour:
   normalPegDef: {fileID: 11400000, guid: 1cf2e80fab14b9c499f6847029e6f21a, type: 2}
   criticalPegDef: {fileID: 11400000, guid: a44a6bc639fe7da47b9762a80d9b028e, type: 2}
   config: {fileID: 11400000, guid: 57aa2a1dee64d304d90c7ee545cc7956, type: 2}
+  generationProfile: {fileID: 11400000, guid: c5022a4636621f746bda3ba7622fad06, type: 2}
   pegOverlapMask:
     serializedVersion: 2
     m_Bits: 8

@@ -44,6 +44,7 @@ public class BoardManager : MonoBehaviour
     private float runtimeTargetDensity;
     private BoardGenerationProfile.SymmetryRule runtimeSymmetry;
     private string runtimeProfileId;
+    private BoardGenerationProfile.LayoutWeight[] runtimeAllowedLayouts;
 
     private void Awake()
     {
@@ -210,6 +211,7 @@ public class BoardManager : MonoBehaviour
         runtimeTargetDensity = 1f;
         runtimeSymmetry = BoardGenerationProfile.SymmetryRule.None;
         runtimeProfileId = null;
+        runtimeAllowedLayouts = null;
 
         if (generationProfile == null)
             return;
@@ -223,6 +225,7 @@ public class BoardManager : MonoBehaviour
         runtimeSpecialChance = profile.specialChance;
         runtimeTargetDensity = profile.targetDensity;
         runtimeSymmetry = profile.symmetryRule;
+        runtimeAllowedLayouts = profile.allowedLayouts;
 
         if (profile.specialLimits == null)
             return;
@@ -363,19 +366,12 @@ public class BoardManager : MonoBehaviour
 
     private BoardLayout PickLayout(System.Random rng)
     {
-        if (generationProfile != null && !string.IsNullOrEmpty(runtimeProfileId)
-            && generationProfile.TryGetProfile(
-                battle != null ? battle.CurrentStageIndex : -1,
-                battle != null ? battle.EncounterIndex : -1,
-                battle != null ? battle.EncounterInStage : -1,
-                out BoardGenerationProfile.EncounterProfile profile)
-            && profile.allowedLayouts != null
-            && profile.allowedLayouts.Length > 0)
+        if (runtimeAllowedLayouts != null && runtimeAllowedLayouts.Length > 0)
         {
             float totalWeight = 0f;
-            for (int i = 0; i < profile.allowedLayouts.Length; i++)
+            for (int i = 0; i < runtimeAllowedLayouts.Length; i++)
             {
-                BoardGenerationProfile.LayoutWeight entry = profile.allowedLayouts[i];
+                BoardGenerationProfile.LayoutWeight entry = runtimeAllowedLayouts[i];
                 if (entry == null || entry.layout == null || entry.weight <= 0f)
                     continue;
 
@@ -386,9 +382,9 @@ public class BoardManager : MonoBehaviour
             {
                 float pick = (float)(rng.NextDouble() * totalWeight);
                 float acc = 0f;
-                for (int i = 0; i < profile.allowedLayouts.Length; i++)
+                for (int i = 0; i < runtimeAllowedLayouts.Length; i++)
                 {
-                    BoardGenerationProfile.LayoutWeight entry = profile.allowedLayouts[i];
+                    BoardGenerationProfile.LayoutWeight entry = runtimeAllowedLayouts[i];
                     if (entry == null || entry.layout == null || entry.weight <= 0f)
                         continue;
 

@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 496b27517a7175744933c2c32bd5ab8a, type: 3}
-  m_Name: BoardLayout_Islands
+  m_Name: BoardLayout_Hourglass
   m_EditorClassIdentifier: Assembly-CSharp::BoardLayout
   rows: 8
   cols: 7
-  pattern: 4
+  pattern: 6
   fill: 0.55
-  activeMask: 0000000000000000010100010100000101000101000000010101000000000101010000000101000101000001010001010000000000000000
+  activeMask: 

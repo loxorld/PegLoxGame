@@ -12,4 +12,103 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7d56189e2d5b4a95b8efccf93a60d66f, type: 3}
   m_Name: BoardGenerationProfile_Main
   m_EditorClassIdentifier: Assembly-CSharp::BoardGenerationProfile
-  profiles: []
+  profiles:
+  - profileId: stage0_opening
+    stageIndex: 0
+    encounterIndex: -1
+    encounterInStage: 0
+    allowedLayouts:
+    - layout: {fileID: 11400000, guid: 0e60b14eedfb9e54588f9ec73e1bd81f, type: 2}
+      weight: 1.6
+    - layout: {fileID: 11400000, guid: e3a523c1a5a464846bc32ef22cfa42e2, type: 2}
+      weight: 0.6
+    targetDensity: 0.95
+    jitter: 0.08
+    symmetryRule: 1
+    criticalChance: 0.2
+    specialChance: 0.06
+    specialLimits:
+    - definition: {fileID: 11400000, guid: 06d4b2a7020065c4883d00e5141d2be8, type: 2}
+      maxPerBoard: 1
+  - profileId: stage0_mid
+    stageIndex: 0
+    encounterIndex: -1
+    encounterInStage: -1
+    allowedLayouts:
+    - layout: {fileID: 11400000, guid: e3a523c1a5a464846bc32ef22cfa42e2, type: 2}
+      weight: 1
+    - layout: {fileID: 11400000, guid: 3c5c695a111024547aea6579196620c5, type: 2}
+      weight: 1
+    - layout: {fileID: 11400000, guid: 1ccb95e4ec7e45f88e7f5283ad5b496d, type: 2}
+      weight: 0.7
+    targetDensity: 0.86
+    jitter: 0.12
+    symmetryRule: 2
+    criticalChance: 0.24
+    specialChance: 0.12
+    specialLimits:
+    - definition: {fileID: 11400000, guid: 1e0b2bfc337364b4fae5cbe2d06e4ac0, type: 2}
+      maxPerBoard: 2
+    - definition: {fileID: 11400000, guid: b247ae88b1b4856439aff3f65f684458, type: 2}
+      maxPerBoard: 2
+  - profileId: stage1_standard
+    stageIndex: 1
+    encounterIndex: -1
+    encounterInStage: -1
+    allowedLayouts:
+    - layout: {fileID: 11400000, guid: 3c5c695a111024547aea6579196620c5, type: 2}
+      weight: 0.8
+    - layout: {fileID: 11400000, guid: 2ce0ca7f216f4314bd4e56e10c2c9f3a, type: 2}
+      weight: 1.2
+    - layout: {fileID: 11400000, guid: 1ccb95e4ec7e45f88e7f5283ad5b496d, type: 2}
+      weight: 1
+    targetDensity: 0.78
+    jitter: 0.14
+    symmetryRule: 3
+    criticalChance: 0.28
+    specialChance: 0.17
+    specialLimits:
+    - definition: {fileID: 11400000, guid: 77d3fde54bf6c654eac2ed2531493100, type: 2}
+      maxPerBoard: 2
+    - definition: {fileID: 11400000, guid: ed2d5ba224d21b14d99b96a568a9e531, type: 2}
+      maxPerBoard: 2
+  - profileId: stage2_elite
+    stageIndex: 2
+    encounterIndex: -1
+    encounterInStage: -1
+    allowedLayouts:
+    - layout: {fileID: 11400000, guid: 2ce0ca7f216f4314bd4e56e10c2c9f3a, type: 2}
+      weight: 1.4
+    - layout: {fileID: 11400000, guid: 1ccb95e4ec7e45f88e7f5283ad5b496d, type: 2}
+      weight: 1.1
+    targetDensity: 0.72
+    jitter: 0.16
+    symmetryRule: 4
+    criticalChance: 0.32
+    specialChance: 0.22
+    specialLimits:
+    - definition: {fileID: 11400000, guid: 20228edb3670e2c4088f1a60e6bad84d, type: 2}
+      maxPerBoard: 2
+    - definition: {fileID: 11400000, guid: b247ae88b1b4856439aff3f65f684458, type: 2}
+      maxPerBoard: 1
+  - profileId: fallback_any
+    stageIndex: -1
+    encounterIndex: -1
+    encounterInStage: -1
+    allowedLayouts:
+    - layout: {fileID: 11400000, guid: 0e60b14eedfb9e54588f9ec73e1bd81f, type: 2}
+      weight: 1
+    - layout: {fileID: 11400000, guid: e3a523c1a5a464846bc32ef22cfa42e2, type: 2}
+      weight: 1
+    - layout: {fileID: 11400000, guid: 3c5c695a111024547aea6579196620c5, type: 2}
+      weight: 1
+    - layout: {fileID: 11400000, guid: 2ce0ca7f216f4314bd4e56e10c2c9f3a, type: 2}
+      weight: 0.8
+    - layout: {fileID: 11400000, guid: 1ccb95e4ec7e45f88e7f5283ad5b496d, type: 2}
+      weight: 0.8
+    targetDensity: 0.84
+    jitter: 0.12
+    symmetryRule: 0
+    criticalChance: 0.25
+    specialChance: 0.14
+    specialLimits: []

@@ -49,4 +49,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 0e60b14eedfb9e54588f9ec73e1bd81f, type: 2}
   - {fileID: 11400000, guid: e3a523c1a5a464846bc32ef22cfa42e2, type: 2}
   - {fileID: 11400000, guid: 3c5c695a111024547aea6579196620c5, type: 2}
+  - {fileID: 11400000, guid: 2ce0ca7f216f4314bd4e56e10c2c9f3a, type: 2}
+  - {fileID: 11400000, guid: 1ccb95e4ec7e45f88e7f5283ad5b496d, type: 2}
   useLayoutDimensions: 1
