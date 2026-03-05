@@ -9,6 +9,7 @@ public class Peg : MonoBehaviour
     private bool consumed;
     private Collider2D col;
     private PegVisualController visualController;
+    private PegColliderController colliderController;
 
     // Para Durable (o futuras mecánicas)
     private int hitPointsRemaining = 1;
@@ -21,13 +22,20 @@ public class Peg : MonoBehaviour
     {
         col = GetComponent<Collider2D>();
         visualController = GetComponent<PegVisualController>();
+        colliderController = GetComponent<PegColliderController>();
 
         if (visualController == null)
         {
             visualController = gameObject.AddComponent<PegVisualController>();
         }
 
+        if (colliderController == null)
+        {
+            colliderController = gameObject.AddComponent<PegColliderController>();
+        }
+
         visualController.SetDefinition(definition);
+        colliderController.SetDefinition(definition);
         visualController.PlayIdle();
     }
 
@@ -49,6 +57,12 @@ public class Peg : MonoBehaviour
         {
             visualController.SetDefinition(definition);
         }
+
+        if (colliderController != null)
+        {
+            colliderController.SetDefinition(definition);
+        }
+
         ResetForNewEncounter();
     }
 

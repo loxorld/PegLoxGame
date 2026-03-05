@@ -28,3 +28,11 @@ MonoBehaviour:
   behaviors:
   - {fileID: 11400000, guid: 18327f57c717e7c4e971d1a57edb39ed, type: 2}
   countsForMultiplier: 0
+  collision:
+    shape: 0
+    circleRadius: 0.5
+    size: {x: 1, y: 1}
+    offset: {x: 0, y: 0}
+    autoFitToSprite: 1
+    autoFitScale: 0.9
+    useNormalizedVisualSize: 1
