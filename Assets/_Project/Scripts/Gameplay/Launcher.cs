@@ -2,6 +2,9 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
 public class Launcher : MonoBehaviour
 {
@@ -130,95 +133,154 @@ public class Launcher : MonoBehaviour
             return;
         }
 
-        // Touch (Android)
-        if (Input.touchSupported && Input.touchCount > 0)
-        {
-            Touch touch = Input.GetTouch(0);
-            int touchId = touch.fingerId;
-
-            if (touch.phase == TouchPhase.Began)
-            {
-                if (IsPointerOverBlockingUI(touch.position, touchId))
-                {
-                    isDragging = false;
-                    SetTrajectoryVisible(false);
-                    ClearTrajectory();
-                    return;
-                }
-
-                if (!EnsureCameraAvailable())
-                {
-                    CancelDrag();
-                    return;
-                }
-
-                dragStartScreen = touch.position;
-                dragStartWorld = ScreenToWorld(dragStartScreen);
-
-                isDragging = true;
-                isDragBeyondDeadzone = false;
-                SetTrajectoryVisible(false);
-                ClearTrajectory();
-            }
-
-            if ((touch.phase == TouchPhase.Moved || touch.phase == TouchPhase.Stationary) && isDragging)
-            {
-                if (!EnsureCameraAvailable())
-                {
-                    CancelDrag();
-                    return;
-                }
-
-                Vector2 currentScreen = touch.position;
-                if (IsWithinDeadzone(currentScreen))
-                {
-                    if (isDragBeyondDeadzone)
-                    {
-                        isDragBeyondDeadzone = false;
-                        SetTrajectoryVisible(false);
-                        ClearTrajectory();
-                    }
-                    return;
-                }
-
-                if (!isDragBeyondDeadzone)
-                {
-                    isDragBeyondDeadzone = true;
-                    SetTrajectoryVisible(true);
-                }
-                Vector2 currentWorld = ScreenToWorld(currentScreen);
-                Vector2 directionWorld = dragStartWorld - currentWorld;
-
-                UpdateTrajectoryPreview(directionWorld, currentScreen);
-            }
-
-            if ((touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled) && isDragging)
-            {
-                if (!EnsureCameraAvailable())
-                {
-                    CancelDrag();
-                    return;
-                }
-
-                Vector2 releaseScreen = touch.position;
-                if (IsCancelShot(releaseScreen, touchId) || IsWithinDeadzone(releaseScreen))
-                {
-                    CancelDrag();
-                    return;
-                }
-                Vector2 releaseWorld = ScreenToWorld(releaseScreen);
-                Vector2 directionWorld = dragStartWorld - releaseWorld;
-
-                SetTrajectoryVisible(false);
-                ClearTrajectory();
-
-                LaunchBall(directionWorld, releaseScreen);
-                isDragging = false;
-            }
-
+        if (TryHandleTouchInput())
             return;
+
+        HandleMouseInput();
+    }
+
+    private bool TryHandleTouchInput()
+    {
+#if ENABLE_INPUT_SYSTEM
+        Touchscreen touchScreen = Touchscreen.current;
+        if (touchScreen == null)
+            return false;
+
+        var primaryTouch = touchScreen.primaryTouch;
+        bool pointerDown = primaryTouch.press.wasPressedThisFrame;
+        bool pointerHeld = primaryTouch.press.isPressed;
+        bool pointerUp = primaryTouch.press.wasReleasedThisFrame;
+
+        if (!pointerDown && !pointerHeld && !pointerUp)
+            return false;
+
+        Vector2 pointerScreen = primaryTouch.position.ReadValue();
+        int pointerId = primaryTouch.touchId.ReadValue();
+        ProcessPointerInput(pointerDown, pointerHeld, pointerUp, pointerScreen, pointerId);
+        return true;
+#else
+        if (!Input.touchSupported || Input.touchCount <= 0)
+            return false;
+
+        Touch touch = Input.GetTouch(0);
+        bool pointerDown = touch.phase == TouchPhase.Began;
+        bool pointerHeld = touch.phase == TouchPhase.Moved || touch.phase == TouchPhase.Stationary;
+        bool pointerUp = touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled;
+
+        ProcessPointerInput(pointerDown, pointerHeld, pointerUp, touch.position, touch.fingerId);
+        return true;
+#endif
+    }
+
+    private void HandleMouseInput()
+    {
+#if ENABLE_INPUT_SYSTEM
+        Mouse mouse = Mouse.current;
+        if (mouse == null)
+            return;
+
+        bool pointerDown = mouse.leftButton.wasPressedThisFrame;
+        bool pointerHeld = mouse.leftButton.isPressed;
+        bool pointerUp = mouse.leftButton.wasReleasedThisFrame;
+
+        if (!pointerDown && !pointerHeld && !pointerUp)
+            return;
+
+        Vector2 pointerScreen = mouse.position.ReadValue();
+        ProcessPointerInput(pointerDown, pointerHeld, pointerUp, pointerScreen, null);
+#else
+        bool pointerDown = Input.GetMouseButtonDown(0);
+        bool pointerHeld = Input.GetMouseButton(0);
+        bool pointerUp = Input.GetMouseButtonUp(0);
+
+        if (!pointerDown && !pointerHeld && !pointerUp)
+            return;
+
+        Vector2 pointerScreen = Input.mousePosition;
+        ProcessPointerInput(pointerDown, pointerHeld, pointerUp, pointerScreen, null);
+#endif
+    }
+
+    private void ProcessPointerInput(bool pointerDown, bool pointerHeld, bool pointerUp, Vector2 pointerScreen, int? pointerId)
+    {
+        if (pointerDown)
+        {
+            if (IsPointerOverBlockingUI(pointerScreen, pointerId))
+            {
+                isDragging = false;
+                SetTrajectoryVisible(false);
+                ClearTrajectory();
+                return;
+            }
+
+            if (!EnsureCameraAvailable())
+            {
+                CancelDrag();
+                return;
+            }
+
+            dragStartScreen = pointerScreen;
+            dragStartWorld = ScreenToWorld(dragStartScreen);
+
+            isDragging = true;
+            isDragBeyondDeadzone = false;
+            SetTrajectoryVisible(false);
+            ClearTrajectory();
         }
 
+        if (pointerHeld && isDragging)
+        {
+            if (!EnsureCameraAvailable())
+            {
+                CancelDrag();
+                return;
+            }
+
+            if (IsWithinDeadzone(pointerScreen))
+            {
+                if (isDragBeyondDeadzone)
+                {
+                    isDragBeyondDeadzone = false;
+                    SetTrajectoryVisible(false);
+                    ClearTrajectory();
+                }
+                return;
+            }
+
+            if (!isDragBeyondDeadzone)
+            {
+                isDragBeyondDeadzone = true;
+                SetTrajectoryVisible(true);
+            }
+
+            Vector2 currentWorld = ScreenToWorld(pointerScreen);
+            Vector2 directionWorld = dragStartWorld - currentWorld;
+            UpdateTrajectoryPreview(directionWorld, pointerScreen);
+        }
+
+        if (pointerUp && isDragging)
+        {
+            if (!EnsureCameraAvailable())
+            {
+                CancelDrag();
+                return;
+            }
+
+            if (IsCancelShot(pointerScreen, pointerId) || IsWithinDeadzone(pointerScreen))
+            {
+                CancelDrag();
+                return;
+            }
+
+            Vector2 releaseWorld = ScreenToWorld(pointerScreen);
+            Vector2 directionWorld = dragStartWorld - releaseWorld;
+
+            SetTrajectoryVisible(false);
+            ClearTrajectory();
+
+            LaunchBall(directionWorld, pointerScreen);
+            isDragging = false;
+        }
     }
 
     private bool IsPointerOverBlockingUI(Vector2 screenPosition, int? pointerId)
