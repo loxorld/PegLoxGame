@@ -37,6 +37,15 @@ public class BoardManager : MonoBehaviour
     private readonly Dictionary<PegDefinition, int> specialCounts = new Dictionary<PegDefinition, int>();
     private readonly Dictionary<PegDefinition, int> runtimeSpecialLimits = new Dictionary<PegDefinition, int>();
     private readonly Dictionary<int, bool> densityDecisionByGroup = new Dictionary<int, bool>();
+    private readonly Dictionary<int, int> specialCountByVerticalBand = new Dictionary<int, int>();
+    private readonly Dictionary<int, int> activeCellCountByVerticalBand = new Dictionary<int, int>();
+
+    private int runtimeSpecialAssignmentRetries;
+    private int runtimeMinSpecialManhattanDistance;
+    private float runtimeMinSpecialEuclideanDistance;
+    private float runtimeTopBandSpecialDensityCap;
+    private float runtimeMiddleBandSpecialDensityCap;
+    private float runtimeBottomBandSpecialDensityCap;
 
     private float runtimeJitter;
     private float runtimeCriticalChance;
@@ -45,6 +54,14 @@ public class BoardManager : MonoBehaviour
     private BoardGenerationProfile.SymmetryRule runtimeSymmetry;
     private string runtimeProfileId;
     private BoardGenerationProfile.LayoutWeight[] runtimeAllowedLayouts;
+
+    private struct CellPlan
+    {
+        public int row;
+        public int col;
+        public Vector2 basePosition;
+        public PegDefinition definition;
+    }
 
     private void Awake()
     {
@@ -81,6 +98,8 @@ public class BoardManager : MonoBehaviour
         specialCounts.Clear();
         runtimeSpecialLimits.Clear();
         densityDecisionByGroup.Clear();
+        specialCountByVerticalBand.Clear();
+        activeCellCountByVerticalBand.Clear();
 
         if (cam == null || pegPrefab == null || config == null)
         {
@@ -161,9 +180,48 @@ public class BoardManager : MonoBehaviour
         start.x = Mathf.Clamp(start.x, leftBound, rightBound - gridW);
         start.y = Mathf.Clamp(start.y, bottomBound + gridH, topBound);
 
+        List<CellPlan> cellPlans = BuildActiveCellPlans(rows, cols, layout, rng, start, spacingX, spacingY);
+        AssignPegDefinitions(cellPlans, rows, rng);
+
         float pegRadius = GetPegWorldRadius();
         float overlapRadius = pegRadius + extraSeparation;
 
+        int totalSpawned = 0;
+        int specialSpawned = 0;
+        int assignmentFailures = 0;
+
+        for (int i = 0; i < cellPlans.Count; i++)
+        {
+            CellPlan plan = cellPlans[i];
+            if (!TrySpawnPegInCell(plan.basePosition, rng, overlapRadius, spacingX, spacingY, out GameObject go))
+            {
+                assignmentFailures++;
+                continue;
+            }
+
+            spawned.Add(go);
+            totalSpawned++;
+
+            Peg peg = go.GetComponent<Peg>();
+            if (peg == null)
+            {
+                Debug.LogError("[Board] Spawned peg prefab missing Peg component.");
+                continue;
+            }
+
+            peg.SetDefinition(plan.definition);
+            if (IsSpecialDefinition(plan.definition))
+                specialSpawned++;
+        }
+
+        LogDistributionMetrics(rows, cols, cellPlans, totalSpawned, specialSpawned, assignmentFailures);
+
+        PegManager.Instance?.ResetAllPegsForNewEncounter();
+    }
+
+    private List<CellPlan> BuildActiveCellPlans(int rows, int cols, BoardLayout layout, System.Random rng, Vector2 start, float spacingX, float spacingY)
+    {
+        List<CellPlan> plans = new List<CellPlan>(rows * cols);
         for (int r = 0; r < rows; r++)
         {
             for (int c = 0; c < cols; c++)
@@ -177,24 +235,23 @@ public class BoardManager : MonoBehaviour
                     start.y - r * spacingY
                 );
 
-                if (!TrySpawnPegInCell(basePos, rng, overlapRadius, spacingX, spacingY, out GameObject go))
-                    continue;
-
-                spawned.Add(go);
-
-                Peg peg = go.GetComponent<Peg>();
-                if (peg == null)
+                CellPlan plan = new CellPlan
                 {
-                    Debug.LogError("[Board] Spawned peg prefab missing Peg component.");
-                    continue;
-                }
+                    row = r,
+                    col = c,
+                    basePosition = basePos,
+                    definition = normalPegDef
+                };
 
-                PegDefinition def = ChoosePegDefinition(rng);
-                peg.SetDefinition(def);
+                plans.Add(plan);
+
+                int band = GetVerticalBand(r, rows);
+                activeCellCountByVerticalBand.TryGetValue(band, out int count);
+                activeCellCountByVerticalBand[band] = count + 1;
             }
         }
 
-        PegManager.Instance?.ResetAllPegsForNewEncounter();
+        return plans;
     }
 
     public bool TryGetPlayableBounds(out Rect bounds)
@@ -212,6 +269,12 @@ public class BoardManager : MonoBehaviour
         runtimeSymmetry = BoardGenerationProfile.SymmetryRule.None;
         runtimeProfileId = null;
         runtimeAllowedLayouts = null;
+        runtimeSpecialAssignmentRetries = Mathf.Max(1, config.specialTypeAssignmentRetries);
+        runtimeMinSpecialManhattanDistance = Mathf.Max(0, config.minSpecialManhattanDistance);
+        runtimeMinSpecialEuclideanDistance = Mathf.Max(0f, config.minSpecialEuclideanDistance);
+        runtimeTopBandSpecialDensityCap = Mathf.Clamp01(config.topBandSpecialDensityCap);
+        runtimeMiddleBandSpecialDensityCap = Mathf.Clamp01(config.middleBandSpecialDensityCap);
+        runtimeBottomBandSpecialDensityCap = Mathf.Clamp01(config.bottomBandSpecialDensityCap);
 
         if (generationProfile == null)
             return;
@@ -226,6 +289,12 @@ public class BoardManager : MonoBehaviour
         runtimeTargetDensity = profile.targetDensity;
         runtimeSymmetry = profile.symmetryRule;
         runtimeAllowedLayouts = profile.allowedLayouts;
+        runtimeSpecialAssignmentRetries = Mathf.Max(1, profile.specialTypeAssignmentRetries);
+        runtimeMinSpecialManhattanDistance = Mathf.Max(0, profile.minSpecialManhattanDistance);
+        runtimeMinSpecialEuclideanDistance = Mathf.Max(0f, profile.minSpecialEuclideanDistance);
+        runtimeTopBandSpecialDensityCap = Mathf.Clamp01(profile.topBandSpecialDensityCap);
+        runtimeMiddleBandSpecialDensityCap = Mathf.Clamp01(profile.middleBandSpecialDensityCap);
+        runtimeBottomBandSpecialDensityCap = Mathf.Clamp01(profile.bottomBandSpecialDensityCap);
 
         if (profile.specialLimits == null)
             return;
@@ -288,15 +357,42 @@ public class BoardManager : MonoBehaviour
         }
     }
 
-    private PegDefinition ChoosePegDefinition(System.Random rng)
+    private void AssignPegDefinitions(List<CellPlan> cellPlans, int rows, System.Random rng)
+    {
+        for (int i = 0; i < cellPlans.Count; i++)
+        {
+            CellPlan plan = cellPlans[i];
+            plan.definition = ChoosePegDefinitionForCell(plan, cellPlans, i, rows, rng);
+            cellPlans[i] = plan;
+
+            if (IsSpecialDefinition(plan.definition))
+            {
+                if (!specialCounts.ContainsKey(plan.definition))
+                    specialCounts[plan.definition] = 0;
+
+                specialCounts[plan.definition]++;
+
+                int band = GetVerticalBand(plan.row, rows);
+                specialCountByVerticalBand.TryGetValue(band, out int specialInBand);
+                specialCountByVerticalBand[band] = specialInBand + 1;
+            }
+        }
+    }
+
+    private PegDefinition ChoosePegDefinitionForCell(CellPlan currentCell, List<CellPlan> cellPlans, int assignedUntilIndex, int rows, System.Random rng)
     {
         if (config.specialPegs != null && config.specialPegs.Length > 0)
         {
             double roll = rng.NextDouble();
             if (roll < runtimeSpecialChance)
             {
-                PegDefinition special = PickWeightedSpecial(rng);
-                if (special != null) return special;
+                int retries = Mathf.Max(1, runtimeSpecialAssignmentRetries);
+                for (int attempt = 0; attempt < retries; attempt++)
+                {
+                    PegDefinition special = PickWeightedSpecialForCell(currentCell, cellPlans, assignedUntilIndex, rows, rng);
+                    if (special != null)
+                        return special;
+                }
             }
         }
 
@@ -304,15 +400,18 @@ public class BoardManager : MonoBehaviour
         return isCrit ? criticalPegDef : normalPegDef;
     }
 
-    private PegDefinition PickWeightedSpecial(System.Random rng)
+    private PegDefinition PickWeightedSpecialForCell(CellPlan currentCell, List<CellPlan> cellPlans, int assignedUntilIndex, int rows, System.Random rng)
     {
         float totalWeight = 0f;
+        int band = GetVerticalBand(currentCell.row, rows);
 
         for (int i = 0; i < config.specialPegs.Length; i++)
         {
             var entry = config.specialPegs[i];
             if (entry == null || entry.definition == null) continue;
             if (entry.weight <= 0f) continue;
+            if (!CanPlaceSpecialInBand(band)) continue;
+            if (!CanPlaceSpecialByDistance(currentCell, cellPlans, assignedUntilIndex)) continue;
 
             int maxPerBoard = GetMaxPerBoard(entry.definition, entry.maxPerBoard);
             if (maxPerBoard > 0)
@@ -335,6 +434,8 @@ public class BoardManager : MonoBehaviour
             var entry = config.specialPegs[i];
             if (entry == null || entry.definition == null) continue;
             if (entry.weight <= 0f) continue;
+            if (!CanPlaceSpecialInBand(band)) continue;
+            if (!CanPlaceSpecialByDistance(currentCell, cellPlans, assignedUntilIndex)) continue;
 
             int maxPerBoard = GetMaxPerBoard(entry.definition, entry.maxPerBoard);
             if (maxPerBoard > 0)
@@ -346,9 +447,6 @@ public class BoardManager : MonoBehaviour
             acc += entry.weight;
             if (pick <= acc)
             {
-                if (!specialCounts.ContainsKey(entry.definition)) specialCounts[entry.definition] = 0;
-                specialCounts[entry.definition]++;
-
                 return entry.definition;
             }
         }
@@ -362,6 +460,126 @@ public class BoardManager : MonoBehaviour
             return runtimeLimit;
 
         return configDefault;
+    }
+
+    private bool CanPlaceSpecialByDistance(CellPlan currentCell, List<CellPlan> cellPlans, int assignedUntilIndex)
+    {
+        if (runtimeMinSpecialManhattanDistance <= 0 && runtimeMinSpecialEuclideanDistance <= 0f)
+            return true;
+
+        float minEuclideanSq = runtimeMinSpecialEuclideanDistance * runtimeMinSpecialEuclideanDistance;
+        for (int i = 0; i < assignedUntilIndex; i++)
+        {
+            CellPlan other = cellPlans[i];
+            if (!IsSpecialDefinition(other.definition))
+                continue;
+
+            int dx = Mathf.Abs(currentCell.col - other.col);
+            int dy = Mathf.Abs(currentCell.row - other.row);
+
+            if (runtimeMinSpecialManhattanDistance > 0 && dx + dy < runtimeMinSpecialManhattanDistance)
+                return false;
+
+            if (runtimeMinSpecialEuclideanDistance > 0f)
+            {
+                int d2 = dx * dx + dy * dy;
+                if (d2 < minEuclideanSq)
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    private bool CanPlaceSpecialInBand(int band)
+    {
+        activeCellCountByVerticalBand.TryGetValue(band, out int activeCount);
+        if (activeCount <= 0)
+            return false;
+
+        specialCountByVerticalBand.TryGetValue(band, out int currentSpecials);
+        float cap = GetBandSpecialDensityCap(band);
+        int limit = Mathf.CeilToInt(activeCount * cap);
+        return currentSpecials < limit;
+    }
+
+    private float GetBandSpecialDensityCap(int band)
+    {
+        switch (band)
+        {
+            case 0: return runtimeTopBandSpecialDensityCap;
+            case 1: return runtimeMiddleBandSpecialDensityCap;
+            default: return runtimeBottomBandSpecialDensityCap;
+        }
+    }
+
+    private int GetVerticalBand(int row, int rows)
+    {
+        if (rows <= 1)
+            return 1;
+
+        float normalized = row / (float)(rows - 1);
+        if (normalized < 0.3334f) return 0;
+        if (normalized < 0.6667f) return 1;
+        return 2;
+    }
+
+    private bool IsSpecialDefinition(PegDefinition definition)
+    {
+        if (definition == null || definition == normalPegDef || definition == criticalPegDef)
+            return false;
+
+        return true;
+    }
+
+    private void LogDistributionMetrics(int rows, int cols, List<CellPlan> plans, int spawnedCount, int spawnedSpecialCount, int spawnFailures)
+    {
+        float[] quadrantTotals = new float[4];
+        float[] quadrantSpecials = new float[4];
+
+        for (int i = 0; i < plans.Count; i++)
+        {
+            CellPlan plan = plans[i];
+            int quadrant = GetQuadrant(plan.row, plan.col, rows, cols);
+            quadrantTotals[quadrant] += 1f;
+            if (IsSpecialDefinition(plan.definition))
+                quadrantSpecials[quadrant] += 1f;
+        }
+
+        float totalVariance = CalculateVariance(quadrantTotals);
+        float specialVariance = CalculateVariance(quadrantSpecials);
+
+        Debug.Log($"[BoardTelemetry] distribution plans={plans.Count} spawned={spawnedCount} spawnedSpecials={spawnedSpecialCount} spawnFailures={spawnFailures} totalVarQ={totalVariance:F3} specialVarQ={specialVariance:F3}");
+    }
+
+    private int GetQuadrant(int row, int col, int rows, int cols)
+    {
+        bool top = row < rows * 0.5f;
+        bool left = col < cols * 0.5f;
+        if (top && left) return 0;
+        if (top) return 1;
+        if (left) return 2;
+        return 3;
+    }
+
+    private float CalculateVariance(float[] values)
+    {
+        if (values == null || values.Length == 0)
+            return 0f;
+
+        float mean = 0f;
+        for (int i = 0; i < values.Length; i++)
+            mean += values[i];
+        mean /= values.Length;
+
+        float sum = 0f;
+        for (int i = 0; i < values.Length; i++)
+        {
+            float delta = values[i] - mean;
+            sum += delta * delta;
+        }
+
+        return sum / values.Length;
     }
 
     private BoardLayout PickLayout(System.Random rng)

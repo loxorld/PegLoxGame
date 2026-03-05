@@ -49,6 +49,21 @@ public class BoardConfig : ScriptableObject
     [Tooltip("Probabilidad global de que un peg sea 'especial' (en vez de normal/critical)")]
     [Range(0f, 1f)] public float specialChance = 0.10f;
 
+    [Header("Special Distribution")]
+    [Tooltip("Reintentos para encontrar un especial vlido antes de degradar a normal/critical")]
+    [Min(1)] public int specialTypeAssignmentRetries = 4;
+    [Tooltip("Distancia Manhattan mnima entre especiales (0 = sin restriccin)")]
+    [Min(0)] public int minSpecialManhattanDistance = 1;
+    [Tooltip("Distancia Eucldea mnima entre especiales en ndice de grilla (0 = sin restriccin)")]
+    [Min(0f)] public float minSpecialEuclideanDistance = 0f;
+    [Tooltip("Cupo mximo de especiales en banda superior (fraccin de celdas activas de esa banda)")]
+    [Range(0f, 1f)] public float topBandSpecialDensityCap = 0.60f;
+    [Tooltip("Cupo mximo de especiales en banda media (fraccin de celdas activas de esa banda)")]
+    [Range(0f, 1f)] public float middleBandSpecialDensityCap = 0.60f;
+    [Tooltip("Cupo mximo de especiales en banda inferior (fraccin de celdas activas de esa banda)")]
+    [Range(0f, 1f)] public float bottomBandSpecialDensityCap = 0.60f;
+
+
     public SpecialPegSpawn[] specialPegs;
 
     // ------------------------------------------

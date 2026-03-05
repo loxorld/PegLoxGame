@@ -47,6 +47,14 @@ public class BoardGenerationProfile : ScriptableObject
         [Range(0f, 1f)] public float criticalChance = 0.15f;
         [Range(0f, 1f)] public float specialChance = 0.10f;
 
+        [Header("Special Distribution")]
+        [Min(1)] public int specialTypeAssignmentRetries = 4;
+        [Min(0)] public int minSpecialManhattanDistance = 1;
+        [Min(0f)] public float minSpecialEuclideanDistance = 0f;
+        [Range(0f, 1f)] public float topBandSpecialDensityCap = 0.60f;
+        [Range(0f, 1f)] public float middleBandSpecialDensityCap = 0.60f;
+        [Range(0f, 1f)] public float bottomBandSpecialDensityCap = 0.60f;
+
         [Header("Special Peg Limits")]
         public SpecialLimit[] specialLimits;
 
