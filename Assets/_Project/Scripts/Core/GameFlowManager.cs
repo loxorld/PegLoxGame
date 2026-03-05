@@ -22,18 +22,24 @@ public class GameFlowManager : MonoBehaviour
 
     public static GameFlowManager Instance { get; private set; }
 
-    public GameState State { get; private set; } = GameState.Combat;
-    public event Action<GameState> OnStateChanged;
-    public MapNodeData SavedMapNode { get; private set; }
-    public int NodesVisited { get; private set; }
-    public int EncounterIndex { get; private set; }
-    public int EncounterInStageIndex { get; private set; }
-    public int CurrentStageIndex { get; private set; }
+    private readonly RunState runState = new RunState();
 
-    public bool HasSavedPlayerHP { get; private set; }
-    public int SavedPlayerHP { get; private set; }
-    public int Coins { get; private set; }
-    public int PlayerMaxHP { get; private set; }
+    public GameState State
+    {
+        get => runState.CurrentGameState;
+        private set => runState.CurrentGameState = value;
+    }
+    public event Action<GameState> OnStateChanged;
+    public MapNodeData SavedMapNode { get => runState.SavedMapNode; private set => runState.SavedMapNode = value; }
+    public int NodesVisited { get => runState.NodesVisited; private set => runState.NodesVisited = value; }
+    public int EncounterIndex { get => runState.EncounterIndex; private set => runState.EncounterIndex = value; }
+    public int EncounterInStageIndex { get => runState.EncounterInStageIndex; private set => runState.EncounterInStageIndex = value; }
+    public int CurrentStageIndex { get => runState.CurrentStageIndex; private set => runState.CurrentStageIndex = value; }
+
+    public bool HasSavedPlayerHP { get => runState.HasSavedPlayerHP; private set => runState.HasSavedPlayerHP = value; }
+    public int SavedPlayerHP { get => runState.SavedPlayerHP; private set => runState.SavedPlayerHP = value; }
+    public int Coins { get => runState.Coins; private set => runState.Coins = value; }
+    public int PlayerMaxHP { get => runState.PlayerMaxHP; private set => runState.PlayerMaxHP = value; }
 
     public bool HasBossEncounter => bossEncounterActive;
     public EnemyData BossEnemy => bossEnemy;
@@ -62,9 +68,9 @@ public class GameFlowManager : MonoBehaviour
     private bool pendingOrbApply;
     private bool pendingRelicApply;
     private GameState stateBeforePause = GameState.Combat;
-    private readonly Dictionary<string, List<ShopOfferRunData>> shopCatalogsById = new Dictionary<string, List<ShopOfferRunData>>();
-    private readonly HashSet<string> resolvedEventNodeIds = new HashSet<string>(StringComparer.Ordinal);
-    private readonly Dictionary<string, int> eventOptionCounters = new Dictionary<string, int>(StringComparer.Ordinal);
+    private Dictionary<string, List<ShopOfferRunData>> shopCatalogsById => runState.ShopCatalogsById;
+    private HashSet<string> resolvedEventNodeIds => runState.ResolvedEventNodeIds;
+    private Dictionary<string, int> eventOptionCounters => runState.EventOptionCounters;
     private readonly Dictionary<string, MapNodeData> mapNodesByPersistentId = new Dictionary<string, MapNodeData>(StringComparer.Ordinal);
     private readonly Dictionary<string, MapNodeData> mapNodesByLegacyName = new Dictionary<string, MapNodeData>(StringComparer.Ordinal);
 
@@ -74,6 +80,8 @@ public class GameFlowManager : MonoBehaviour
     [SerializeField] private RelicManager relicManager;
 
     private RunSaveService runSaveService;
+    private RunPersistenceService runPersistenceService;
+    private FlowSceneCoordinator flowSceneCoordinator;
 
     public void InjectDependencies(MapManager injectedMapManager, OrbManager injectedOrbManager, RelicManager injectedRelicManager)
     {
@@ -90,7 +98,22 @@ public class GameFlowManager : MonoBehaviour
     public void InjectRunSaveService(RunSaveService injectedRunSaveService)
     {
         if (injectedRunSaveService != null)
+        {
             runSaveService = injectedRunSaveService;
+            runPersistenceService = null;
+        }
+    }
+
+    public void InjectRunPersistenceService(RunPersistenceService injectedRunPersistenceService)
+    {
+        if (injectedRunPersistenceService != null)
+            runPersistenceService = injectedRunPersistenceService;
+    }
+
+    public void InjectFlowSceneCoordinator(FlowSceneCoordinator injectedFlowSceneCoordinator)
+    {
+        if (injectedFlowSceneCoordinator != null)
+            flowSceneCoordinator = injectedFlowSceneCoordinator;
     }
 
     private void Awake()
@@ -109,6 +132,8 @@ public class GameFlowManager : MonoBehaviour
         Coins = startingCoins;
 
         ResolveRunSaveService();
+        ResolveRunPersistenceService();
+        ResolveFlowSceneCoordinator();
         BuildMapNodeResolutionCache();
         LoadRun();
         SceneManager.sceneLoaded += OnSceneLoaded;
@@ -354,56 +379,28 @@ public class GameFlowManager : MonoBehaviour
 
     public void SaveRun()
     {
-        RunSaveData data = BuildRunSnapshot();
-        ResolveRunSaveService()?.Save(data);
+        OrbManager orbManagerInstance = ResolveOrbManager();
+        RelicManager relicManagerInstance = ResolveRelicManager();
+        ResolveRunPersistenceService().Save(
+            runState,
+            orbManagerInstance != null ? orbManagerInstance.SerializeOrbs() : null,
+            orbManagerInstance != null ? orbManagerInstance.GetCurrentOrbId() : null,
+            relicManagerInstance != null ? relicManagerInstance.SerializeRelics() : null);
     }
 
     public bool LoadRun()
     {
-        RunSaveService saveService = ResolveRunSaveService();
-        if (saveService == null)
+        RunPersistenceService persistenceService = ResolveRunPersistenceService();
+        if (persistenceService == null)
             return false;
 
-        if (!saveService.TryLoad(out RunSaveData data))
+        if (!persistenceService.TryLoad(out RunSaveData data))
             return false;
 
         StageLoadedRunSnapshot(data);
         return true;
     }
 
-    private RunSaveData BuildRunSnapshot()
-    {
-        RunSaveData data = new RunSaveData
-        {
-            SaveVersion = RunSaveData.CurrentVersion,
-            SavedMapNodeId = BuildPersistentMapNodeId(SavedMapNode),
-            EncounterIndex = EncounterIndex,
-            EncounterInStageIndex = EncounterInStageIndex,
-            CurrentStageIndex = CurrentStageIndex,
-            NodesVisited = NodesVisited,
-            Coins = Coins,
-            PlayerMaxHP = PlayerMaxHP,
-            SavedPlayerHP = SavedPlayerHP,
-            HasSavedPlayerHP = HasSavedPlayerHP,
-            GameState = (int)State
-        };
-
-        OrbManager orbManagerInstance = ResolveOrbManager();
-        if (orbManagerInstance != null)
-        {
-            data.Orbs = orbManagerInstance.SerializeOrbs();
-            data.CurrentOrbId = orbManagerInstance.GetCurrentOrbId();
-        }
-
-        RelicManager relicManagerInstance = ResolveRelicManager();
-        if (relicManagerInstance != null)
-            data.Relics = relicManagerInstance.SerializeRelics();
-        data.ShopCatalogs = SerializeShopCatalogs();
-        data.ResolvedEventNodeIds = new List<string>(resolvedEventNodeIds);
-        data.EventOptionCounters = SerializeEventOptionCounters();
-
-        return data;
-    }
 
     private void StageLoadedRunSnapshot(RunSaveData data)
     {
@@ -421,30 +418,13 @@ public class GameFlowManager : MonoBehaviour
 
     private static GameState NormalizeLoadedState(GameState loadedState)
     {
-        // Nunca restaurar una corrida directamente en estados que congelan el tiempo.
-        // Si se guardó estando en pausa o game over, retomamos en combate.
-        if (loadedState == GameState.Paused || loadedState == GameState.GameOver)
-            return GameState.Combat;
-
-        return loadedState;
+        return RunPersistenceService.NormalizeLoadedState(loadedState);
     }
 
     private void ApplyRunSnapshot(RunSaveData data)
     {
         pendingMapNodeId = data.SavedMapNodeId;
-        SavedMapNode = ResolveMapNodeById(pendingMapNodeId, data.IsLegacySave());
-        EncounterIndex = Mathf.Max(0, data.EncounterIndex);
-        EncounterInStageIndex = Mathf.Max(0, data.EncounterInStageIndex);
-        CurrentStageIndex = Mathf.Max(0, data.CurrentStageIndex);
-        NodesVisited = Mathf.Max(0, data.NodesVisited);
-        Coins = Mathf.Max(0, data.Coins);
-        PlayerMaxHP = Mathf.Max(1, data.PlayerMaxHP);
-        SavedPlayerHP = Mathf.Clamp(data.SavedPlayerHP, 0, PlayerMaxHP);
-        HasSavedPlayerHP = data.HasSavedPlayerHP;
-        DeserializeShopCatalogs(data.ShopCatalogs);
-        DeserializeResolvedEventNodes(data.ResolvedEventNodeIds);
-        DeserializeEventOptionCounters(data.EventOptionCounters);
-
+        ResolveRunPersistenceService().ApplyRunSnapshot(runState, data, ResolveMapNodeById);
         ValidateEncounterState("ApplyRunData");
     }
 
@@ -534,106 +514,13 @@ public class GameFlowManager : MonoBehaviour
 
         if (allowLegacyNameMigration && mapNodesByLegacyName.TryGetValue(mapNodeId, out MapNodeData nodeByLegacyName) && nodeByLegacyName != null)
         {
-            Debug.LogWarning($"[GameFlow] Migración save legacy: MapNodeData '{mapNodeId}' resuelto por name. Reguardar para persistir persistentId.");
+            Debug.LogWarning($"[GameFlow] MigraciÃ³n save legacy: MapNodeData '{mapNodeId}' resuelto por name. Reguardar para persistir persistentId.");
             return nodeByLegacyName;
         }
 
         return null;
     }
 
-    private List<RunSaveData.ShopCatalogSaveData> SerializeShopCatalogs()
-    {
-        var serialized = new List<RunSaveData.ShopCatalogSaveData>();
-        foreach (KeyValuePair<string, List<ShopOfferRunData>> entry in shopCatalogsById)
-        {
-            if (string.IsNullOrWhiteSpace(entry.Key) || entry.Value == null)
-                continue;
-
-            var catalogData = new RunSaveData.ShopCatalogSaveData { ShopId = entry.Key };
-            for (int i = 0; i < entry.Value.Count; i++)
-            {
-                ShopOfferRunData offer = entry.Value[i];
-                if (offer == null || string.IsNullOrWhiteSpace(offer.OfferId))
-                    continue;
-
-                catalogData.Offers.Add(new RunSaveData.ShopOfferSaveData
-                {
-                    OfferId = offer.OfferId,
-                    OfferType = (int)offer.OfferType,
-                    Cost = Mathf.Max(0, offer.Cost),
-                    PrimaryValue = offer.PrimaryValue,
-                    RemainingStock = Mathf.Max(0, offer.RemainingStock),
-                    Rarity = (int)offer.Rarity,
-                    RequiresMissingHp = offer.RequiresMissingHp,
-                    RequiresUpgradableOrb = offer.RequiresUpgradableOrb,
-                    RequiresAnyOrb = offer.RequiresAnyOrb
-                });
-            }
-
-            serialized.Add(catalogData);
-        }
-
-        return serialized;
-    }
-
-    private void DeserializeShopCatalogs(List<RunSaveData.ShopCatalogSaveData> serialized)
-    {
-        shopCatalogsById.Clear();
-        if (serialized == null)
-            return;
-
-        for (int i = 0; i < serialized.Count; i++)
-        {
-            RunSaveData.ShopCatalogSaveData catalogData = serialized[i];
-            if (catalogData == null || string.IsNullOrWhiteSpace(catalogData.ShopId))
-                continue;
-
-            var offers = new List<ShopOfferRunData>();
-            List<RunSaveData.ShopOfferSaveData> serializedOffers = catalogData.Offers;
-            if (serializedOffers != null)
-            {
-                for (int j = 0; j < serializedOffers.Count; j++)
-                {
-                    RunSaveData.ShopOfferSaveData offer = serializedOffers[j];
-                    if (offer == null || string.IsNullOrWhiteSpace(offer.OfferId))
-                        continue;
-
-                    offers.Add(new ShopOfferRunData
-                    {
-                        OfferId = offer.OfferId,
-                        OfferType = (ShopService.ShopOfferType)Mathf.Max(0, offer.OfferType),
-                        Cost = Mathf.Max(0, offer.Cost),
-                        PrimaryValue = offer.PrimaryValue,
-                        RemainingStock = Mathf.Max(0, offer.RemainingStock),
-                        Rarity = (ShopService.ShopOfferRarity)Mathf.Clamp(offer.Rarity, 0, (int)ShopService.ShopOfferRarity.Legendary),
-                        RequiresMissingHp = offer.RequiresMissingHp,
-                        RequiresUpgradableOrb = offer.RequiresUpgradableOrb,
-                        RequiresAnyOrb = offer.RequiresAnyOrb
-                    });
-                }
-            }
-
-            shopCatalogsById[catalogData.ShopId] = offers;
-        }
-    }
-
-    private List<RunSaveData.EventOptionCounterSaveData> SerializeEventOptionCounters()
-    {
-        var serialized = new List<RunSaveData.EventOptionCounterSaveData>(eventOptionCounters.Count);
-        foreach (KeyValuePair<string, int> entry in eventOptionCounters)
-        {
-            if (string.IsNullOrWhiteSpace(entry.Key))
-                continue;
-
-            serialized.Add(new RunSaveData.EventOptionCounterSaveData
-            {
-                CounterKey = entry.Key,
-                Count = Mathf.Max(0, entry.Value)
-            });
-        }
-
-        return serialized;
-    }
     private static List<ShopOfferRunData> CloneCatalog(List<ShopOfferRunData> source)
     {
         var clone = new List<ShopOfferRunData>(source.Count);
@@ -660,36 +547,6 @@ public class GameFlowManager : MonoBehaviour
         return clone;
     }
 
-    private void DeserializeResolvedEventNodes(List<string> serializedNodeIds)
-    {
-        resolvedEventNodeIds.Clear();
-        if (serializedNodeIds == null)
-            return;
-
-        for (int i = 0; i < serializedNodeIds.Count; i++)
-        {
-            string nodeId = serializedNodeIds[i];
-            if (!string.IsNullOrWhiteSpace(nodeId))
-                resolvedEventNodeIds.Add(nodeId);
-        }
-    }
-
-    private void DeserializeEventOptionCounters(List<RunSaveData.EventOptionCounterSaveData> serializedCounters)
-    {
-        eventOptionCounters.Clear();
-        if (serializedCounters == null)
-            return;
-
-        for (int i = 0; i < serializedCounters.Count; i++)
-        {
-            RunSaveData.EventOptionCounterSaveData counterData = serializedCounters[i];
-            if (counterData == null || string.IsNullOrWhiteSpace(counterData.CounterKey))
-                continue;
-
-            eventOptionCounters[counterData.CounterKey] = Mathf.Max(0, counterData.Count);
-        }
-    }
-
     private static string BuildEventOptionCounterKey(MapStage stage, MapNodeData node, string optionLabel, MapDomainService.EventResolutionOutcome appliedOutcome)
     {
         string stageId = stage != null && !string.IsNullOrWhiteSpace(stage.name) ? stage.name.Trim() : "unknown-stage";
@@ -712,7 +569,7 @@ public class GameFlowManager : MonoBehaviour
         nodeId = BuildPersistentMapNodeId(node);
         if (string.IsNullOrWhiteSpace(nodeId))
         {
-            Debug.LogWarning("[GameFlow] No se pudo generar un id estable para MapNodeData (persistentId/name vacío).");
+            Debug.LogWarning("[GameFlow] No se pudo generar un id estable para MapNodeData (persistentId/name vacÃ­o).");
             return false;
         }
 
@@ -721,13 +578,7 @@ public class GameFlowManager : MonoBehaviour
 
     private static string BuildPersistentMapNodeId(MapNodeData node)
     {
-        if (node == null)
-            return null;
-
-        if (!string.IsNullOrWhiteSpace(node.PersistentId))
-            return node.PersistentId.Trim();
-
-        return string.IsNullOrWhiteSpace(node.name) ? null : node.name.Trim();
+        return RunPersistenceService.BuildPersistentMapNodeId(node);
     }
 
     public void RestartCombatScene()
@@ -737,11 +588,7 @@ public class GameFlowManager : MonoBehaviour
 
     public void RestartRunFromMenu()
     {
-        ResetRunState();
-        ResetPersistentManagers();
-        SetState(GameState.Combat);
-        Time.timeScale = 1f;
-        SceneManager.LoadScene(SceneCatalog.Load().MapScene, LoadSceneMode.Single);
+        ResolveFlowSceneCoordinator().RestartRunFromMenu(ResetRunState, ResetPersistentManagers, SetState);
     }
 
     public void SetCurrentStageIndex(int stageIndex)
@@ -777,30 +624,12 @@ public class GameFlowManager : MonoBehaviour
 
     private void TryInitializeMapForCurrentState()
     {
-        if (State != GameState.MapNavigation)
-            return;
-
-        MapManager resolvedMapManager = ResolveMapManager();
-        if (resolvedMapManager != null)
-        {
-            resolvedMapManager.StartStageForCurrentRun();
-            return;
-        }
-
-        SceneCatalog catalog = SceneCatalog.Load();
-        string activeSceneName = SceneManager.GetActiveScene().name;
-        if (string.Equals(activeSceneName, catalog.MapScene, StringComparison.Ordinal))
-            Debug.LogError("[GameFlow] No se encontr MapManager en la escena de mapa.");
+        ResolveFlowSceneCoordinator().TryInitializeMapForCurrentState(State);
     }
 
     public bool ContinueRunFromMenu()
     {
-        if (SavedMapNode == null)
-            return false;
-
-        Time.timeScale = 1f;
-        SceneManager.LoadScene(SceneCatalog.Load().MapScene, LoadSceneMode.Single);
-        return true;
+        return ResolveFlowSceneCoordinator().ContinueRunFromMenu(SavedMapNode);
     }
 
     private void ResetPersistentManagers()
@@ -913,6 +742,41 @@ public class GameFlowManager : MonoBehaviour
         return runSaveService;
     }
 
+    private RunPersistenceService ResolveRunPersistenceService()
+    {
+        if (runPersistenceService != null)
+            return runPersistenceService;
+
+        RunSaveService saveService = ResolveRunSaveService();
+        if (saveService == null)
+            return null;
+
+        runPersistenceService = new RunPersistenceService(new RunSaveGateway(saveService));
+        return runPersistenceService;
+    }
+
+    private FlowSceneCoordinator ResolveFlowSceneCoordinator()
+    {
+        if (flowSceneCoordinator != null)
+            return flowSceneCoordinator;
+
+        flowSceneCoordinator = new FlowSceneCoordinator(
+            () =>
+            {
+                MapManager map = ResolveMapManager();
+                if (map == null)
+                    return false;
+
+                map.StartStageForCurrentRun();
+                return true;
+            },
+            () => SceneManager.GetActiveScene().name,
+            SceneManager.LoadScene,
+            SceneCatalog.Load,
+            value => Time.timeScale = value);
+        return flowSceneCoordinator;
+    }
+
     private static bool IsMigratedMapSceneActive()
     {
         SceneCatalog catalog = SceneCatalog.Load();
@@ -951,7 +815,7 @@ public class GameFlowManager : MonoBehaviour
 
     public void Pause()
     {
-        // No pausamos si ya está game over o en rewards
+        // No pausamos si ya estÃ¡ game over o en rewards
         if (State == GameState.GameOver) return;
         if (State == GameState.RewardChoice) return;
         if (State == GameState.Paused) return;
