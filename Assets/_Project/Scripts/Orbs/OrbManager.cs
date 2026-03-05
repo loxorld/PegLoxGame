@@ -14,6 +14,8 @@ public class OrbManager : MonoBehaviour
     private readonly List<OrbInstance> ownedOrbInstances = new List<OrbInstance>();
     private OrbInstance currentOrbInstance;
     private OrbData defaultOrb;
+    private readonly Dictionary<string, OrbData> orbByPersistentId = new Dictionary<string, OrbData>();
+    private readonly Dictionary<string, OrbData> orbByLegacyName = new Dictionary<string, OrbData>();
 
     public OrbInstance CurrentOrb => currentOrbInstance;
     public IReadOnlyList<OrbInstance> OwnedOrbInstances => ownedOrbInstances;
@@ -30,6 +32,7 @@ public class OrbManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
 
         defaultOrb = currentOrb;
+        BuildOrbResolutionCache();
 
         // Si currentOrb está seteado, aseguro que exista en ownedOrbs
         if (currentOrb != null && !ownedOrbs.Contains(currentOrb))
@@ -161,7 +164,7 @@ public class OrbManager : MonoBehaviour
 
             result.Add(new RunSaveData.OrbSaveData
             {
-                OrbId = instance.BaseData.name,
+                OrbId = BuildPersistentOrbId(instance.BaseData),
                 Level = instance.Level
             });
         }
@@ -172,10 +175,10 @@ public class OrbManager : MonoBehaviour
     public string GetCurrentOrbId()
     {
         if (currentOrbInstance != null && currentOrbInstance.BaseData != null)
-            return currentOrbInstance.BaseData.name;
+            return BuildPersistentOrbId(currentOrbInstance.BaseData);
 
         if (currentOrb != null)
-            return currentOrb.name;
+            return BuildPersistentOrbId(currentOrb);
 
         return null;
     }
@@ -271,27 +274,63 @@ public class OrbManager : MonoBehaviour
         for (int i = 0; i < ownedOrbInstances.Count; i++)
         {
             OrbInstance instance = ownedOrbInstances[i];
-            if (instance != null && instance.BaseData != null && instance.BaseData.name == orbId)
+            if (instance == null || instance.BaseData == null)
+                continue;
+
+            if (string.Equals(BuildPersistentOrbId(instance.BaseData), orbId, System.StringComparison.Ordinal))
                 return instance;
         }
 
         return null;
     }
 
-    private static OrbData ResolveOrbById(string orbId)
+    private void BuildOrbResolutionCache()
+    {
+        orbByPersistentId.Clear();
+        orbByLegacyName.Clear();
+
+        OrbData[] candidates = Resources.LoadAll<OrbData>(string.Empty);
+        for (int i = 0; i < candidates.Length; i++)
+        {
+            OrbData orb = candidates[i];
+            if (orb == null)
+                continue;
+
+            string persistentId = BuildPersistentOrbId(orb);
+            if (!string.IsNullOrWhiteSpace(persistentId) && !orbByPersistentId.ContainsKey(persistentId))
+                orbByPersistentId[persistentId] = orb;
+
+            string legacyName = string.IsNullOrWhiteSpace(orb.name) ? null : orb.name.Trim();
+            if (!string.IsNullOrWhiteSpace(legacyName) && !orbByLegacyName.ContainsKey(legacyName))
+                orbByLegacyName[legacyName] = orb;
+        }
+    }
+
+    private OrbData ResolveOrbById(string orbId)
     {
         if (string.IsNullOrWhiteSpace(orbId))
             return null;
 
-        OrbData[] candidates = Resources.FindObjectsOfTypeAll<OrbData>();
-        for (int i = 0; i < candidates.Length; i++)
+        if (orbByPersistentId.TryGetValue(orbId, out OrbData orbById) && orbById != null)
+            return orbById;
+
+        if (orbByLegacyName.TryGetValue(orbId, out OrbData orbByName) && orbByName != null)
         {
-            OrbData orb = candidates[i];
-            if (orb != null && orb.name == orbId)
-                return orb;
+            Debug.LogWarning($"[OrbManager] Migración save legacy: OrbData '{orbId}' resuelto por name. Reguardar para persistir persistentId.");
+            return orbByName;
         }
 
         return null;
     }
-}
 
+    private static string BuildPersistentOrbId(OrbData orb)
+    {
+        if (orb == null)
+            return null;
+
+        if (!string.IsNullOrWhiteSpace(orb.PersistentId))
+            return orb.PersistentId.Trim();
+
+        return string.IsNullOrWhiteSpace(orb.name) ? null : orb.name.Trim();
+    }
+}

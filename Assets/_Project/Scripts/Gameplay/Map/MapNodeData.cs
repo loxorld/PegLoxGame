@@ -3,6 +3,9 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "MapNode", menuName = "Map/Node")]
 public class MapNodeData : ScriptableObject
 {
+    [Header("Persistence")]
+    [SerializeField] private string persistentId;
+
     public NodeType nodeType;
     public string title;
     [TextArea] public string description;
@@ -19,4 +22,6 @@ public class MapNodeData : ScriptableObject
     [Min(1f)] public float bossDamageMultiplier = 1.5f;
     [Min(0)] public int bossHpBonus = 0;
     [Min(0)] public int bossDamageBonus = 0;
+
+    public string PersistentId => persistentId;
 }

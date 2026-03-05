@@ -65,6 +65,8 @@ public class GameFlowManager : MonoBehaviour
     private readonly Dictionary<string, List<ShopOfferRunData>> shopCatalogsById = new Dictionary<string, List<ShopOfferRunData>>();
     private readonly HashSet<string> resolvedEventNodeIds = new HashSet<string>(StringComparer.Ordinal);
     private readonly Dictionary<string, int> eventOptionCounters = new Dictionary<string, int>(StringComparer.Ordinal);
+    private readonly Dictionary<string, MapNodeData> mapNodesByPersistentId = new Dictionary<string, MapNodeData>(StringComparer.Ordinal);
+    private readonly Dictionary<string, MapNodeData> mapNodesByLegacyName = new Dictionary<string, MapNodeData>(StringComparer.Ordinal);
 
     [Header("Scene References (DI)")]
     [SerializeField] private MapManager mapManager;
@@ -107,6 +109,7 @@ public class GameFlowManager : MonoBehaviour
         Coins = startingCoins;
 
         ResolveRunSaveService();
+        BuildMapNodeResolutionCache();
         LoadRun();
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
@@ -352,7 +355,8 @@ public class GameFlowManager : MonoBehaviour
     {
         RunSaveData data = new RunSaveData
         {
-            SavedMapNodeId = SavedMapNode != null ? SavedMapNode.name : null,
+            SaveVersion = RunSaveData.CurrentVersion,
+            SavedMapNodeId = BuildPersistentMapNodeId(SavedMapNode),
             EncounterIndex = EncounterIndex,
             EncounterInStageIndex = EncounterInStageIndex,
             CurrentStageIndex = CurrentStageIndex,
@@ -408,7 +412,7 @@ public class GameFlowManager : MonoBehaviour
     private void ApplyRunSnapshot(RunSaveData data)
     {
         pendingMapNodeId = data.SavedMapNodeId;
-        SavedMapNode = ResolveMapNodeById(pendingMapNodeId);
+        SavedMapNode = ResolveMapNodeById(pendingMapNodeId, data.IsLegacySave());
         EncounterIndex = Mathf.Max(0, data.EncounterIndex);
         EncounterInStageIndex = Mathf.Max(0, data.EncounterInStageIndex);
         CurrentStageIndex = Mathf.Max(0, data.CurrentStageIndex);
@@ -452,8 +456,10 @@ public class GameFlowManager : MonoBehaviour
         if (!hasLoadedRun)
             return;
 
+        BuildMapNodeResolutionCache();
+
         if (SavedMapNode == null && !string.IsNullOrWhiteSpace(pendingMapNodeId))
-            SavedMapNode = ResolveMapNodeById(pendingMapNodeId);
+            SavedMapNode = ResolveMapNodeById(pendingMapNodeId, pendingRunData != null && pendingRunData.IsLegacySave());
 
         if (pendingStateApply)
             StartCoroutine(ApplyLoadedStateNextFrame());
@@ -466,25 +472,50 @@ public class GameFlowManager : MonoBehaviour
     private System.Collections.IEnumerator ApplyLoadedStateNextFrame()
     {
         yield return null;
+        BuildMapNodeResolutionCache();
+
         if (SavedMapNode == null && !string.IsNullOrWhiteSpace(pendingMapNodeId))
-            SavedMapNode = ResolveMapNodeById(pendingMapNodeId);
+            SavedMapNode = ResolveMapNodeById(pendingMapNodeId, pendingRunData != null && pendingRunData.IsLegacySave());
         ApplyManagersFromRunData();
 
         pendingStateApply = false;
         SetState(pendingLoadedState);
     }
 
-    private static MapNodeData ResolveMapNodeById(string mapNodeId)
+    private void BuildMapNodeResolutionCache()
+    {
+        mapNodesByPersistentId.Clear();
+        mapNodesByLegacyName.Clear();
+
+        MapNodeData[] candidates = Resources.LoadAll<MapNodeData>(string.Empty);
+        for (int i = 0; i < candidates.Length; i++)
+        {
+            MapNodeData node = candidates[i];
+            if (node == null)
+                continue;
+
+            string persistentId = BuildPersistentMapNodeId(node);
+            if (!string.IsNullOrWhiteSpace(persistentId) && !mapNodesByPersistentId.ContainsKey(persistentId))
+                mapNodesByPersistentId[persistentId] = node;
+
+            string legacyName = string.IsNullOrWhiteSpace(node.name) ? null : node.name.Trim();
+            if (!string.IsNullOrWhiteSpace(legacyName) && !mapNodesByLegacyName.ContainsKey(legacyName))
+                mapNodesByLegacyName[legacyName] = node;
+        }
+    }
+
+    private MapNodeData ResolveMapNodeById(string mapNodeId, bool allowLegacyNameMigration)
     {
         if (string.IsNullOrWhiteSpace(mapNodeId))
             return null;
 
-        MapNodeData[] candidates = Resources.FindObjectsOfTypeAll<MapNodeData>();
-        for (int i = 0; i < candidates.Length; i++)
+        if (mapNodesByPersistentId.TryGetValue(mapNodeId, out MapNodeData nodeByPersistentId) && nodeByPersistentId != null)
+            return nodeByPersistentId;
+
+        if (allowLegacyNameMigration && mapNodesByLegacyName.TryGetValue(mapNodeId, out MapNodeData nodeByLegacyName) && nodeByLegacyName != null)
         {
-            MapNodeData node = candidates[i];
-            if (node != null && node.name == mapNodeId)
-                return node;
+            Debug.LogWarning($"[GameFlow] Migración save legacy: MapNodeData '{mapNodeId}' resuelto por name. Reguardar para persistir persistentId.");
+            return nodeByLegacyName;
         }
 
         return null;
@@ -658,20 +689,26 @@ public class GameFlowManager : MonoBehaviour
 
     private static bool TryBuildMapNodeId(MapNodeData node, out string nodeId)
     {
-        nodeId = null;
-        if (node == null)
-            return false;
-
-        nodeId = string.IsNullOrWhiteSpace(node.name) ? null : node.name.Trim();
+        nodeId = BuildPersistentMapNodeId(node);
         if (string.IsNullOrWhiteSpace(nodeId))
         {
-            Debug.LogWarning("[GameFlow] No se pudo generar un id estable para MapNodeData (name vaco).");
+            Debug.LogWarning("[GameFlow] No se pudo generar un id estable para MapNodeData (persistentId/name vacío).");
             return false;
         }
 
         return true;
     }
 
+    private static string BuildPersistentMapNodeId(MapNodeData node)
+    {
+        if (node == null)
+            return null;
+
+        if (!string.IsNullOrWhiteSpace(node.PersistentId))
+            return node.PersistentId.Trim();
+
+        return string.IsNullOrWhiteSpace(node.name) ? null : node.name.Trim();
+    }
 
     public void RestartCombatScene()
     {

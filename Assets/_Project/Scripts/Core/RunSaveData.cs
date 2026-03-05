@@ -4,6 +4,9 @@ using System.Collections.Generic;
 [Serializable]
 public class RunSaveData
 {
+    public const int LegacyVersion = 1;
+    public const int CurrentVersion = 2;
+
     [Serializable]
     public class OrbSaveData
     {
@@ -39,6 +42,7 @@ public class RunSaveData
         public int Count;
     }
 
+    public int SaveVersion = CurrentVersion;
     public string SavedMapNodeId;
     public int EncounterIndex;
     public int EncounterInStageIndex;
@@ -55,4 +59,9 @@ public class RunSaveData
     public List<ShopCatalogSaveData> ShopCatalogs = new List<ShopCatalogSaveData>();
     public List<string> ResolvedEventNodeIds = new List<string>();
     public List<EventOptionCounterSaveData> EventOptionCounters = new List<EventOptionCounterSaveData>();
+
+    public bool IsLegacySave()
+    {
+        return SaveVersion <= 0 || SaveVersion == LegacyVersion;
+    }
 }

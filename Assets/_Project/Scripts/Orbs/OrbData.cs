@@ -4,6 +4,9 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "PeglinLike/Orb Data", fileName = "OrbData")]
 public class OrbData : ScriptableObject
 {
+    [Header("Persistence")]
+    [SerializeField] private string persistentId;
+
     [Header("UI")]
     public string orbName = "Basic Orb";
 
@@ -11,7 +14,7 @@ public class OrbData : ScriptableObject
     public Sprite icon;
 
     [TextArea(2, 4)]
-    [Tooltip("Descripción corta para UI.")]
+    [Tooltip("Descripcin corta para UI.")]
     public string description;
 
     [Header("Damage")]
@@ -29,4 +32,6 @@ public class OrbData : ScriptableObject
 
     [Header("Orb Effects (optional)")]
     public List<ShotEffectBase> orbEffects = new List<ShotEffectBase>();
+
+    public string PersistentId => persistentId;
 }
