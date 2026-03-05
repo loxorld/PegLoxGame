@@ -331,6 +331,26 @@ public class GameFlowManager : MonoBehaviour
         return false;
     }
 
+    public bool TryRestoreShopOffer(string shopId, string offerId)
+    {
+        if (string.IsNullOrWhiteSpace(shopId) || string.IsNullOrWhiteSpace(offerId))
+            return false;
+
+        if (!shopCatalogsById.TryGetValue(shopId, out List<ShopOfferRunData> catalog) || catalog == null)
+            return false;
+
+        for (int i = 0; i < catalog.Count; i++)
+        {
+            ShopOfferRunData offer = catalog[i];
+            if (offer == null || !string.Equals(offer.OfferId, offerId, StringComparison.Ordinal))
+                continue;
+
+            offer.RemainingStock++;
+            return true;
+        }
+
+        return false;
+    }
 
     public void SaveRun()
     {

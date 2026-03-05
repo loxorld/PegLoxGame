@@ -10,6 +10,8 @@ public sealed class ShopDomainService
         public string Message;
     }
 
+    internal Func<ShopService.ShopOfferData, bool> SimulateIntermediateFailureForTests;
+
     public List<ShopService.ShopOfferData> GenerateOffers(
         ShopConfig config,
         RunBalanceConfig balance,
@@ -77,6 +79,35 @@ public sealed class ShopDomainService
 
     public bool IsOfferEnabled(ShopService.PlayerShopState state, ShopService.ShopOfferData offer, out string reason)
     {
+        return IsOfferEnabled(state, offer, includeStockValidation: true, out reason);
+    }
+
+    public PurchaseResult TryPurchaseAtomic(GameFlowManager flow, OrbManager orbManager, string shopId, ShopService.ShopOfferData offer)
+    {
+        if (flow == null)
+            return new PurchaseResult { Success = false, Message = "No se encontró GameFlowManager en la escena." };
+
+        if (offer == null)
+            return new PurchaseResult { Success = false, Message = "Oferta inválida." };
+
+        if (!flow.TryConsumeShopOffer(shopId, offer.OfferId))
+            return new PurchaseResult { Success = false, Message = "Sin stock para esta oferta." };
+
+        PlayerPurchaseSnapshot snapshot = PlayerPurchaseSnapshot.Capture(flow);
+        PurchaseResult result = ExecutePurchase(flow, orbManager, offer);
+        if (result.Success)
+        {
+            flow.SaveRun();
+            return result;
+        }
+
+        snapshot.Rollback(flow);
+        flow.TryRestoreShopOffer(shopId, offer.OfferId);
+        return result;
+    }
+
+    private bool IsOfferEnabled(ShopService.PlayerShopState state, ShopService.ShopOfferData offer, bool includeStockValidation, out string reason)
+    {
         reason = null;
         if (state == null || offer == null)
         {
@@ -84,7 +115,7 @@ public sealed class ShopDomainService
             return false;
         }
 
-        if (offer.Stock <= 0)
+        if (includeStockValidation && offer.Stock <= 0)
         {
             reason = "Sin stock.";
             return false;
@@ -117,25 +148,47 @@ public sealed class ShopDomainService
         return true;
     }
 
-    public PurchaseResult ExecutePurchase(GameFlowManager flow, OrbManager orbManager, ShopService.ShopOfferData offer)
+    private PurchaseResult ExecutePurchase(GameFlowManager flow, OrbManager orbManager, ShopService.ShopOfferData offer)
     {
-        if (offer == null)
-            return new PurchaseResult { Success = false, Message = "Oferta inválida." };
+        ShopService.PlayerShopState state = BuildPlayerState(flow, orbManager);
+        if (!IsOfferEnabled(state, offer, includeStockValidation: false, out string reason))
+            return new PurchaseResult { Success = false, Message = reason };
 
         switch (offer.Type)
         {
             case ShopService.ShopOfferType.Heal:
-                return RunResult(ShopService.TryHeal(flow, offer.Cost, offer.PrimaryValue, out string heal), heal);
+                return RunResult(TryHeal(flow, offer.Cost, offer.PrimaryValue, offer, out string heal), heal);
             case ShopService.ShopOfferType.OrbUpgrade:
             case ShopService.ShopOfferType.OrbUpgradeDiscount:
-                return RunResult(ShopService.TryUpgradeOrb(flow, orbManager, offer.Cost, out string upgrade), upgrade);
+                return RunResult(TryUpgradeOrb(flow, orbManager, offer.Cost, offer, out string upgrade), upgrade);
             case ShopService.ShopOfferType.RecoveryPack:
-                return RunResult(TryRecoveryPack(flow, offer.Cost, offer.PrimaryValue, out string pack), pack);
+                return RunResult(TryRecoveryPack(flow, offer.Cost, offer.PrimaryValue, offer, out string pack), pack);
             case ShopService.ShopOfferType.VitalityBoost:
-                return RunResult(TryVitalityBoost(flow, offer.Cost, offer.PrimaryValue, out string vitality), vitality);
+                return RunResult(TryVitalityBoost(flow, offer.Cost, offer.PrimaryValue, offer, out string vitality), vitality);
             default:
                 return new PurchaseResult { Success = false, Message = "Oferta no soportada." };
         }
+    }
+
+    private ShopService.PlayerShopState BuildPlayerState(GameFlowManager flow, OrbManager orbManager)
+    {
+        IReadOnlyList<OrbInstance> ownedOrbs = orbManager != null ? orbManager.OwnedOrbInstances : null;
+        int orbCount = ownedOrbs != null ? ownedOrbs.Count : 0;
+        int upgradable = GetUpgradableOrbs(ownedOrbs).Count;
+        bool missingHp = flow != null && flow.HasSavedPlayerHP && flow.SavedPlayerHP < flow.PlayerMaxHP;
+
+        return new ShopService.PlayerShopState
+        {
+            Coins = flow != null ? flow.Coins : 0,
+            OrbCount = orbCount,
+            UpgradableOrbCount = upgradable,
+            HasMissingHp = missingHp
+        };
+    }
+
+    private bool ShouldFailIntermediateForTests(ShopService.ShopOfferData offer)
+    {
+        return SimulateIntermediateFailureForTests != null && SimulateIntermediateFailureForTests(offer);
     }
 
     private static PurchaseResult RunResult(bool success, string message)
@@ -236,18 +289,76 @@ public sealed class ShopDomainService
         return filtered[UnityEngine.Random.Range(0, filtered.Count)];
     }
 
-    private static bool TryRecoveryPack(GameFlowManager flow, int cost, int healAmount, out string message)
+    private bool TryHeal(GameFlowManager flow, int healCost, int healAmount, ShopService.ShopOfferData offer, out string message)
     {
         message = null;
-        if (flow == null)
+        if (!flow.SpendCoins(healCost))
         {
-            message = "No se encontró GameFlowManager en la escena.";
+            message = "No alcanzan las monedas para curar.";
             return false;
         }
 
+        if (ShouldFailIntermediateForTests(offer))
+        {
+            message = "Fallo intermedio en la compra.";
+            return false;
+        }
+
+        flow.ModifySavedHP(healAmount);
+        message = $"Te curaste +{healAmount} HP.";
+        return true;
+    }
+
+    private bool TryUpgradeOrb(GameFlowManager flow, OrbManager orbManager, int upgradeCost, ShopService.ShopOfferData offer, out string message)
+    {
+        message = null;
+        IReadOnlyList<OrbInstance> ownedOrbs = orbManager != null ? orbManager.OwnedOrbInstances : null;
+        if (ownedOrbs == null || ownedOrbs.Count == 0)
+        {
+            message = "No hay orbes para mejorar.";
+            return false;
+        }
+
+        List<OrbInstance> upgradableOrbs = GetUpgradableOrbs(ownedOrbs);
+        if (upgradableOrbs.Count == 0)
+        {
+            message = "Todos los orbes ya están al máximo.";
+            return false;
+        }
+
+        if (!flow.SpendCoins(upgradeCost))
+        {
+            message = "No alcanzan las monedas para mejorar un orbe.";
+            return false;
+        }
+
+        if (ShouldFailIntermediateForTests(offer))
+        {
+            message = "Fallo intermedio en la compra.";
+            return false;
+        }
+
+        OrbInstance chosenOrb = upgradableOrbs[UnityEngine.Random.Range(0, upgradableOrbs.Count)];
+        int prev = chosenOrb.Level;
+        chosenOrb.LevelUp();
+        message = chosenOrb.Level > prev
+            ? $"Mejoraste {chosenOrb.OrbName} a nivel {chosenOrb.Level}."
+            : $"{chosenOrb.OrbName} ya está al máximo.";
+        return true;
+    }
+
+    private bool TryRecoveryPack(GameFlowManager flow, int cost, int healAmount, ShopService.ShopOfferData offer, out string message)
+    {
+        message = null;
         if (!flow.SpendCoins(cost))
         {
             message = "No alcanzan las monedas para esta oferta.";
+            return false;
+        }
+
+        if (ShouldFailIntermediateForTests(offer))
+        {
+            message = "Fallo intermedio en la compra.";
             return false;
         }
 
@@ -259,18 +370,18 @@ public sealed class ShopDomainService
         return true;
     }
 
-    private static bool TryVitalityBoost(GameFlowManager flow, int cost, int hpBonus, out string message)
+    private bool TryVitalityBoost(GameFlowManager flow, int cost, int hpBonus, ShopService.ShopOfferData offer, out string message)
     {
         message = null;
-        if (flow == null)
-        {
-            message = "No se encontró GameFlowManager en la escena.";
-            return false;
-        }
-
         if (!flow.SpendCoins(cost))
         {
             message = "No alcanzan las monedas para potenciarte.";
+            return false;
+        }
+
+        if (ShouldFailIntermediateForTests(offer))
+        {
+            message = "Fallo intermedio en la compra.";
             return false;
         }
 
@@ -279,6 +390,60 @@ public sealed class ShopDomainService
         flow.ModifySavedHP(Mathf.Max(1, hpBonus));
         message = $"Tu vida máxima sube +{hpBonus}.";
         return true;
+    }
+
+    private static List<OrbInstance> GetUpgradableOrbs(IReadOnlyList<OrbInstance> ownedOrbs)
+    {
+        var upgradableOrbs = new List<OrbInstance>();
+        if (ownedOrbs == null)
+            return upgradableOrbs;
+
+        for (int i = 0; i < ownedOrbs.Count; i++)
+        {
+            OrbInstance orb = ownedOrbs[i];
+            if (orb != null && orb.CanLevelUp)
+                upgradableOrbs.Add(orb);
+        }
+
+        return upgradableOrbs;
+    }
+
+    private sealed class PlayerPurchaseSnapshot
+    {
+        private readonly int coins;
+        private readonly int savedHp;
+        private readonly bool hasSavedHp;
+        private readonly int maxHp;
+
+        private PlayerPurchaseSnapshot(GameFlowManager flow)
+        {
+            coins = flow.Coins;
+            savedHp = flow.SavedPlayerHP;
+            hasSavedHp = flow.HasSavedPlayerHP;
+            maxHp = flow.PlayerMaxHP;
+        }
+
+        public static PlayerPurchaseSnapshot Capture(GameFlowManager flow)
+        {
+            return new PlayerPurchaseSnapshot(flow);
+        }
+
+        public void Rollback(GameFlowManager flow)
+        {
+            int deltaCoins = coins - flow.Coins;
+            if (deltaCoins > 0)
+                flow.AddCoins(deltaCoins);
+            else if (deltaCoins < 0)
+                flow.SpendCoins(-deltaCoins);
+
+            flow.SavePlayerMaxHP(maxHp);
+            if (hasSavedHp)
+            {
+                int hpDelta = savedHp - flow.SavedPlayerHP;
+                if (hpDelta != 0)
+                    flow.ModifySavedHP(hpDelta);
+            }
+        }
     }
 
     private static List<ShopService.ShopOfferData> GenerateLegacyOffers(

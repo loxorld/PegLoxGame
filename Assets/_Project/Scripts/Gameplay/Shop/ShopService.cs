@@ -134,29 +134,9 @@ public class ShopService
 
     public bool TryPurchaseOffer(GameFlowManager flow, OrbManager orbManager, string shopId, ShopOfferData offer, out string message)
     {
-        PlayerShopState currentState = BuildPlayerState(flow, orbManager);
-        if (!domainService.IsOfferEnabled(currentState, offer, out string reason))
-        {
-            message = reason;
-            return false;
-        }
-
-        ShopDomainService.PurchaseResult result = domainService.ExecutePurchase(flow, orbManager, offer);
-        if (!result.Success)
-        {
-            message = result.Message;
-            return false;
-        }
-
-        if (!flow.TryConsumeShopOffer(shopId, offer.OfferId))
-        {
-            message = "Sin stock para esta oferta.";
-            return false;
-        }
-
-        flow.SaveRun();
+        ShopDomainService.PurchaseResult result = domainService.TryPurchaseAtomic(flow, orbManager, shopId, offer);
         message = result.Message;
-        return true;
+        return result.Success;
     }
 
     private static int ResolveDefaultPrimaryValue(ShopOfferType type, int fallbackHealAmount)
@@ -172,64 +152,6 @@ public class ShopService
             default:
                 return 1;
         }
-    }
-
-    public static bool TryHeal(GameFlowManager flow, int healCost, int healAmount, out string message)
-    {
-        message = null;
-        if (flow == null)
-        {
-            message = "No se encontró GameFlowManager en la escena.";
-            return false;
-        }
-
-        if (!flow.SpendCoins(healCost))
-        {
-            message = "No alcanzan las monedas para curar.";
-            return false;
-        }
-
-        flow.ModifySavedHP(healAmount);
-        message = $"Te curaste +{healAmount} HP.";
-        return true;
-    }
-
-    public static bool TryUpgradeOrb(GameFlowManager flow, OrbManager orbManager, int upgradeCost, out string message)
-    {
-        message = null;
-        if (flow == null)
-        {
-            message = "No se encontró GameFlowManager en la escena.";
-            return false;
-        }
-
-        IReadOnlyList<OrbInstance> ownedOrbs = orbManager != null ? orbManager.OwnedOrbInstances : null;
-        if (ownedOrbs == null || ownedOrbs.Count == 0)
-        {
-            message = "No hay orbes para mejorar.";
-            return false;
-        }
-
-        List<OrbInstance> upgradableOrbs = GetUpgradableOrbs(ownedOrbs);
-        if (upgradableOrbs.Count == 0)
-        {
-            message = "Todos los orbes ya están al máximo.";
-            return false;
-        }
-
-        if (!flow.SpendCoins(upgradeCost))
-        {
-            message = "No alcanzan las monedas para mejorar un orbe.";
-            return false;
-        }
-
-        OrbInstance chosenOrb = upgradableOrbs[UnityEngine.Random.Range(0, upgradableOrbs.Count)];
-        int prev = chosenOrb.Level;
-        chosenOrb.LevelUp();
-        message = chosenOrb.Level > prev
-            ? $"Mejoraste {chosenOrb.OrbName} a nivel {chosenOrb.Level}."
-            : $"{chosenOrb.OrbName} ya está al máximo.";
-        return true;
     }
 
     private static List<OrbInstance> GetUpgradableOrbs(IReadOnlyList<OrbInstance> ownedOrbs)
