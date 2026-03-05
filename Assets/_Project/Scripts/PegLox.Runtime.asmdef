@@ -1,7 +1,9 @@
 {
   "name": "PegLox.Runtime",
   "rootNamespace": "PegLox",
-  "references": [],
+  "references": [
+    "Unity.TextMeshPro"
+  ],
   "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,
