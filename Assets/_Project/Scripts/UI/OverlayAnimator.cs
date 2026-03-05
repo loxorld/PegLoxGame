@@ -1,72 +1,110 @@
-﻿using System.Collections;
-using UnityEngine;
+﻿using UnityEngine;
+using DG.Tweening;
 
+[RequireComponent(typeof(CanvasGroup))]
 public class OverlayAnimator : MonoBehaviour
 {
-    [SerializeField] private CanvasGroup canvasGroup;
-    [SerializeField, Min(0f)] private float fadeDuration = 0.15f;
+    [Header("References")]
+    [SerializeField] private RectTransform card;
 
-    private Coroutine fadeRoutine;
+    [Header("Timings")]
+    [SerializeField] private float fadeIn = 0.18f;
+    [SerializeField] private float fadeOut = 0.12f;
+    [SerializeField] private float popDuration = 0.20f;
+
+    [Header("Pop")]
+    [SerializeField] private float popFromScale = 0.96f;
+
+    private CanvasGroup cg;
+    private Tween tween;
 
     private void Awake()
     {
-        if (canvasGroup == null)
-            canvasGroup = GetComponent<CanvasGroup>();
+        Initialize();
+    }
+
+    private void OnEnable()
+    {
+        Initialize();
+    }
+
+    private void Initialize()
+    {
+        if (cg != null) return;
+        cg = GetComponent<CanvasGroup>();
+        if (cg == null) return;
+
+        cg.alpha = 0f;
+        cg.interactable = false;
+        cg.blocksRaycasts = false;
+
+        if (card != null)
+            card.localScale = Vector3.one;
+    }
+
+    private void OnDisable()
+    {
+        tween?.Kill(false);
+        tween = null;
+    }
+
+    private void OnDestroy()
+    {
+        tween?.Kill(false);
+        tween = null;
     }
 
     public void Show()
     {
-        if (!gameObject.activeSelf)
-            gameObject.SetActive(true);
+        Initialize();
+        if (cg == null) return;
 
-        StartFade(targetAlpha: 1f, disableOnComplete: false);
+        tween?.Kill();
+        gameObject.SetActive(true);
+
+        cg.blocksRaycasts = true;
+        cg.interactable = true;
+
+        Sequence s = DOTween.Sequence();
+        s.SetUpdate(true);
+        s.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
+        cg.alpha = 0f;
+
+        s.Join(cg.DOFade(1f, fadeIn));
+
+        if (card != null)
+        {
+            card.localScale = Vector3.one * popFromScale;
+            s.Join(card.DOScale(1f, popDuration).SetEase(Ease.OutBack));
+        }
+
+        tween = s;
     }
 
     public void Hide()
     {
-        StartFade(targetAlpha: 0f, disableOnComplete: true);
-    }
+        Initialize();
+        if (cg == null) return;
 
-    private void StartFade(float targetAlpha, bool disableOnComplete)
-    {
-        if (fadeRoutine != null)
-            StopCoroutine(fadeRoutine);
+        tween?.Kill();
 
-        if (canvasGroup == null)
+        cg.interactable = false;
+        cg.blocksRaycasts = false;
+
+        Sequence s = DOTween.Sequence();
+        s.SetUpdate(true);
+        s.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
+        s.Join(cg.DOFade(0f, fadeOut));
+
+        if (card != null)
+            s.Join(card.DOScale(popFromScale, fadeOut).SetEase(Ease.InOutSine));
+
+        s.OnComplete(() =>
         {
-            if (disableOnComplete)
-                gameObject.SetActive(false);
-            return;
-        }
-
-        fadeRoutine = StartCoroutine(FadeRoutine(targetAlpha, disableOnComplete));
-    }
-
-    private IEnumerator FadeRoutine(float targetAlpha, bool disableOnComplete)
-    {
-        float startAlpha = canvasGroup.alpha;
-
-        if (fadeDuration <= 0f)
-        {
-            canvasGroup.alpha = targetAlpha;
-        }
-        else
-        {
-            float elapsed = 0f;
-            while (elapsed < fadeDuration)
-            {
-                elapsed += Time.unscaledDeltaTime;
-                float t = Mathf.Clamp01(elapsed / fadeDuration);
-                canvasGroup.alpha = Mathf.Lerp(startAlpha, targetAlpha, t);
-                yield return null;
-            }
-
-            canvasGroup.alpha = targetAlpha;
-        }
-
-        if (disableOnComplete && Mathf.Approximately(targetAlpha, 0f))
+            if (this == null || gameObject == null) return;
             gameObject.SetActive(false);
+        });
 
-        fadeRoutine = null;
+        tween = s;
     }
 }
