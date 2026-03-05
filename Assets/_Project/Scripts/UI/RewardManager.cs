@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
 public enum RewardKind
@@ -87,9 +86,6 @@ public class RewardManager : MonoBehaviour
     [SerializeField, Min(0)] private int encounterCoinsMin = 4;
     [SerializeField, Min(0)] private int encounterCoinsMax = 8;
 
-    [Header("Debug / PC Fallback")]
-    [SerializeField] private bool enableKeyboardFallback = true;
-
     // UI/event consumers
     public event Action<RewardOption[]> RewardChoicesPresented;
     public event Action RewardResolved;
@@ -122,17 +118,6 @@ public class RewardManager : MonoBehaviour
     {
         if (battle != null)
             battle.EncounterCompleted -= OnEncounterCompleted;
-    }
-
-    private void Update()
-    {
-        if (!enableKeyboardFallback) return;
-        if (!awaitingChoice) return;
-        if (Keyboard.current == null) return;
-
-        if (Keyboard.current.digit1Key.wasPressedThisFrame) Choose(1);
-        else if (Keyboard.current.digit2Key.wasPressedThisFrame) Choose(2);
-        else if (Keyboard.current.digit3Key.wasPressedThisFrame) Choose(3);
     }
 
     private void OnEncounterCompleted()

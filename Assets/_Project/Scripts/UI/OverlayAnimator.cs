@@ -70,7 +70,7 @@ public class OverlayAnimator : MonoBehaviour
         s.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
         cg.alpha = 0f;
 
-        s.Join(cg.DOFade(1f, fadeIn));
+        s.Join(DOTween.To(() => cg.alpha, value => cg.alpha = value, 1f, fadeIn));
 
         if (card != null)
         {
@@ -94,7 +94,7 @@ public class OverlayAnimator : MonoBehaviour
         Sequence s = DOTween.Sequence();
         s.SetUpdate(true);
         s.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
-        s.Join(cg.DOFade(0f, fadeOut));
+        s.Join(DOTween.To(() => cg.alpha, value => cg.alpha = value, 0f, fadeOut));
 
         if (card != null)
             s.Join(card.DOScale(popFromScale, fadeOut).SetEase(Ease.InOutSine));

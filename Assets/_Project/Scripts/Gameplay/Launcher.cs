@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 public class Launcher : MonoBehaviour
@@ -121,15 +120,6 @@ public class Launcher : MonoBehaviour
 
         if (orbManager == null || relicManager == null)
             ResolveReferences();
-        HandleOrbSelectionLegacy();
-
-        // Cambiar orbe equipado (Editor)
-        if (Keyboard.current != null && orbManager != null)
-        {
-            if (Keyboard.current.qKey.wasPressedThisFrame) orbManager.PrevOrb();
-            if (Keyboard.current.eKey.wasPressedThisFrame) orbManager.NextOrb();
-        }
-
         bool canAim = (GameFlowManager.Instance == null) || GameFlowManager.Instance.CanShoot;
         if (!canAim)
         {
@@ -141,14 +131,14 @@ public class Launcher : MonoBehaviour
         }
 
         // Touch (Android)
-        if (Touchscreen.current != null)
+        if (Input.touchSupported && Input.touchCount > 0)
         {
-            var touch = Touchscreen.current.primaryTouch;
-            int touchId = touch.touchId.ReadValue();
+            Touch touch = Input.GetTouch(0);
+            int touchId = touch.fingerId;
 
-            if (touch.press.wasPressedThisFrame)
+            if (touch.phase == TouchPhase.Began)
             {
-                if (IsPointerOverBlockingUI(touch.position.ReadValue(), touchId))
+                if (IsPointerOverBlockingUI(touch.position, touchId))
                 {
                     isDragging = false;
                     SetTrajectoryVisible(false);
@@ -162,7 +152,7 @@ public class Launcher : MonoBehaviour
                     return;
                 }
 
-                dragStartScreen = touch.position.ReadValue();
+                dragStartScreen = touch.position;
                 dragStartWorld = ScreenToWorld(dragStartScreen);
 
                 isDragging = true;
@@ -171,7 +161,7 @@ public class Launcher : MonoBehaviour
                 ClearTrajectory();
             }
 
-            if (touch.press.isPressed && isDragging)
+            if ((touch.phase == TouchPhase.Moved || touch.phase == TouchPhase.Stationary) && isDragging)
             {
                 if (!EnsureCameraAvailable())
                 {
@@ -179,7 +169,7 @@ public class Launcher : MonoBehaviour
                     return;
                 }
 
-                Vector2 currentScreen = touch.position.ReadValue();
+                Vector2 currentScreen = touch.position;
                 if (IsWithinDeadzone(currentScreen))
                 {
                     if (isDragBeyondDeadzone)
@@ -202,7 +192,7 @@ public class Launcher : MonoBehaviour
                 UpdateTrajectoryPreview(directionWorld, currentScreen);
             }
 
-            if (touch.press.wasReleasedThisFrame && isDragging)
+            if ((touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled) && isDragging)
             {
                 if (!EnsureCameraAvailable())
                 {
@@ -210,7 +200,7 @@ public class Launcher : MonoBehaviour
                     return;
                 }
 
-                Vector2 releaseScreen = touch.position.ReadValue();
+                Vector2 releaseScreen = touch.position;
                 if (IsCancelShot(releaseScreen, touchId) || IsWithinDeadzone(releaseScreen))
                 {
                     CancelDrag();
@@ -229,88 +219,6 @@ public class Launcher : MonoBehaviour
             return;
         }
 
-        // Mouse (Editor)
-        if (Mouse.current == null) return;
-
-        if (Mouse.current.leftButton.wasPressedThisFrame)
-        {
-            if (IsPointerOverBlockingUI(Mouse.current.position.ReadValue(), null))
-            {
-                isDragging = false;
-                SetTrajectoryVisible(false);
-                ClearTrajectory();
-                return;
-            }
-
-            if (!EnsureCameraAvailable())
-            {
-                CancelDrag();
-                return;
-            }
-
-            dragStartScreen = Mouse.current.position.ReadValue();
-            dragStartWorld = ScreenToWorld(dragStartScreen);
-
-            isDragging = true;
-            isDragBeyondDeadzone = false;
-            SetTrajectoryVisible(false);
-            ClearTrajectory();
-        }
-
-        if (isDragging && Mouse.current.leftButton.isPressed)
-        {
-            if (!EnsureCameraAvailable())
-            {
-                CancelDrag();
-                return;
-            }
-
-            Vector2 currentScreen = Mouse.current.position.ReadValue();
-            if (IsWithinDeadzone(currentScreen))
-            {
-                if (isDragBeyondDeadzone)
-                {
-                    isDragBeyondDeadzone = false;
-                    SetTrajectoryVisible(false);
-                    ClearTrajectory();
-                }
-                return;
-            }
-
-            if (!isDragBeyondDeadzone)
-            {
-                isDragBeyondDeadzone = true;
-                SetTrajectoryVisible(true);
-            }
-            Vector2 currentWorld = ScreenToWorld(currentScreen);
-            Vector2 directionWorld = dragStartWorld - currentWorld;
-
-            UpdateTrajectoryPreview(directionWorld, currentScreen);
-        }
-
-        if (Mouse.current.leftButton.wasReleasedThisFrame && isDragging)
-        {
-            if (!EnsureCameraAvailable())
-            {
-                CancelDrag();
-                return;
-            }
-
-            Vector2 releaseScreen = Mouse.current.position.ReadValue();
-            if (IsCancelShot(releaseScreen, null) || IsWithinDeadzone(releaseScreen))
-            {
-                CancelDrag();
-                return;
-            }
-            Vector2 releaseWorld = ScreenToWorld(releaseScreen);
-            Vector2 directionWorld = dragStartWorld - releaseWorld;
-
-            SetTrajectoryVisible(false);
-            ClearTrajectory();
-
-            LaunchBall(directionWorld, releaseScreen);
-            isDragging = false;
-        }
     }
 
     private bool IsPointerOverBlockingUI(Vector2 screenPosition, int? pointerId)
@@ -393,16 +301,6 @@ public class Launcher : MonoBehaviour
             return null;
 
         return canvas.worldCamera != null ? canvas.worldCamera : Camera.main;
-    }
-    private void HandleOrbSelectionLegacy()
-    {
-        if (Keyboard.current == null || orbs == null || orbs.Length == 0) return;
-
-        if (Keyboard.current.digit1Key.wasPressedThisFrame) selectedOrbIndex = 0;
-        if (Keyboard.current.digit2Key.wasPressedThisFrame) selectedOrbIndex = 1;
-        if (Keyboard.current.digit3Key.wasPressedThisFrame) selectedOrbIndex = 2;
-
-        selectedOrbIndex = Mathf.Clamp(selectedOrbIndex, 0, orbs.Length - 1);
     }
 
     private Vector2 ScreenToWorld(Vector2 screenPos)
