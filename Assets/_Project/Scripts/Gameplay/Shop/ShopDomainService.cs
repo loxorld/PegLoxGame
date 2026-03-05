@@ -13,7 +13,7 @@ namespace PegLox.Gameplay.Shop
             public string Message;
         }
 
-        internal Func<ShopService.ShopOfferData, bool> SimulateIntermediateFailureForTests;
+        public Func<ShopService.ShopOfferData, bool> SimulateIntermediateFailureForTests;
 
         public List<ShopService.ShopOfferData> GenerateOffers(
             ShopConfig config,

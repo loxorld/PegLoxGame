@@ -1,10 +1,9 @@
 {
-  "name": "PegLox.UI",
-  "rootNamespace": "PegLox.UI",
+  "name": "PegLox.Gameplay",
+  "rootNamespace": "PegLox.Gameplay",
   "references": [
-    "PegLox.Core",
-    "PegLox.Gameplay",
-    "PegLox.Combat"
+    "PegLox.Runtime",
+    "PegLox.Core"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

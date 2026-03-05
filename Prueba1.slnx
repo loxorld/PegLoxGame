@@ -1,9 +1,6 @@
 ﻿<Solution>
+  <Project Path="PegLox.Runtime.csproj" />
   <Project Path="Assembly-CSharp.csproj" />
-  <Project Path="PegLox.Gameplay.csproj" />
-  <Project Path="PegLox.UI.csproj" />
-  <Project Path="PegLox.Combat.csproj" />
-  <Project Path="PegLox.Core.csproj" />
   <Project Path="Assembly-CSharp-firstpass.csproj" />
   <Project Path="PegLox.Editor.csproj" />
   <Project Path="PegLox.Tests.EditMode.csproj" />

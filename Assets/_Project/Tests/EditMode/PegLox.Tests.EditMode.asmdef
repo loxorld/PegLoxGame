@@ -2,10 +2,7 @@
   "name": "PegLox.Tests.EditMode",
   "rootNamespace": "PegLox.Tests.EditMode",
   "references": [
-    "PegLox.Core",
-    "PegLox.Gameplay",
-    "PegLox.Combat",
-    "PegLox.UI"
+    "PegLox.Runtime"
   ],
   "includePlatforms": [
     "Editor"

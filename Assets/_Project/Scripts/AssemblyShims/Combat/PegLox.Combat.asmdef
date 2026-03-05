@@ -1,12 +1,11 @@
 {
-  "name": "PegLox.Editor",
-  "rootNamespace": "PegLox.Editor",
+  "name": "PegLox.Combat",
+  "rootNamespace": "PegLox.Combat",
   "references": [
-    "PegLox.Runtime"
+    "PegLox.Runtime",
+    "PegLox.Gameplay"
   ],
-  "includePlatforms": [
-    "Editor"
-  ],
+  "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,
   "overrideReferences": false,
