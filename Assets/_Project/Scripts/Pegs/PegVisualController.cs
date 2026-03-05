@@ -14,7 +14,6 @@ public class PegVisualController : MonoBehaviour
     private Sprite fallbackSprite;
     private Coroutine hideRoutine;
     private Vector3 baseLocalScale;
-    private float fallbackMaxDimension = 1f;
     private float activeScaleMultiplier = 1f;
     private bool initialized;
 
@@ -31,7 +30,6 @@ public class PegVisualController : MonoBehaviour
         animator = GetComponent<Animator>();
         fallbackSprite = spriteRenderer != null ? spriteRenderer.sprite : null;
         baseLocalScale = transform.localScale;
-        fallbackMaxDimension = GetSpriteMaxDimension(fallbackSprite);
         initialized = true;
     }
 
@@ -180,24 +178,7 @@ public class PegVisualController : MonoBehaviour
     }
     private float CalculateScaleMultiplier()
     {
-        if (fallbackMaxDimension <= Mathf.Epsilon) return 1f;
-
-        Sprite referenceSprite = definition != null && definition.idleSprite != null
-            ? definition.idleSprite
-            : fallbackSprite;
-
-        float referenceDimension = GetSpriteMaxDimension(referenceSprite);
-        if (referenceDimension <= Mathf.Epsilon) return 1f;
-
-        return fallbackMaxDimension / referenceDimension;
-    }
-
-    private float GetSpriteMaxDimension(Sprite sprite)
-    {
-        if (sprite == null) return 0f;
-
-        Vector2 size = sprite.bounds.size;
-        return Mathf.Max(size.x, size.y);
+        return PegSizingUtility.CalculateVisualScaleMultiplier(definition, fallbackSprite);
     }
 
     private void ApplyScaleMultiplier()

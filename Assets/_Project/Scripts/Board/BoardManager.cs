@@ -30,6 +30,8 @@ public class BoardManager : MonoBehaviour
     [SerializeField] private BoardBoundsProvider boundsProvider;
 
     private readonly List<GameObject> spawned = new List<GameObject>();
+    private readonly List<PlacedPegData> placedPegs = new List<PlacedPegData>();
+    private readonly Dictionary<PegDefinition, float> effectiveRadiusByDefinition = new Dictionary<PegDefinition, float>();
 
     private Rect playableBounds;
     private bool hasPlayableBounds;
@@ -61,6 +63,12 @@ public class BoardManager : MonoBehaviour
         public int col;
         public Vector2 basePosition;
         public PegDefinition definition;
+    }
+
+    private struct PlacedPegData
+    {
+        public Vector2 position;
+        public float radius;
     }
 
     private void Awake()
@@ -100,6 +108,8 @@ public class BoardManager : MonoBehaviour
         densityDecisionByGroup.Clear();
         specialCountByVerticalBand.Clear();
         activeCellCountByVerticalBand.Clear();
+        placedPegs.Clear();
+        effectiveRadiusByDefinition.Clear();
 
         if (cam == null || pegPrefab == null || config == null)
         {
@@ -183,9 +193,6 @@ public class BoardManager : MonoBehaviour
         List<CellPlan> cellPlans = BuildActiveCellPlans(rows, cols, layout, rng, start, spacingX, spacingY);
         AssignPegDefinitions(cellPlans, rows, rng);
 
-        float pegRadius = GetPegWorldRadius();
-        float overlapRadius = pegRadius + extraSeparation;
-
         int totalSpawned = 0;
         int specialSpawned = 0;
         int assignmentFailures = 0;
@@ -193,7 +200,7 @@ public class BoardManager : MonoBehaviour
         for (int i = 0; i < cellPlans.Count; i++)
         {
             CellPlan plan = cellPlans[i];
-            if (!TrySpawnPegInCell(plan.basePosition, rng, overlapRadius, spacingX, spacingY, out GameObject go))
+            if (!TrySpawnPegInCell(plan.basePosition, plan.definition, rng, spacingX, spacingY, out GameObject go))
             {
                 assignmentFailures++;
                 continue;
@@ -620,18 +627,23 @@ public class BoardManager : MonoBehaviour
         return config.layouts[idx];
     }
 
-    private bool TrySpawnPegInCell(Vector2 basePos, System.Random rng, float overlapRadius, float spacingX, float spacingY, out GameObject spawnedPeg)
+    private bool TrySpawnPegInCell(Vector2 basePos, PegDefinition candidateDefinition, System.Random rng, float spacingX, float spacingY, out GameObject spawnedPeg)
     {
         spawnedPeg = null;
+        float candidateRadius = GetEffectivePegRadius(candidateDefinition);
 
         for (int attempt = 0; attempt < maxTriesPerCell; attempt++)
         {
             Vector2 pos = ApplyJitter(basePos, rng, spacingX, spacingY);
 
-            if (Physics2D.OverlapCircle(pos, overlapRadius, pegOverlapMask) != null)
+            if (OverlapsPlacedPeg(pos, candidateRadius))
+                continue;
+
+            if (Physics2D.OverlapCircle(pos, candidateRadius, pegOverlapMask) != null)
                 continue;
 
             spawnedPeg = Instantiate(pegPrefab, pos, Quaternion.identity, boardRoot);
+            placedPegs.Add(new PlacedPegData { position = pos, radius = candidateRadius });
             return true;
         }
 
@@ -645,13 +657,33 @@ public class BoardManager : MonoBehaviour
         return new Vector2(basePos.x + jx, basePos.y + jy);
     }
 
-    private float GetPegWorldRadius()
+    private bool OverlapsPlacedPeg(Vector2 candidateCenter, float candidateRadius)
     {
-        var col = pegPrefab.GetComponent<CircleCollider2D>();
-        if (col == null) return 0.15f;
+        for (int i = 0; i < placedPegs.Count; i++)
+        {
+            PlacedPegData placed = placedPegs[i];
+            if (PegSizingUtility.CirclesOverlap(candidateCenter, candidateRadius, placed.position, placed.radius))
+                return true;
+        }
 
-        float scale = pegPrefab.transform.localScale.x;
-        return col.radius * scale;
+        return false;
+    }
+
+    private float GetEffectivePegRadius(PegDefinition definition)
+    {
+        if (effectiveRadiusByDefinition.TryGetValue(definition, out float cachedRadius))
+            return cachedRadius;
+
+        SpriteRenderer spriteRenderer = pegPrefab.GetComponent<SpriteRenderer>();
+        CircleCollider2D circleCollider = pegPrefab.GetComponent<CircleCollider2D>();
+
+        Sprite fallbackSprite = spriteRenderer != null ? spriteRenderer.sprite : null;
+        float baseScale = Mathf.Max(Mathf.Abs(pegPrefab.transform.localScale.x), Mathf.Abs(pegPrefab.transform.localScale.y));
+        float colliderRadius = circleCollider != null ? circleCollider.radius : 0f;
+
+        float calculatedRadius = PegSizingUtility.CalculateEffectiveWorldRadius(definition, fallbackSprite, baseScale, colliderRadius, extraSeparation);
+        effectiveRadiusByDefinition[definition] = calculatedRadius;
+        return calculatedRadius;
     }
 
     public void ClearBoard()
@@ -661,6 +693,8 @@ public class BoardManager : MonoBehaviour
             if (spawned[i] != null) Destroy(spawned[i]);
         }
         spawned.Clear();
+        placedPegs.Clear();
+        effectiveRadiusByDefinition.Clear();
     }
 
     private Rect CalculatePlayableBounds()
