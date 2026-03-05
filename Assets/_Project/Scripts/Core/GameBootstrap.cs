@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.SceneManagement;
 using System;
+using PegLox.Gameplay.Shop;
 
 public class GameBootstrap : MonoBehaviour
 {

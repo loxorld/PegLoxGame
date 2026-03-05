@@ -4,6 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using PegLox.Gameplay.Shop;
 
 public class ShopScene : MonoBehaviour, IMapShopView
 {

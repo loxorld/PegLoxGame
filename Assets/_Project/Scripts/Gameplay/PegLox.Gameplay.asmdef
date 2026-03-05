@@ -1,0 +1,17 @@
+{
+  "name": "PegLox.Gameplay",
+  "rootNamespace": "PegLox.Gameplay",
+  "references": [
+    "PegLox.Core",
+    "PegLox.Combat"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

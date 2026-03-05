@@ -1,0 +1,24 @@
+{
+  "name": "PegLox.Tests.EditMode",
+  "rootNamespace": "PegLox.Tests.EditMode",
+  "references": [
+    "PegLox.Core",
+    "PegLox.Gameplay",
+    "PegLox.Combat",
+    "PegLox.UI"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

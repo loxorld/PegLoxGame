@@ -1,0 +1,19 @@
+{
+  "name": "PegLox.Editor",
+  "rootNamespace": "PegLox.Editor",
+  "references": [
+    "PegLox.Core",
+    "PegLox.Gameplay"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

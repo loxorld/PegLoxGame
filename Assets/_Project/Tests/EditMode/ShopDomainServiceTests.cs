@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
+using PegLox.Gameplay.Shop;
 
 public class ShopDomainServiceTests
 {
