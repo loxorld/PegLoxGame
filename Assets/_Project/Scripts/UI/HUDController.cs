@@ -108,7 +108,8 @@ public class HUDController : MonoBehaviour
         ResolveReferences();
 
         if (canvasGroup != null)
-            canvasGroup.DOFade(1f, 0.25f);
+            DOTween.To(() => canvasGroup.alpha, value => canvasGroup.alpha = value, 1f, 0.25f)
+                .SetTarget(canvasGroup);
 
         if (hudTransform != null)
             hudTransform.DOScale(1f, 0.25f).SetEase(Ease.OutBack);

@@ -2,7 +2,8 @@
   "name": "PegLox.Tests.EditMode",
   "rootNamespace": "PegLox.Tests.EditMode",
   "references": [
-    "PegLox.Runtime"
+    "PegLox.Runtime",
+    "PegLox.Gameplay"
   ],
   "includePlatforms": [
     "Editor"

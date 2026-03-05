@@ -163,6 +163,9 @@ public static class BuildSceneValidator
     {
         string scenePath = scene.path;
 
+        if (IsBootstrapScene(scenePath))
+            return;
+
         GameFlowManager[] gameFlows = FindInScene<GameFlowManager>(scene);
         MapManager[] mapManagers = FindInScene<MapManager>(scene);
         MapNavigationUI[] mapUis = FindInScene<MapNavigationUI>(scene);
@@ -207,6 +210,12 @@ public static class BuildSceneValidator
                 ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, modal, "buttonTemplate");
             }
         }
+    }
+
+    private static bool IsBootstrapScene(string scenePath)
+    {
+        string sceneName = System.IO.Path.GetFileNameWithoutExtension(scenePath);
+        return string.Equals(sceneName, "BootScene", StringComparison.OrdinalIgnoreCase);
     }
 
     private static T[] FindInScene<T>(Scene scene) where T : Component

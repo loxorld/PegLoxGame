@@ -209,10 +209,16 @@ public class MenuMicroInteractions : MonoBehaviour
                 CachedTitleRect.anchoredPosition = basePos + (Vector2.up * introOffsetY);
             }
 
-            intro.Insert(cumulativeDelay, titleCg.DOFade(1f, introFade).SetEase(Ease.OutQuad));
+            intro.Insert(cumulativeDelay,
+               DOTween.To(() => titleCg.alpha, value => titleCg.alpha = value, 1f, introFade)
+                   .SetEase(Ease.OutQuad)
+                   .SetTarget(titleCg));
             if (animateTitlePosition)
             {
-                intro.Insert(cumulativeDelay, CachedTitleRect.DOAnchorPos(basePos, introMove).SetEase(Ease.OutQuad));
+                intro.Insert(cumulativeDelay,
+                    DOTween.To(() => CachedTitleRect.anchoredPosition, value => CachedTitleRect.anchoredPosition = value, basePos, introMove)
+                        .SetEase(Ease.OutQuad)
+                        .SetTarget(CachedTitleRect));
             }
 
             cumulativeDelay += introStagger;
@@ -239,10 +245,16 @@ public class MenuMicroInteractions : MonoBehaviour
                 entry.rect.anchoredPosition = entry.baseAnchoredPos + (Vector2.up * introOffsetY);
             }
 
-            intro.Insert(cumulativeDelay, entry.canvasGroup.DOFade(1f, introFade).SetEase(Ease.OutQuad));
+            intro.Insert(cumulativeDelay,
+                DOTween.To(() => entry.canvasGroup.alpha, value => entry.canvasGroup.alpha = value, 1f, introFade)
+                    .SetEase(Ease.OutQuad)
+                    .SetTarget(entry.canvasGroup));
             if (animateButtonPosition)
             {
-                intro.Insert(cumulativeDelay, entry.rect.DOAnchorPos(entry.baseAnchoredPos, introMove).SetEase(Ease.OutQuad));
+                intro.Insert(cumulativeDelay,
+                    DOTween.To(() => entry.rect.anchoredPosition, value => entry.rect.anchoredPosition = value, entry.baseAnchoredPos, introMove)
+                        .SetEase(Ease.OutQuad)
+                        .SetTarget(entry.rect));
             }
 
             cumulativeDelay += introStagger;
