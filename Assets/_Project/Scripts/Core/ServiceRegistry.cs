@@ -7,6 +7,14 @@ public static class ServiceRegistry
 {
     private static readonly Dictionary<Type, object> Services = new Dictionary<Type, object>();
     private static readonly HashSet<string> ReportedFallbackKeys = new HashSet<string>();
+    private static bool allowLegacyFallback;
+
+    public static bool AllowLegacyFallback => allowLegacyFallback;
+
+    public static void ConfigureLegacyFallback(bool enabled)
+    {
+        allowLegacyFallback = enabled;
+    }
 
     public static void Register<T>(T service) where T : class
     {
@@ -48,6 +56,12 @@ public static class ServiceRegistry
 
         LogFallback(owner, dependency, "registry-miss");
 
+        if (!AllowLegacyFallback)
+        {
+            LogFallbackMetric(owner, dependency, "legacy-fallback-disabled");
+            return null;
+        }
+
         T fallback = fallbackResolver != null ? fallbackResolver.Invoke() : null;
         if (fallback == null)
             return null;
@@ -80,11 +94,17 @@ public static class ServiceRegistry
 
     public static T LegacyFind<T>(bool includeInactive = false) where T : UnityEngine.Object
     {
+        if (!AllowLegacyFallback)
+            return null;
+
         return UnityEngine.Object.FindObjectOfType<T>(includeInactive);
     }
 
     public static T[] LegacyFindAll<T>(bool includeInactive = false) where T : UnityEngine.Object
     {
+        if (!AllowLegacyFallback)
+            return Array.Empty<T>();
+
         return UnityEngine.Object.FindObjectsOfType<T>(includeInactive);
     }
 
@@ -92,6 +112,7 @@ public static class ServiceRegistry
     {
         Services.Clear();
         ReportedFallbackKeys.Clear();
+        allowLegacyFallback = false;
     }
     private static bool IsValidService(object service)
     {

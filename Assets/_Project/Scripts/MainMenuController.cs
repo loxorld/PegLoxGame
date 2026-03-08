@@ -3,10 +3,10 @@ using UnityEngine.SceneManagement;
 using TMPro;
 
 /// <summary>
-/// Maneja las interacciones del menú principal: iniciar/continuar partida,
-/// mostrar/ocultar el panel de opciones, y cerrar la aplicación.
-/// Además inicializa el texto de versión y asegura que solo los paneles
-/// correctos estén activos al cargar la escena.
+/// Maneja las interacciones del menÃº principal: iniciar/continuar partida,
+/// mostrar/ocultar el panel de opciones, y cerrar la aplicaciÃ³n.
+/// AdemÃ¡s inicializa el texto de versiÃ³n y asegura que solo los paneles
+/// correctos estÃ©n activos al cargar la escena.
 /// </summary>
 public class MainMenuController : MonoBehaviour
 {
@@ -18,12 +18,12 @@ public class MainMenuController : MonoBehaviour
     [SerializeField] private GameObject optionsPanel;
 
     [Header("UI Text")]
-    [Tooltip("Elemento de texto para mostrar la versión de la aplicación.")]
+    [Tooltip("Elemento de texto para mostrar la versiÃ³n de la aplicaciÃ³n.")]
     [SerializeField] private TMP_Text versionLabel;
 
     private void Awake()
     {
-        // El menú siempre debe arrancar con tiempo real, aunque el último save se haya hecho en pausa.
+        // El menÃº siempre debe arrancar con tiempo real, aunque el Ãºltimo save se haya hecho en pausa.
         Time.timeScale = 1f;
 
         GameFlowManager flow = GameFlowManager.Instance;
@@ -32,11 +32,11 @@ public class MainMenuController : MonoBehaviour
 
         AudioManager.Instance?.PlayMenuMusic();
 
-        // Asegura que los paneles correctos estén activos al iniciar.
-        if (menuPanel != null) menuPanel.SetActive(true);
+        GameFlowManager flow = GameFlowManager.Instance ?? ServiceRegistry.Resolve<GameFlowManager>();
+        GameFlowManager flow = GameFlowManager.Instance ?? ServiceRegistry.Resolve<GameFlowManager>();
         if (optionsPanel != null) optionsPanel.SetActive(false);
 
-        // Muestra la versión actual si se asignó la etiqueta.
+        // Muestra la versiÃ³n actual si se asignÃ³ la etiqueta.
         if (versionLabel != null)
         {
             versionLabel.text = $"v{Application.version}";
@@ -45,7 +45,7 @@ public class MainMenuController : MonoBehaviour
 
     /// <summary>
     /// Carga la escena de juego. El modo Single garantiza que se descarte
-    /// el menú y solo quede la escena de combate.
+    /// el menÃº y solo quede la escena de combate.
     /// </summary>
     public void OnPlayButton()
     {
@@ -78,7 +78,7 @@ public class MainMenuController : MonoBehaviour
     }
 
     /// <summary>
-    /// Llamado por el botón New Run. Por ahora hace lo mismo que OnPlayButton().
+    /// Llamado por el botÃ³n New Run. Por ahora hace lo mismo que OnPlayButton().
     /// </summary>
     public void OnNewRunButton() => OnPlayButton();
 
@@ -105,7 +105,7 @@ public class MainMenuController : MonoBehaviour
     }
 
     /// <summary>
-    /// Cierra la aplicación. En móvil cierra la app; en el editor no hace nada.
+    /// Cierra la aplicaciÃ³n. En mÃ³vil cierra la app; en el editor no hace nada.
     /// </summary>
     public void OnQuitButton()
     {
