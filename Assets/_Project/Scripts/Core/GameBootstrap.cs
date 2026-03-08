@@ -1,7 +1,21 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEngine.SceneManagement;
-using System;
 
+/// <summary>
+/// Bootstrap centralizado del runtime.
+///
+/// Política DI única:
+/// - Runtime: solo ServiceRegistry + inyección explícita.
+/// - Sin descubrimiento implícito en escena para servicios críticos.
+///
+/// Wiring requerido por escena (ver también prefab GameBootstrap):
+/// - gameFlowManager: referencia obligatoria.
+/// - mapManager: referencia obligatoria en escenas de mapa/combat.
+/// - orbManager: referencia obligatoria en escenas de mapa/combat.
+/// - relicManager: referencia obligatoria en escenas de mapa/combat.
+/// - mapNodeModalView: opcional, pero debe implementar IMapNodeModalView cuando se use modal de mapa.
+/// </summary>
 public class GameBootstrap : MonoBehaviour
 {
     [Header("Core")]
@@ -14,13 +28,25 @@ public class GameBootstrap : MonoBehaviour
     [SerializeField] private MonoBehaviour mapNodeModalView;
     [SerializeField] private bool autoCreateShopService = true;
 
+    [Header("Migration")]
+    [SerializeField] private bool allowLegacyFallback;
+
+    [Header("Scene Wiring Documentation")]
+    [TextArea(4, 10)]
+    [SerializeField] private string sceneWiringDocumentation =
+        "Required refs: gameFlowManager, mapManager, orbManager, relicManager. Optional: mapNodeModalView (IMapNodeModalView). New scenes should keep allowLegacyFallback=false.";
+
     private ShopService shopService;
 
     private void Awake()
     {
         DontDestroyOnLoad(gameObject);
         shopService = autoCreateShopService ? new ShopService() : null;
+        ServiceRegistry.ConfigureLegacyFallback(allowLegacyFallback);
+
         RegisterAndInject();
+        ValidateCriticalServicesOrFail();
+
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
@@ -29,9 +55,18 @@ public class GameBootstrap : MonoBehaviour
         SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
+    private void OnValidate()
+    {
+        if (mapNodeModalView != null && !(mapNodeModalView is IMapNodeModalView))
+            Debug.LogError("[GameBootstrap] mapNodeModalView debe implementar IMapNodeModalView.", this);
+
+        ValidateRequiredReferences(false);
+    }
+
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         RegisterAndInject();
+        ValidateCriticalServicesOrFail();
     }
 
     private void RegisterAndInject()
@@ -42,12 +77,6 @@ public class GameBootstrap : MonoBehaviour
 
     private void RegisterCoreServices()
     {
-        gameFlowManager = ResolveSceneComponent(gameFlowManager, () => GameFlowManager.Instance ?? ServiceRegistry.LegacyFind<GameFlowManager>(true));
-        mapManager = ResolveSceneComponent(mapManager, () => ServiceRegistry.LegacyFind<MapManager>(true));
-        orbManager = ResolveSceneComponent(orbManager, () => OrbManager.Instance ?? ServiceRegistry.LegacyFind<OrbManager>(true));
-        relicManager = ResolveSceneComponent(relicManager, () => RelicManager.Instance ?? ServiceRegistry.LegacyFind<RelicManager>(true));
-        mapNodeModalView = ResolveMapNodeModalView();
-
         ServiceRegistry.Register(gameFlowManager);
         ServiceRegistry.Register(mapManager);
         ServiceRegistry.Register(orbManager);
@@ -62,46 +91,36 @@ public class GameBootstrap : MonoBehaviour
 
     private void InjectCoreDependencies()
     {
-        if (gameFlowManager != null)
-            gameFlowManager.InjectDependencies(mapManager, orbManager, relicManager);
+        gameFlowManager?.InjectDependencies(mapManager, orbManager, relicManager);
 
         if (mapManager != null)
-            mapManager.InjectDependencies(gameFlowManager, shopService, mapNodeModalView as IMapNodeModalView);
+            mapManager.InjectDependencies(gameFlowManager, shopService, mapNodeModalView as IMapNodeModalView, orbManager, relicManager);
     }
 
-    private static T ResolveSceneComponent<T>(T current, Func<T> resolver) where T : Component
+    private void ValidateCriticalServicesOrFail()
     {
-        if (IsSceneObject(current))
-            return current;
-
-        T resolved = resolver != null ? resolver.Invoke() : null;
-        return IsSceneObject(resolved) ? resolved : null;
+        if (!ValidateRequiredReferences(true))
+            throw new InvalidOperationException("[GameBootstrap] Faltan referencias críticas para DI. Corrige el wiring de la escena/prefab.");
     }
 
-    private MonoBehaviour ResolveMapNodeModalView()
+    private bool ValidateRequiredReferences(bool logErrors)
     {
-        if (mapNodeModalView != null && IsSceneObject(mapNodeModalView) && mapNodeModalView is IMapNodeModalView)
-            return mapNodeModalView;
-
-        if (ServiceRegistry.TryResolve(out IMapNodeModalView registeredModalView) && registeredModalView is MonoBehaviour registeredMono && IsSceneObject(registeredMono))
-            return registeredMono;
-
-        MonoBehaviour[] candidates = ServiceRegistry.LegacyFindAll<MonoBehaviour>(true);
-        for (int i = 0; i < candidates.Length; i++)
-        {
-            MonoBehaviour candidate = candidates[i];
-            if (!IsSceneObject(candidate))
-                continue;
-
-            if (candidate is IMapNodeModalView)
-                return candidate;
-        }
-
-        return null;
+        bool valid = true;
+        valid &= ValidateReference(gameFlowManager, nameof(gameFlowManager), logErrors);
+        valid &= ValidateReference(mapManager, nameof(mapManager), logErrors);
+        valid &= ValidateReference(orbManager, nameof(orbManager), logErrors);
+        valid &= ValidateReference(relicManager, nameof(relicManager), logErrors);
+        return valid;
     }
 
-    private static bool IsSceneObject(Component component)
+    private bool ValidateReference(UnityEngine.Object reference, string fieldName, bool logError)
     {
-        return component != null && component.gameObject.scene.IsValid();
+        if (reference != null)
+            return true;
+
+        if (logError)
+            Debug.LogError($"[GameBootstrap] Falta referencia crítica: {fieldName}.", this);
+
+        return false;
     }
 }

@@ -147,17 +147,10 @@ public class MapPresentationController : MonoBehaviour
         if (isMigratedMapScene)
             ServiceRegistry.LogFallbackMetric(nameof(MapPresentationController), nameof(mapNodeModalView), "strict-missing-reference");
 
-        MonoBehaviour[] behaviours = ServiceRegistry.LegacyFindAll<MonoBehaviour>(true);
-        for (int i = 0; i < behaviours.Length; i++)
+        if (isMigratedMapScene)
         {
-            if (behaviours[i] is IMapNodeModalView candidate)
-            {
-                mapNodeModalView = behaviours[i];
-                ServiceRegistry.Register(candidate);
-                string source = isMigratedMapScene ? "strict-recovered-findobjectsoftype" : "findobjectsoftype";
-                ServiceRegistry.LogFallbackMetric(nameof(MapPresentationController), nameof(mapNodeModalView), source);
-                return candidate;
-            }
+            Debug.LogError("[MapPresentationController] DI estricto: falta IMapNodeModalView en escena migrada. Revisa el cableado de dependencias.");
+            return null;
         }
 
         MapNodeModalUI modalUI = MapNodeModalUI.GetOrCreate();
@@ -165,13 +158,9 @@ public class MapPresentationController : MonoBehaviour
         {
             mapNodeModalView = modalUI;
             ServiceRegistry.Register<IMapNodeModalView>(modalUI);
-            string source = isMigratedMapScene ? "strict-recovered-mapnodemodalui-getorcreate" : "mapnodemodalui-getorcreate";
-            ServiceRegistry.LogFallbackMetric(nameof(MapPresentationController), nameof(mapNodeModalView), source);
+            ServiceRegistry.LogFallbackMetric(nameof(MapPresentationController), nameof(mapNodeModalView), "mapnodemodalui-getorcreate");
             return modalUI;
         }
-
-        if (isMigratedMapScene)
-            Debug.LogError("[MapPresentationController] DI estricto: falta IMapNodeModalView en escena migrada. Revisa el cableado de dependencias.");
 
         return null;
     }
@@ -186,18 +175,6 @@ public class MapPresentationController : MonoBehaviour
         {
             mapShopView = registryView as MonoBehaviour;
             return registryView;
-        }
-
-        MonoBehaviour[] behaviours = ServiceRegistry.LegacyFindAll<MonoBehaviour>(true);
-        for (int i = 0; i < behaviours.Length; i++)
-        {
-            if (behaviours[i] is IMapShopView candidate)
-            {
-                mapShopView = behaviours[i];
-                ServiceRegistry.Register(candidate);
-                ServiceRegistry.LogFallbackMetric(nameof(MapPresentationController), nameof(mapShopView), "findobjectsoftype");
-                return candidate;
-            }
         }
 
         if (loadShopSceneAdditively && !IsShopSceneLoaded())

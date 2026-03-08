@@ -30,6 +30,7 @@ public class MapManager : MonoBehaviour
     [SerializeField, Min(1)] private int shopHealAmount = 8;
     [SerializeField, Min(0)] private int shopOrbUpgradeCost = 15;
     [SerializeField] private ShopService shopService;
+    [SerializeField] private OrbManager orbManager;
     [SerializeField] private RelicManager relicManager;
 
     private readonly MapDomainService domainService = new MapDomainService();
@@ -58,7 +59,7 @@ public class MapManager : MonoBehaviour
             eventRngService = injectedEventRngService;
     }
 
-    public void InjectDependencies(GameFlowManager injectedGameFlowManager, ShopService injectedShopService, IMapNodeModalView injectedMapNodeModalView)
+    public void InjectDependencies(GameFlowManager injectedGameFlowManager, ShopService injectedShopService, IMapNodeModalView injectedMapNodeModalView, OrbManager injectedOrbManager, RelicManager injectedRelicManager)
     {
         if (injectedGameFlowManager != null)
             gameFlowManager = injectedGameFlowManager;
@@ -68,6 +69,12 @@ public class MapManager : MonoBehaviour
 
         if (injectedMapNodeModalView != null)
             mapNodeModalView = injectedMapNodeModalView as MonoBehaviour;
+
+        if (injectedOrbManager != null)
+            orbManager = injectedOrbManager;
+
+        if (injectedRelicManager != null)
+            relicManager = injectedRelicManager;
 
         EnsurePresentationController();
         presentationController?.InjectModalView(injectedMapNodeModalView);
@@ -144,7 +151,7 @@ public class MapManager : MonoBehaviour
         GameFlowManager flow = ResolveGameFlowManager();
         if (flow == null)
         {
-            Debug.LogWarning("[MapManager] No se encontró GameFlowManager en la escena.");
+            Debug.LogWarning("[MapManager] No se encontrÃ³ GameFlowManager en la escena.");
             return;
         }
 
@@ -164,7 +171,7 @@ public class MapManager : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("[MapManager] No se encontró GameFlowManager al guardar MapNode.");
+            Debug.LogWarning("[MapManager] No se encontrÃ³ GameFlowManager al guardar MapNode.");
         }
 
         currentNode = nextNode;
@@ -216,7 +223,7 @@ public class MapManager : MonoBehaviour
         GameFlowManager flow = ResolveGameFlowManager();
         if (flow == null)
         {
-            Debug.LogWarning("[MapManager] No se encontró GameFlowManager en la escena.");
+            Debug.LogWarning("[MapManager] No se encontrÃ³ GameFlowManager en la escena.");
             return;
         }
 
@@ -443,7 +450,7 @@ public class MapManager : MonoBehaviour
         GameFlowManager flow = ResolveGameFlowManager();
         if (flow == null)
         {
-            Debug.LogWarning("[MapManager] No se encontró GameFlowManager en la escena.");
+            Debug.LogWarning("[MapManager] No se encontrÃ³ GameFlowManager en la escena.");
             return;
         }
 
@@ -498,14 +505,16 @@ public class MapManager : MonoBehaviour
             return null;
         }
 
-        gameFlowManager = ServiceRegistry.ResolveWithFallback(nameof(MapManager), nameof(gameFlowManager), () => ServiceRegistry.LegacyFind<GameFlowManager>());
+        gameFlowManager = GameFlowManager.Instance;
         if (gameFlowManager != null)
         {
             ServiceRegistry.Register(gameFlowManager);
-            ServiceRegistry.LogFallbackMetric(nameof(MapManager), nameof(gameFlowManager), "findobjectoftype");
+            ServiceRegistry.LogFallbackMetric(nameof(MapManager), nameof(gameFlowManager), "gameflow-instance");
+            return gameFlowManager;
         }
 
-        return gameFlowManager;
+        Debug.LogError("[MapManager] Falta GameFlowManager. Configura la referencia en GameBootstrap.");
+        return null;
     }
 
 
@@ -546,11 +555,16 @@ public class MapManager : MonoBehaviour
             return null;
         }
 
-        OrbManager orbManager = ServiceRegistry.ResolveWithFallback(nameof(MapManager), "OrbManagerForShop", () => OrbManager.Instance ?? ServiceRegistry.LegacyFind<OrbManager>(true));
+        orbManager = OrbManager.Instance;
         if (orbManager != null)
-            ServiceRegistry.LogFallbackMetric(nameof(MapManager), "OrbManagerForShop", "legacy-resolver");
+        {
+            ServiceRegistry.Register(orbManager);
+            ServiceRegistry.LogFallbackMetric(nameof(MapManager), "OrbManagerForShop", "orbmanager-instance");
+            return orbManager;
+        }
 
-        return orbManager;
+        Debug.LogError("[MapManager] Falta OrbManager para tienda. Configura la referencia en GameBootstrap.");
+        return null;
     }
 
     private RelicManager ResolveRelicManager()

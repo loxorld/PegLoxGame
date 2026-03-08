@@ -50,3 +50,5 @@ MonoBehaviour:
   relicManager: {fileID: 0}
   mapNodeModalView: {fileID: 0}
   autoCreateShopService: 1
+  allowLegacyFallback: 0
+  sceneWiringDocumentation: 'Required refs per scene: gameFlowManager, mapManager, orbManager, relicManager. Optional: mapNodeModalView implementing IMapNodeModalView. New scenes must keep allowLegacyFallback=false.'

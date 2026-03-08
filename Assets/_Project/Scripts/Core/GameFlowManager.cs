@@ -655,14 +655,8 @@ public class GameFlowManager : MonoBehaviour
             return null;
         }
 
-        mapManager = ServiceRegistry.ResolveWithFallback(nameof(GameFlowManager), nameof(mapManager), () => ServiceRegistry.LegacyFind<MapManager>(true));
-        if (mapManager != null)
-        {
-            ServiceRegistry.Register(mapManager);
-            ServiceRegistry.LogFallbackMetric(nameof(GameFlowManager), nameof(mapManager), "findobjectoftype");
-        }
-
-        return mapManager;
+        Debug.LogError("[GameFlow] Falta MapManager. Configura la referencia en GameBootstrap.");
+        return null;
     }
 
     private OrbManager ResolveOrbManager()
@@ -682,14 +676,16 @@ public class GameFlowManager : MonoBehaviour
             return null;
         }
 
-        orbManager = ServiceRegistry.ResolveWithFallback(nameof(GameFlowManager), nameof(orbManager), () => OrbManager.Instance);
+        orbManager = OrbManager.Instance;
         if (orbManager != null)
         {
             ServiceRegistry.Register(orbManager);
-            ServiceRegistry.LogFallbackMetric(nameof(GameFlowManager), nameof(orbManager), "legacy-resolver");
+            ServiceRegistry.LogFallbackMetric(nameof(GameFlowManager), nameof(orbManager), "orbmanager-instance");
+            return orbManager;
         }
 
-        return orbManager;
+        Debug.LogError("[GameFlow] Falta OrbManager. Configura la referencia en GameBootstrap.");
+        return null;
     }
 
     private RelicManager ResolveRelicManager()
@@ -709,14 +705,16 @@ public class GameFlowManager : MonoBehaviour
             return null;
         }
 
-        relicManager = ServiceRegistry.ResolveWithFallback(nameof(GameFlowManager), nameof(relicManager), () => RelicManager.Instance);
+        relicManager = RelicManager.Instance;
         if (relicManager != null)
         {
             ServiceRegistry.Register(relicManager);
-            ServiceRegistry.LogFallbackMetric(nameof(GameFlowManager), nameof(relicManager), "legacy-resolver");
+            ServiceRegistry.LogFallbackMetric(nameof(GameFlowManager), nameof(relicManager), "relicmanager-instance");
+            return relicManager;
         }
 
-        return relicManager;
+        Debug.LogError("[GameFlow] Falta RelicManager. Configura la referencia en GameBootstrap.");
+        return null;
     }
 
     private RunSaveService ResolveRunSaveService()
