@@ -32,8 +32,6 @@ public class MainMenuController : MonoBehaviour
 
         AudioManager.Instance?.PlayMenuMusic();
 
-        GameFlowManager flow = GameFlowManager.Instance ?? ServiceRegistry.Resolve<GameFlowManager>();
-        GameFlowManager flow = GameFlowManager.Instance ?? ServiceRegistry.Resolve<GameFlowManager>();
         if (optionsPanel != null) optionsPanel.SetActive(false);
 
         // Muestra la versión actual si se asignó la etiqueta.
