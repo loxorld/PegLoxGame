@@ -34,7 +34,7 @@ public class OrbManager : MonoBehaviour
         defaultOrb = currentOrb;
         BuildOrbResolutionCache();
 
-        // Si currentOrb est· seteado, aseguro que exista en ownedOrbs
+        // Si currentOrb est√° seteado, aseguro que exista en ownedOrbs
         if (currentOrb != null && !ownedOrbs.Contains(currentOrb))
             ownedOrbs.Add(currentOrb);
 
@@ -44,6 +44,8 @@ public class OrbManager : MonoBehaviour
     public void SetCurrentOrb(OrbData orb)
     {
         if (orb == null) return;
+
+        CacheOrbCandidate(orb);
 
         // Si no estaba en la lista, lo agrego
         if (!ownedOrbs.Contains(orb))
@@ -60,7 +62,7 @@ public class OrbManager : MonoBehaviour
         currentOrbInstance = orb;
         currentOrb = orb.BaseData;
 
-        // Mantener Ìndice alineado al orbe actual
+        // Mantener √≠ndice alineado al orbe actual
         currentIndex = ownedOrbInstances.IndexOf(currentOrbInstance);
         if (currentIndex < 0) currentIndex = 0;
 
@@ -71,12 +73,14 @@ public class OrbManager : MonoBehaviour
     {
         if (orb == null) return;
 
+        CacheOrbCandidate(orb);
+
         if (!ownedOrbs.Contains(orb))
             ownedOrbs.Add(orb);
 
         OrbInstance instance = GetOrCreateInstance(orb);
 
-        // MVP autom·tico: cuando gan·s un orbe, lo equip·s
+        // MVP autom√°tico: cuando gan√°s un orbe, lo equip√°s
         SetCurrentOrb(instance);
 
         Debug.Log($"[OrbManager] Orb gained: {orb.orbName}");
@@ -86,7 +90,7 @@ public class OrbManager : MonoBehaviour
 
     private void Start()
     {
-        // Asegura Ìndice consistente si ya hay currentOrb seteado
+        // Asegura √≠ndice consistente si ya hay currentOrb seteado
         if (currentOrb != null)
             SyncCurrentIndexFromInstance();
     }
@@ -185,6 +189,8 @@ public class OrbManager : MonoBehaviour
 
     public void DeserializeOrbs(List<RunSaveData.OrbSaveData> savedOrbs, string currentOrbId)
     {
+        BuildOrbResolutionCache();
+
         if (savedOrbs == null || savedOrbs.Count == 0)
         {
             ResetToDefaults();
@@ -228,6 +234,8 @@ public class OrbManager : MonoBehaviour
     private OrbInstance GetOrCreateInstance(OrbData orb)
     {
         if (orb == null) return null;
+
+        CacheOrbCandidate(orb);
 
         for (int i = 0; i < ownedOrbInstances.Count; i++)
         {
@@ -291,19 +299,34 @@ public class OrbManager : MonoBehaviour
 
         OrbData[] candidates = Resources.LoadAll<OrbData>(string.Empty);
         for (int i = 0; i < candidates.Length; i++)
-        {
-            OrbData orb = candidates[i];
-            if (orb == null)
-                continue;
+            CacheOrbCandidate(candidates[i]);
 
-            string persistentId = BuildPersistentOrbId(orb);
-            if (!string.IsNullOrWhiteSpace(persistentId) && !orbByPersistentId.ContainsKey(persistentId))
-                orbByPersistentId[persistentId] = orb;
+        OrbData[] loadedCandidates = Resources.FindObjectsOfTypeAll<OrbData>();
+        for (int i = 0; i < loadedCandidates.Length; i++)
+            CacheOrbCandidate(loadedCandidates[i]);
 
-            string legacyName = string.IsNullOrWhiteSpace(orb.name) ? null : orb.name.Trim();
-            if (!string.IsNullOrWhiteSpace(legacyName) && !orbByLegacyName.ContainsKey(legacyName))
-                orbByLegacyName[legacyName] = orb;
-        }
+        CacheOrbCandidate(currentOrb);
+        CacheOrbCandidate(defaultOrb);
+
+        if (ownedOrbs == null)
+            return;
+
+        for (int i = 0; i < ownedOrbs.Count; i++)
+            CacheOrbCandidate(ownedOrbs[i]);
+    }
+
+    private void CacheOrbCandidate(OrbData orb)
+    {
+        if (orb == null)
+            return;
+
+        string persistentId = BuildPersistentOrbId(orb);
+        if (!string.IsNullOrWhiteSpace(persistentId) && !orbByPersistentId.ContainsKey(persistentId))
+            orbByPersistentId[persistentId] = orb;
+
+        string legacyName = string.IsNullOrWhiteSpace(orb.name) ? null : orb.name.Trim();
+        if (!string.IsNullOrWhiteSpace(legacyName) && !orbByLegacyName.ContainsKey(legacyName))
+            orbByLegacyName[legacyName] = orb;
     }
 
     private OrbData ResolveOrbById(string orbId)
@@ -316,7 +339,7 @@ public class OrbManager : MonoBehaviour
 
         if (orbByLegacyName.TryGetValue(orbId, out OrbData orbByName) && orbByName != null)
         {
-            Debug.LogWarning($"[OrbManager] MigraciÛn save legacy: OrbData '{orbId}' resuelto por name. Reguardar para persistir persistentId.");
+            Debug.LogWarning($"[OrbManager] Migraci√≥n save legacy: OrbData '{orbId}' resuelto por name. Reguardar para persistir persistentId.");
             return orbByName;
         }
 
@@ -334,3 +357,4 @@ public class OrbManager : MonoBehaviour
         return string.IsNullOrWhiteSpace(orb.name) ? null : orb.name.Trim();
     }
 }
+

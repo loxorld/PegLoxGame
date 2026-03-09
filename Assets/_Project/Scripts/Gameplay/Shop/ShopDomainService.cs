@@ -4,13 +4,17 @@ using UnityEngine;
 
 public sealed class ShopDomainService
 {
+    private const string UnexpectedPurchaseErrorMessage = "Ocurrió un error al procesar la compra.";
+
     public sealed class PurchaseResult
     {
         public bool Success;
         public string Message;
     }
 
+#pragma warning disable CS0649
     internal Func<ShopService.ShopOfferData, bool> SimulateIntermediateFailureForTests;
+#pragma warning restore CS0649
 
     public List<ShopService.ShopOfferData> GenerateOffers(
         ShopConfig config,
@@ -25,52 +29,22 @@ public sealed class ShopDomainService
             return GenerateLegacyOffers(balance, stageIndex, fallbackHealCost, fallbackHealAmount, fallbackUpgradeCost);
 
         int amount = UnityEngine.Random.Range(config.MinOffersPerVisit, config.MaxOffersPerVisit + 1);
-        var generated = new List<ShopService.ShopOfferData>(amount);
-        var usedOfferIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        int maxAttemptsPerOffer = Mathf.Max(4, config.OfferTable.Count * 3);
-
-        for (int i = 0; i < amount; i++)
-        {
-            ShopConfig.OfferTemplate template = null;
-            for (int attempt = 0; attempt < maxAttemptsPerOffer; attempt++)
-            {
-                ShopConfig.OfferTemplate candidate = PickTemplateByRarity(config);
-                if (candidate == null)
-                    break;
-
-                if (CanUseTemplate(candidate, usedOfferIds, allowDuplicateOffersWhenStockAvailable))
-                {
-                    template = candidate;
-                    break;
-                }
-            }
-
-            if (template == null)
-                break;
-
-            usedOfferIds.Add(NormalizeOfferId(template.OfferId));
-
-            int baseCost = ResolveTemplateCost(template, balance, stageIndex, fallbackHealCost, fallbackUpgradeCost);
-            int adjustedCost = Mathf.Max(0, Mathf.RoundToInt(baseCost * config.GetPriceMultiplier(template.Rarity)));
-            generated.Add(new ShopService.ShopOfferData
-            {
-                OfferId = BuildOfferId(template.OfferId, i),
-                Type = template.Type,
-                Cost = adjustedCost,
-                Stock = Mathf.Max(1, template.BaseStock),
-                Rarity = template.Rarity,
-                PrimaryValue = ResolvePrimaryValue(template, fallbackHealAmount),
-                RequiresMissingHp = template.RequiresMissingHp,
-                RequiresUpgradableOrb = template.RequiresUpgradableOrb,
-                RequiresAnyOrb = template.RequiresAnyOrb
-            });
-        }
+        List<ShopConfig.OfferTemplate> selectedTemplates = SelectOfferTemplates(config, amount, allowDuplicateOffersWhenStockAvailable);
+        List<ShopService.ShopOfferData> generated = BuildGeneratedOffers(
+            selectedTemplates,
+            config,
+            balance,
+            stageIndex,
+            fallbackHealCost,
+            fallbackHealAmount,
+            fallbackUpgradeCost);
 
         if (generated.Count < amount)
         {
-            int distinctTemplateCount = CountDistinctOfferIds(config.OfferTable);
-            Debug.LogWarning($"[ShopDomainService] Configuración insuficiente para generar {amount} ofertas únicas. " +
-                             $"Se generaron {generated.Count}. Plantillas distintas disponibles: {distinctTemplateCount}. " +
+            int generationCapacity = CountOfferGenerationCapacity(config.OfferTable, allowDuplicateOffersWhenStockAvailable);
+            string capacityLabel = allowDuplicateOffersWhenStockAvailable ? "cupos generables" : "ofertas únicas";
+            Debug.LogWarning($"[ShopDomainService] Configuración insuficiente para generar {amount} ofertas. " +
+                             $"Se generaron {generated.Count}. Capacidad disponible ({capacityLabel}): {generationCapacity}. " +
                              "Revisa ShopConfig o habilita duplicados de forma explícita cuando corresponda.");
         }
 
@@ -93,17 +67,26 @@ public sealed class ShopDomainService
         if (!flow.TryConsumeShopOffer(shopId, offer.OfferId))
             return new PurchaseResult { Success = false, Message = "Sin stock para esta oferta." };
 
-        PlayerPurchaseSnapshot snapshot = PlayerPurchaseSnapshot.Capture(flow);
-        PurchaseResult result = ExecutePurchase(flow, orbManager, offer);
-        if (result.Success)
+        PlayerPurchaseSnapshot snapshot = PlayerPurchaseSnapshot.Capture(flow, orbManager);
+
+        try
         {
-            flow.SaveRun();
+            PurchaseResult result = ExecutePurchase(flow, orbManager, offer);
+            if (result.Success)
+            {
+                flow.SaveRun();
+                return result;
+            }
+
+            RollbackFailedPurchase(flow, orbManager, shopId, offer.OfferId, snapshot);
             return result;
         }
-
-        snapshot.Rollback(flow);
-        flow.TryRestoreShopOffer(shopId, offer.OfferId);
-        return result;
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[ShopDomainService] Compra revertida por excepción: {ex.Message}");
+            RollbackFailedPurchase(flow, orbManager, shopId, offer.OfferId, snapshot);
+            return new PurchaseResult { Success = false, Message = UnexpectedPurchaseErrorMessage };
+        }
     }
 
     private bool IsOfferEnabled(ShopService.PlayerShopState state, ShopService.ShopOfferData offer, bool includeStockValidation, out string reason)
@@ -196,6 +179,17 @@ public sealed class ShopDomainService
         return new PurchaseResult { Success = success, Message = message };
     }
 
+    private static void RollbackFailedPurchase(
+        GameFlowManager flow,
+        OrbManager orbManager,
+        string shopId,
+        string offerId,
+        PlayerPurchaseSnapshot snapshot)
+    {
+        snapshot?.Rollback(flow, orbManager);
+        flow?.TryRestoreShopOffer(shopId, offerId);
+    }
+
     private static string BuildOfferId(string baseId, int index)
     {
         return $"{NormalizeOfferId(baseId)}_{index}";
@@ -226,22 +220,199 @@ public sealed class ShopDomainService
         }
     }
 
-    private static bool CanUseTemplate(ShopConfig.OfferTemplate template, HashSet<string> usedOfferIds, bool allowDuplicateOffersWhenStockAvailable)
+    private static List<ShopConfig.OfferTemplate> SelectOfferTemplates(ShopConfig config, int amount, bool allowDuplicateOffersWhenStockAvailable)
     {
-        string normalizedOfferId = NormalizeOfferId(template.OfferId);
-        if (!usedOfferIds.Contains(normalizedOfferId))
-            return true;
+        var selectedTemplates = new List<ShopConfig.OfferTemplate>(Mathf.Max(0, amount));
+        if (config == null || config.OfferTable == null || config.OfferTable.Count == 0 || amount <= 0)
+            return selectedTemplates;
 
-        return allowDuplicateOffersWhenStockAvailable && template.BaseStock > 1;
+        Dictionary<string, int> listingCapacityByOfferId = BuildListingCapacityByOfferId(config.OfferTable, allowDuplicateOffersWhenStockAvailable);
+        var selectedCountsByOfferId = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        for (int i = 0; i < amount; i++)
+        {
+            List<ShopConfig.OfferTemplate> availableTemplates = BuildAvailableTemplates(
+                config.OfferTable,
+                selectedCountsByOfferId,
+                listingCapacityByOfferId);
+            if (availableTemplates.Count == 0)
+                break;
+
+            ShopConfig.OfferTemplate pickedTemplate = PickTemplateByRarity(availableTemplates, config.RarityWeights);
+            if (pickedTemplate == null)
+                break;
+
+            selectedTemplates.Add(pickedTemplate);
+            IncrementOfferCount(selectedCountsByOfferId, NormalizeOfferId(pickedTemplate.OfferId));
+        }
+
+        return selectedTemplates;
     }
 
-    private static int CountDistinctOfferIds(IReadOnlyList<ShopConfig.OfferTemplate> offers)
+    private static List<ShopService.ShopOfferData> BuildGeneratedOffers(
+        IReadOnlyList<ShopConfig.OfferTemplate> selectedTemplates,
+        ShopConfig config,
+        RunBalanceConfig balance,
+        int stageIndex,
+        int fallbackHealCost,
+        int fallbackHealAmount,
+        int fallbackUpgradeCost)
     {
-        var distinctIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        for (int i = 0; i < offers.Count; i++)
-            distinctIds.Add(NormalizeOfferId(offers[i].OfferId));
+        var generated = new List<ShopService.ShopOfferData>(selectedTemplates != null ? selectedTemplates.Count : 0);
+        if (selectedTemplates == null || selectedTemplates.Count == 0)
+            return generated;
 
-        return distinctIds.Count;
+        Dictionary<string, int> selectedCountsByOfferId = CountSelectedOffersById(selectedTemplates);
+        Dictionary<string, int> totalStockByOfferId = ResolveTotalStockByOfferId(selectedTemplates);
+        var emittedCountsByOfferId = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        for (int i = 0; i < selectedTemplates.Count; i++)
+        {
+            ShopConfig.OfferTemplate template = selectedTemplates[i];
+            string normalizedOfferId = NormalizeOfferId(template.OfferId);
+            int emittedCount = GetCounterValue(emittedCountsByOfferId, normalizedOfferId);
+            int listingCount = GetCounterValue(selectedCountsByOfferId, normalizedOfferId);
+            int totalStock = GetCounterValue(totalStockByOfferId, normalizedOfferId);
+
+            int baseCost = ResolveTemplateCost(template, balance, stageIndex, fallbackHealCost, fallbackUpgradeCost);
+            int adjustedCost = Mathf.Max(0, Mathf.RoundToInt(baseCost * config.GetPriceMultiplier(template.Rarity)));
+            generated.Add(new ShopService.ShopOfferData
+            {
+                OfferId = BuildOfferId(template.OfferId, i),
+                Type = template.Type,
+                Cost = adjustedCost,
+                Stock = ResolveGeneratedStock(totalStock, listingCount, emittedCount),
+                Rarity = template.Rarity,
+                PrimaryValue = ResolvePrimaryValue(template, fallbackHealAmount),
+                RequiresMissingHp = template.RequiresMissingHp,
+                RequiresUpgradableOrb = template.RequiresUpgradableOrb,
+                RequiresAnyOrb = template.RequiresAnyOrb
+            });
+
+            emittedCountsByOfferId[normalizedOfferId] = emittedCount + 1;
+        }
+
+        return generated;
+    }
+
+    private static Dictionary<string, int> BuildListingCapacityByOfferId(
+        IReadOnlyList<ShopConfig.OfferTemplate> offers,
+        bool allowDuplicateOffersWhenStockAvailable)
+    {
+        var capacityByOfferId = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        if (offers == null)
+            return capacityByOfferId;
+
+        for (int i = 0; i < offers.Count; i++)
+        {
+            ShopConfig.OfferTemplate template = offers[i];
+            if (template == null)
+                continue;
+
+            string normalizedOfferId = NormalizeOfferId(template.OfferId);
+            int capacity = allowDuplicateOffersWhenStockAvailable ? Mathf.Max(1, template.BaseStock) : 1;
+            if (!capacityByOfferId.TryGetValue(normalizedOfferId, out int currentCapacity) || capacity > currentCapacity)
+                capacityByOfferId[normalizedOfferId] = capacity;
+        }
+
+        return capacityByOfferId;
+    }
+
+    private static List<ShopConfig.OfferTemplate> BuildAvailableTemplates(
+        IReadOnlyList<ShopConfig.OfferTemplate> offers,
+        Dictionary<string, int> selectedCountsByOfferId,
+        Dictionary<string, int> listingCapacityByOfferId)
+    {
+        var availableTemplates = new List<ShopConfig.OfferTemplate>();
+        if (offers == null)
+            return availableTemplates;
+
+        for (int i = 0; i < offers.Count; i++)
+        {
+            ShopConfig.OfferTemplate template = offers[i];
+            if (template == null)
+                continue;
+
+            string normalizedOfferId = NormalizeOfferId(template.OfferId);
+            int selectedCount = GetCounterValue(selectedCountsByOfferId, normalizedOfferId);
+            int listingCapacity = GetCounterValue(listingCapacityByOfferId, normalizedOfferId);
+            if (selectedCount < listingCapacity)
+                availableTemplates.Add(template);
+        }
+
+        return availableTemplates;
+    }
+
+    private static Dictionary<string, int> CountSelectedOffersById(IReadOnlyList<ShopConfig.OfferTemplate> selectedTemplates)
+    {
+        var countsByOfferId = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        if (selectedTemplates == null)
+            return countsByOfferId;
+
+        for (int i = 0; i < selectedTemplates.Count; i++)
+        {
+            ShopConfig.OfferTemplate template = selectedTemplates[i];
+            if (template == null)
+                continue;
+
+            IncrementOfferCount(countsByOfferId, NormalizeOfferId(template.OfferId));
+        }
+
+        return countsByOfferId;
+    }
+
+    private static Dictionary<string, int> ResolveTotalStockByOfferId(IReadOnlyList<ShopConfig.OfferTemplate> selectedTemplates)
+    {
+        var totalStockByOfferId = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        if (selectedTemplates == null)
+            return totalStockByOfferId;
+
+        for (int i = 0; i < selectedTemplates.Count; i++)
+        {
+            ShopConfig.OfferTemplate template = selectedTemplates[i];
+            if (template == null)
+                continue;
+
+            string normalizedOfferId = NormalizeOfferId(template.OfferId);
+            int totalStock = Mathf.Max(1, template.BaseStock);
+            if (!totalStockByOfferId.TryGetValue(normalizedOfferId, out int currentTotalStock) || totalStock > currentTotalStock)
+                totalStockByOfferId[normalizedOfferId] = totalStock;
+        }
+
+        return totalStockByOfferId;
+    }
+
+    private static int ResolveGeneratedStock(int totalStock, int listingCount, int emittedCount)
+    {
+        int safeTotalStock = Mathf.Max(1, totalStock);
+        int safeListingCount = Mathf.Max(1, listingCount);
+        int safeEmittedCount = Mathf.Clamp(emittedCount, 0, safeListingCount - 1);
+
+        int stockPerListing = safeTotalStock / safeListingCount;
+        int remainder = safeTotalStock % safeListingCount;
+        return stockPerListing + (safeEmittedCount < remainder ? 1 : 0);
+    }
+
+    private static void IncrementOfferCount(Dictionary<string, int> countsByOfferId, string normalizedOfferId)
+    {
+        countsByOfferId[normalizedOfferId] = GetCounterValue(countsByOfferId, normalizedOfferId) + 1;
+    }
+
+    private static int GetCounterValue(Dictionary<string, int> countsByOfferId, string normalizedOfferId)
+    {
+        return countsByOfferId != null && countsByOfferId.TryGetValue(normalizedOfferId, out int count)
+            ? count
+            : 0;
+    }
+
+    private static int CountOfferGenerationCapacity(IReadOnlyList<ShopConfig.OfferTemplate> offers, bool allowDuplicateOffersWhenStockAvailable)
+    {
+        Dictionary<string, int> capacityByOfferId = BuildListingCapacityByOfferId(offers, allowDuplicateOffersWhenStockAvailable);
+        int totalCapacity = 0;
+        foreach (KeyValuePair<string, int> entry in capacityByOfferId)
+            totalCapacity += Mathf.Max(0, entry.Value);
+
+        return totalCapacity;
     }
 
     private static string NormalizeOfferId(string offerId)
@@ -249,25 +420,36 @@ public sealed class ShopDomainService
         return string.IsNullOrWhiteSpace(offerId) ? "offer" : offerId.Trim();
     }
 
-    private static ShopConfig.OfferTemplate PickTemplateByRarity(ShopConfig config)
+    private static ShopConfig.OfferTemplate PickTemplateByRarity(
+        IReadOnlyList<ShopConfig.OfferTemplate> availableTemplates,
+        IReadOnlyList<ShopConfig.RarityWeight> rarityWeights)
     {
-        List<ShopConfig.OfferTemplate> offers = new List<ShopConfig.OfferTemplate>(config.OfferTable);
-        if (offers.Count == 0)
+        if (availableTemplates == null || availableTemplates.Count == 0)
             return null;
 
         float total = 0f;
-        for (int i = 0; i < config.RarityWeights.Count; i++)
-            total += config.RarityWeights[i].Weight;
+        for (int i = 0; i < rarityWeights.Count; i++)
+        {
+            ShopConfig.RarityWeight weight = rarityWeights[i];
+            if (weight == null || weight.Weight <= 0f)
+                continue;
+
+            if (HasTemplateWithRarity(availableTemplates, weight.Rarity))
+                total += weight.Weight;
+        }
 
         if (total <= 0f)
-            return offers[UnityEngine.Random.Range(0, offers.Count)];
+            return availableTemplates[UnityEngine.Random.Range(0, availableTemplates.Count)];
 
         float roll = UnityEngine.Random.Range(0f, total);
         ShopService.ShopOfferRarity picked = ShopService.ShopOfferRarity.Common;
         float cumulative = 0f;
-        for (int i = 0; i < config.RarityWeights.Count; i++)
+        for (int i = 0; i < rarityWeights.Count; i++)
         {
-            ShopConfig.RarityWeight weight = config.RarityWeights[i];
+            ShopConfig.RarityWeight weight = rarityWeights[i];
+            if (weight == null || weight.Weight <= 0f || !HasTemplateWithRarity(availableTemplates, weight.Rarity))
+                continue;
+
             cumulative += weight.Weight;
             if (roll <= cumulative)
             {
@@ -277,16 +459,28 @@ public sealed class ShopDomainService
         }
 
         var filtered = new List<ShopConfig.OfferTemplate>();
-        for (int i = 0; i < offers.Count; i++)
+        for (int i = 0; i < availableTemplates.Count; i++)
         {
-            if (offers[i].Rarity == picked)
-                filtered.Add(offers[i]);
+            if (availableTemplates[i].Rarity == picked)
+                filtered.Add(availableTemplates[i]);
         }
 
         if (filtered.Count == 0)
-            filtered = offers;
+            filtered = new List<ShopConfig.OfferTemplate>(availableTemplates);
 
         return filtered[UnityEngine.Random.Range(0, filtered.Count)];
+    }
+
+    private static bool HasTemplateWithRarity(IReadOnlyList<ShopConfig.OfferTemplate> templates, ShopService.ShopOfferRarity rarity)
+    {
+        for (int i = 0; i < templates.Count; i++)
+        {
+            ShopConfig.OfferTemplate template = templates[i];
+            if (template != null && template.Rarity == rarity)
+                return true;
+        }
+
+        return false;
     }
 
     private bool TryHeal(GameFlowManager flow, int healCost, int healAmount, ShopService.ShopOfferData offer, out string message)
@@ -414,21 +608,31 @@ public sealed class ShopDomainService
         private readonly int savedHp;
         private readonly bool hasSavedHp;
         private readonly int maxHp;
+        private readonly List<RunSaveData.OrbSaveData> serializedOrbs;
+        private readonly string currentOrbId;
+        private readonly bool hasOrbSnapshot;
 
-        private PlayerPurchaseSnapshot(GameFlowManager flow)
+        private PlayerPurchaseSnapshot(GameFlowManager flow, OrbManager orbManager)
         {
             coins = flow.Coins;
             savedHp = flow.SavedPlayerHP;
             hasSavedHp = flow.HasSavedPlayerHP;
             maxHp = flow.PlayerMaxHP;
+
+            if (orbManager != null)
+            {
+                serializedOrbs = CloneOrbSaves(orbManager.SerializeOrbs());
+                currentOrbId = orbManager.GetCurrentOrbId();
+                hasOrbSnapshot = true;
+            }
         }
 
-        public static PlayerPurchaseSnapshot Capture(GameFlowManager flow)
+        public static PlayerPurchaseSnapshot Capture(GameFlowManager flow, OrbManager orbManager)
         {
-            return new PlayerPurchaseSnapshot(flow);
+            return new PlayerPurchaseSnapshot(flow, orbManager);
         }
 
-        public void Rollback(GameFlowManager flow)
+        public void Rollback(GameFlowManager flow, OrbManager orbManager)
         {
             int deltaCoins = coins - flow.Coins;
             if (deltaCoins > 0)
@@ -437,12 +641,40 @@ public sealed class ShopDomainService
                 flow.SpendCoins(-deltaCoins);
 
             flow.SavePlayerMaxHP(maxHp);
+            RestoreSavedHp(flow);
+
+            if (hasOrbSnapshot && orbManager != null)
+                orbManager.DeserializeOrbs(CloneOrbSaves(serializedOrbs), currentOrbId);
+        }
+
+        private void RestoreSavedHp(GameFlowManager flow)
+        {
             if (hasSavedHp)
+                flow.SavePlayerHP(savedHp);
+            else
+                flow.ClearSavedPlayerHP();
+        }
+
+        private static List<RunSaveData.OrbSaveData> CloneOrbSaves(List<RunSaveData.OrbSaveData> source)
+        {
+            if (source == null)
+                return null;
+
+            var clone = new List<RunSaveData.OrbSaveData>(source.Count);
+            for (int i = 0; i < source.Count; i++)
             {
-                int hpDelta = savedHp - flow.SavedPlayerHP;
-                if (hpDelta != 0)
-                    flow.ModifySavedHP(hpDelta);
+                RunSaveData.OrbSaveData orb = source[i];
+                if (orb == null)
+                    continue;
+
+                clone.Add(new RunSaveData.OrbSaveData
+                {
+                    OrbId = orb.OrbId,
+                    Level = orb.Level
+                });
             }
+
+            return clone;
         }
     }
 

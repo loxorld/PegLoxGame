@@ -1,11 +1,11 @@
-using System;
+ï»¿using System;
 using UnityEngine;
 
 public class ShotManager : MonoBehaviour
 {
 
     public event Action<ShotSummary> ShotStatsChanged;   // durante el tiro
-    public event Action<ShotSummary> ShotResolved;       // al terminar y aplicar daño
+    public event Action<ShotSummary> ShotResolved;       // al terminar y aplicar daÃ±o
 
     public static ShotManager Instance { get; private set; }
 
@@ -45,7 +45,7 @@ public class ShotManager : MonoBehaviour
 #if UNITY_EDITOR
     private void OnValidate()
     {
-        ResolveReferences();
+        ResolveReferences(suppressFallbackLogging: true);
     }
 #endif
 
@@ -71,7 +71,7 @@ public class ShotManager : MonoBehaviour
         if (currentShot == null) return;
 
         int mult = currentShot.Multiplier;
-        // Si todavía no hay set de multiplier, usa el helper consistente
+        // Si todavÃ­a no hay set de multiplier, usa el helper consistente
         if (mult <= 0) mult = 1 + currentShot.CriticalHits;
 
         var summary = new ShotSummary(
@@ -111,16 +111,22 @@ public class ShotManager : MonoBehaviour
         PublishStats();
     }
 
-    private void ResolveReferences()
+    private void ResolveReferences(bool suppressFallbackLogging = false)
     {
         if (battle == null)
-            battle = ServiceRegistry.ResolveWithFallback(nameof(ShotManager), nameof(battle), () => ServiceRegistry.LegacyFind<BattleManager>());
+            battle = suppressFallbackLogging
+                ? ResolveReferenceWithoutLogging<BattleManager>()
+                : ServiceRegistry.ResolveWithFallback(nameof(ShotManager), nameof(battle), () => ServiceRegistry.LegacyFind<BattleManager>());
 
         if (player == null)
-            player = ServiceRegistry.ResolveWithFallback(nameof(ShotManager), nameof(player), () => ServiceRegistry.LegacyFind<PlayerStats>());
+            player = suppressFallbackLogging
+                ? ResolveReferenceWithoutLogging<PlayerStats>()
+                : ServiceRegistry.ResolveWithFallback(nameof(ShotManager), nameof(player), () => ServiceRegistry.LegacyFind<PlayerStats>());
 
         if (relics == null)
-            relics = ServiceRegistry.ResolveWithFallback(nameof(ShotManager), nameof(relics), () => RelicManager.Instance ?? ServiceRegistry.LegacyFind<RelicManager>(true));
+            relics = suppressFallbackLogging
+                ? ResolveReferenceWithoutLogging(() => RelicManager.Instance, includeInactive: true)
+                : ServiceRegistry.ResolveWithFallback(nameof(ShotManager), nameof(relics), () => RelicManager.Instance ?? ServiceRegistry.LegacyFind<RelicManager>(true));
     }
 
     public void RegisterPegHit(PegType pegType)
@@ -130,14 +136,14 @@ public class ShotManager : MonoBehaviour
         if (!CanProcessCombat()) return;
 
         currentShot.RegisterHit(pegType);
-        // Orden consistente: OrbEffects -> RelicEffects (PegBehaviors se ejecutan en Peg antes de llamar acá).
+        // Orden consistente: OrbEffects -> RelicEffects (PegBehaviors se ejecutan en Peg antes de llamar acÃ¡).
         pipeline.OnPegHit(currentShot, pegType);
         PublishStats();
     }
 
     public void OnShotEnded()
     {
-        // si ya terminó, no hagas nada
+        // si ya terminÃ³, no hagas nada
         if (!ShotInProgress) return;
         ShotInProgress = false;
 
@@ -181,7 +187,7 @@ public class ShotManager : MonoBehaviour
 
         enemy.TakeDamage(damage);
 
-        // Si el enemigo murió, no contraataca
+        // Si el enemigo muriÃ³, no contraataca
         if (!enemy.gameObject.activeSelf)
         {
             currentShot = null;
@@ -203,4 +209,19 @@ public class ShotManager : MonoBehaviour
     public int HudTotalHits => currentShot != null ? currentShot.TotalHits : 0;
     public int HudMultiplier => currentShot != null ? (1 + currentShot.CriticalHits) : 1;
     public string HudOrbName => currentShot?.Orb != null ? currentShot.Orb.OrbName : "None";
+
+    private static T ResolveReferenceWithoutLogging<T>(Func<T> instanceResolver = null, bool includeInactive = false) where T : Component
+    {
+        if (ServiceRegistry.TryResolve(out T registered))
+            return registered;
+
+        T singleton = instanceResolver != null ? instanceResolver.Invoke() : null;
+        if (singleton != null)
+            return singleton;
+
+        FindObjectsInactive inactiveMode = includeInactive
+            ? FindObjectsInactive.Include
+            : FindObjectsInactive.Exclude;
+        return UnityEngine.Object.FindAnyObjectByType<T>(inactiveMode);
+    }
 }

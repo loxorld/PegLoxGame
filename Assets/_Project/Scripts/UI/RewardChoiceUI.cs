@@ -32,13 +32,17 @@ public class RewardChoiceUI : MonoBehaviour
 
     private bool flowSubscribed;
 
-    private void ResolveReferences()
+    private void ResolveReferences(bool suppressFallbackLogging = false)
     {
         if (rewards == null)
-            rewards = ServiceRegistry.ResolveWithFallback(nameof(RewardChoiceUI), nameof(rewards), () => ServiceRegistry.LegacyFind<RewardManager>(true));
+            rewards = suppressFallbackLogging
+                ? ResolveReferenceWithoutLogging<RewardManager>(includeInactive: true)
+                : ServiceRegistry.ResolveWithFallback(nameof(RewardChoiceUI), nameof(rewards), () => ServiceRegistry.LegacyFind<RewardManager>(true));
 
         if (flow == null)
-            flow = ServiceRegistry.ResolveWithFallback(nameof(RewardChoiceUI), nameof(flow), () => GameFlowManager.Instance ?? ServiceRegistry.LegacyFind<GameFlowManager>(true));
+            flow = suppressFallbackLogging
+                ? ResolveReferenceWithoutLogging(() => GameFlowManager.Instance, includeInactive: true)
+                : ServiceRegistry.ResolveWithFallback(nameof(RewardChoiceUI), nameof(flow), () => GameFlowManager.Instance ?? ServiceRegistry.LegacyFind<GameFlowManager>(true));
     }
 
     private void Awake()
@@ -54,7 +58,7 @@ public class RewardChoiceUI : MonoBehaviour
 #if UNITY_EDITOR
     private void OnValidate()
     {
-        ResolveReferences();
+        ResolveReferences(suppressFallbackLogging: true);
     }
 #endif
     private void Start()
@@ -225,4 +229,18 @@ public class RewardChoiceUI : MonoBehaviour
         }
     }
 
+    private static T ResolveReferenceWithoutLogging<T>(System.Func<T> instanceResolver = null, bool includeInactive = false) where T : Component
+    {
+        if (ServiceRegistry.TryResolve(out T registered))
+            return registered;
+
+        T singleton = instanceResolver != null ? instanceResolver.Invoke() : null;
+        if (singleton != null)
+            return singleton;
+
+        FindObjectsInactive inactiveMode = includeInactive
+            ? FindObjectsInactive.Include
+            : FindObjectsInactive.Exclude;
+        return Object.FindAnyObjectByType<T>(inactiveMode);
+    }
 }

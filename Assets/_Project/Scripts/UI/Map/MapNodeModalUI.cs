@@ -74,7 +74,7 @@ public class MapNodeModalUI : MonoBehaviour, IMapNodeModalView
         var prefab = Resources.Load<GameObject>(ResourcePath);
         if (prefab == null)
         {
-            Debug.LogError($"[MapNodeModalUI] No se encontr el prefab en Resources/{ResourcePath}.");
+            Debug.LogError($"[MapNodeModalUI] No se encontro el prefab en Resources/{ResourcePath}.");
             return null;
         }
 

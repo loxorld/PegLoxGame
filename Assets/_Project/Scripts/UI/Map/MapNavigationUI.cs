@@ -12,10 +12,22 @@ public class MapNavigationUI : MonoBehaviour
 
     private void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Debug.LogWarning("[MapNavigationUI] Ya existe una instancia activa. Se destruye el duplicado.");
+            Destroy(gameObject);
+            return;
+        }
+
         Instance = this;
         Debug.Log("[MapNavigationUI] Awake ejecutado. Instancia seteada.");
     }
 
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
+    }
 
     public void ShowNode(MapNodeData node)
     {
@@ -26,40 +38,42 @@ public class MapNavigationUI : MonoBehaviour
             return;
         }
 
+        if (!HasNodeRenderingSetup())
+            return;
+
         MapManager mapManagerRef = ResolveMapManager();
         if (mapManagerRef != null && mapManagerRef.ShouldForceBossNode(out MapNodeData bossNode) && bossNode != null)
         {
-            var bossObj = Instantiate(nodePrefab, nodeContainer);
-            var bossUI = bossObj.GetComponent<MapNodeUI>();
-            bossUI.Setup(bossNode, OnNodeSelected);
+            TryCreateNode(bossNode);
             return;
         }
 
-        if (node.nextNodes == null || node.nextNodes.Length == 0)
+        List<MapNodeData> nextNodes = BuildAvailableNextNodes(node);
+        if (nextNodes.Count == 0)
         {
             Debug.LogWarning("[MapNavigationUI] El nodo no tiene conexiones disponibles.");
             return;
         }
 
-        var connections = new List<MapNodeConnection>(node.nextNodes);
-        for (int i = connections.Count - 1; i > 0; i--)
+        for (int i = nextNodes.Count - 1; i > 0; i--)
         {
             int swapIndex = Random.Range(0, i + 1);
-            (connections[i], connections[swapIndex]) = (connections[swapIndex], connections[i]);
+            (nextNodes[i], nextNodes[swapIndex]) = (nextNodes[swapIndex], nextNodes[i]);
         }
 
-        int nodesToShow = Mathf.Min(2, connections.Count);
+        int nodesToShow = Mathf.Min(2, nextNodes.Count);
         for (int i = 0; i < nodesToShow; i++)
-        {
-            var connection = connections[i];
-            var obj = Instantiate(nodePrefab, nodeContainer);
-            var nodeUI = obj.GetComponent<MapNodeUI>();
-            nodeUI.Setup(connection.targetNode, OnNodeSelected);
-        }
+            TryCreateNode(nextNodes[i]);
     }
 
     void OnNodeSelected(MapNodeData next)
     {
+        if (next == null)
+        {
+            Debug.LogWarning("[MapNavigationUI] OnNodeSelected recibio un destino nulo.");
+            return;
+        }
+
         MapManager mapManagerRef = ResolveMapManager();
         if (mapManagerRef == null)
             return;
@@ -80,8 +94,75 @@ public class MapNavigationUI : MonoBehaviour
         return mapManager;
     }
 
+    private bool HasNodeRenderingSetup()
+    {
+        if (nodeContainer == null)
+        {
+            Debug.LogWarning("[MapNavigationUI] Falta nodeContainer para mostrar nodos.");
+            return false;
+        }
+
+        if (nodePrefab == null)
+        {
+            Debug.LogWarning("[MapNavigationUI] Falta nodePrefab para mostrar nodos.");
+            return false;
+        }
+
+        if (nodePrefab.GetComponent<MapNodeUI>() == null)
+        {
+            Debug.LogWarning("[MapNavigationUI] nodePrefab no tiene MapNodeUI.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private List<MapNodeData> BuildAvailableNextNodes(MapNodeData node)
+    {
+        var validNodes = new List<MapNodeData>();
+        if (node?.nextNodes == null || node.nextNodes.Length == 0)
+            return validNodes;
+
+        var seenTargets = new HashSet<MapNodeData>();
+        for (int i = 0; i < node.nextNodes.Length; i++)
+        {
+            MapNodeConnection connection = node.nextNodes[i];
+            if (connection?.targetNode == null)
+                continue;
+
+            if (seenTargets.Add(connection.targetNode))
+                validNodes.Add(connection.targetNode);
+        }
+
+        return validNodes;
+    }
+
+    private bool TryCreateNode(MapNodeData node)
+    {
+        if (node == null)
+            return false;
+
+        GameObject nodeObject = Instantiate(nodePrefab, nodeContainer);
+        if (nodeObject == null)
+            return false;
+
+        MapNodeUI nodeUI = nodeObject.GetComponent<MapNodeUI>();
+        if (nodeUI == null)
+        {
+            Debug.LogWarning("[MapNavigationUI] Se instancio un nodePrefab sin MapNodeUI.");
+            Destroy(nodeObject);
+            return false;
+        }
+
+        nodeUI.Setup(node, OnNodeSelected);
+        return true;
+    }
+
     void ClearNodes()
     {
+        if (nodeContainer == null)
+            return;
+
         foreach (Transform child in nodeContainer)
             Destroy(child.gameObject);
     }

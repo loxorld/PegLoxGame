@@ -165,7 +165,7 @@ public static class BuildSceneValidator
         SceneValidationReport report = ValidateBuildScenes();
         report.LogToConsole(Prefix);
 
-        if (report.HasErrors)
+        if (report.HasErrors && !Application.isBatchMode)
             EditorUtility.DisplayDialog("Scene Validation", report.BuildSummaryLine(), "OK");
     }
 
@@ -290,6 +290,7 @@ public static class BuildSceneValidator
         {
             ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, mapUis[i], "nodeContainer");
             ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, mapUis[i], "nodePrefab");
+            ValidateMapNavigationNodePrefab(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, mapUis[i]);
         }
 
         ValidateModalViews(report, scenePath, modalViews);
@@ -582,6 +583,92 @@ public static class BuildSceneValidator
                 nameof(MapStage),
                 sourceField,
                 $"MapStage '{stage.name}' tiene startingNode y bossNode apuntando al mismo asset."));
+        }
+
+        if (stage.bossNode != null && stage.bossNode.nodeType != NodeType.Boss)
+        {
+            report.Issues.Add(new SceneValidationIssue(
+                severity,
+                scenePath,
+                GetGameObjectPath(owner.gameObject),
+                nameof(MapStage),
+                $"{sourceField}.bossNode",
+                $"MapStage '{stage.name}' tiene un bossNode con nodeType '{stage.bossNode.nodeType}' en vez de Boss."));
+        }
+
+        ValidateMapStageGraph(report, severity, scenePath, owner, stage, sourceField);
+    }
+
+    private static void ValidateMapNavigationNodePrefab(
+        SceneValidationReport report,
+        ValidationSeverity severity,
+        string scenePath,
+        MapNavigationUI mapNavigationUi)
+    {
+        if (mapNavigationUi == null)
+            return;
+
+        FieldInfo nodePrefabField = typeof(MapNavigationUI).GetField("nodePrefab", BindingFlags.Instance | BindingFlags.NonPublic);
+        if (nodePrefabField == null)
+            return;
+
+        GameObject nodePrefab = nodePrefabField.GetValue(mapNavigationUi) as GameObject;
+        if (nodePrefab == null)
+            return;
+
+        if (nodePrefab.GetComponent<MapNodeUI>() != null)
+            return;
+
+        report.Issues.Add(new SceneValidationIssue(
+            severity,
+            scenePath,
+            GetGameObjectPath(mapNavigationUi.gameObject),
+            nameof(MapNavigationUI),
+            "nodePrefab",
+            "nodePrefab no tiene el componente MapNodeUI requerido para renderizar opciones."));
+    }
+
+    private static void ValidateMapStageGraph(
+        SceneValidationReport report,
+        ValidationSeverity severity,
+        string scenePath,
+        MapManager owner,
+        MapStage stage,
+        string sourceField)
+    {
+        if (stage == null || stage.startingNode == null)
+            return;
+
+        var visited = new HashSet<MapNodeData>();
+        var pending = new Stack<MapNodeData>();
+        pending.Push(stage.startingNode);
+
+        while (pending.Count > 0)
+        {
+            MapNodeData current = pending.Pop();
+            if (current == null || !visited.Add(current))
+                continue;
+
+            if (current.nextNodes == null)
+                continue;
+
+            for (int i = 0; i < current.nextNodes.Length; i++)
+            {
+                MapNodeConnection connection = current.nextNodes[i];
+                if (connection == null || connection.targetNode == null)
+                {
+                    report.Issues.Add(new SceneValidationIssue(
+                        severity,
+                        scenePath,
+                        GetGameObjectPath(owner.gameObject),
+                        nameof(MapStage),
+                        $"{sourceField}.{current.name}.nextNodes[{i}]",
+                        $"MapStage '{stage.name}' tiene una conexión nula o sin targetNode en '{current.name}'."));
+                    continue;
+                }
+
+                pending.Push(connection.targetNode);
+            }
         }
     }
 
