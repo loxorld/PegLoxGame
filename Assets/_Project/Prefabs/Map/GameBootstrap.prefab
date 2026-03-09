@@ -44,11 +44,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 984a50be21a44aa4ab85bd70e803a4c6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameBootstrap
-  gameFlowManager: {fileID: 1827790442462989112, guid: 071a158c084bd704ea57fec7ce438c27, type: 3}
+  gameFlowManager: {fileID: 0}
   mapManager: {fileID: 0}
   orbManager: {fileID: 0}
   relicManager: {fileID: 0}
   mapNodeModalView: {fileID: 0}
   autoCreateShopService: 1
   allowLegacyFallback: 0
-  sceneWiringDocumentation: 'Required refs per scene: gameFlowManager, mapManager, orbManager, relicManager. Optional: mapNodeModalView implementing IMapNodeModalView. New scenes must keep allowLegacyFallback=false.'
+  sceneWiringDocumentation: 'Required refs: gameFlowManager always. mapManager only in MapScene. orbManager/relicManager in MapScene and CombatScene. Optional: mapNodeModalView implementing IMapNodeModalView. New scenes must keep allowLegacyFallback=false.'
