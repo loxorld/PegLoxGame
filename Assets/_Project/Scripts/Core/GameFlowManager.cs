@@ -667,10 +667,9 @@ public class GameFlowManager : MonoBehaviour
         if (ServiceRegistry.TryResolve(out orbManager))
             return orbManager;
 
-        ServiceRegistry.LogFallback(nameof(GameFlowManager), nameof(orbManager), "missing-injected-reference");
-
         if (IsMigratedGameplaySceneActive())
         {
+            ServiceRegistry.LogFallback(nameof(GameFlowManager), nameof(orbManager), "missing-injected-reference");
             ServiceRegistry.LogFallbackMetric(nameof(GameFlowManager), nameof(orbManager), "strict-missing-reference");
             Debug.LogError("[GameFlow] DI estricto: falta OrbManager en escena migrada. Revisa el cableado de dependencias.");
             return null;
@@ -696,10 +695,11 @@ public class GameFlowManager : MonoBehaviour
         if (ServiceRegistry.TryResolve(out relicManager))
             return relicManager;
 
-        ServiceRegistry.LogFallback(nameof(GameFlowManager), nameof(relicManager), "missing-injected-reference");
+        
 
         if (IsMigratedGameplaySceneActive())
         {
+            ServiceRegistry.LogFallback(nameof(GameFlowManager), nameof(relicManager), "missing-injected-reference");
             ServiceRegistry.LogFallbackMetric(nameof(GameFlowManager), nameof(relicManager), "strict-missing-reference");
             Debug.LogError("[GameFlow] DI estricto: falta RelicManager en escena migrada. Revisa el cableado de dependencias.");
             return null;
@@ -725,10 +725,10 @@ public class GameFlowManager : MonoBehaviour
         if (ServiceRegistry.TryResolve(out runSaveService))
             return runSaveService;
 
-        ServiceRegistry.LogFallback(nameof(GameFlowManager), nameof(runSaveService), "missing-injected-reference");
-
+        
         if (IsMigratedGameplaySceneActive())
         {
+            ServiceRegistry.LogFallback(nameof(GameFlowManager), nameof(runSaveService), "missing-injected-reference");
             ServiceRegistry.LogFallbackMetric(nameof(GameFlowManager), nameof(runSaveService), "strict-missing-reference");
             Debug.LogError("[GameFlow] DI estricto: falta RunSaveService en escena migrada. Revisa el cableado de dependencias.");
             return null;

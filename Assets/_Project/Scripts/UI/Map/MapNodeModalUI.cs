@@ -114,6 +114,7 @@ public class MapNodeModalUI : MonoBehaviour, IMapNodeModalView
 
         if (buttonTemplate != null)
             buttonTemplate.gameObject.SetActive(false);
+        gameObject.SetActive(false);
     }
 
     private void SetupButtons(Option[] options)
