@@ -33,7 +33,9 @@ public class Launcher : MonoBehaviour
     [SerializeField] private RelicManager relicManager;
 
     [Header("Launch Settings")]
+#pragma warning disable CS0414
     [SerializeField] private float launchForce = 10f; // legacy 
+#pragma warning restore CS0414
     [SerializeField] private float maxAimMagnitude = 3.0f;
     [SerializeField] private LaunchSettings launchSettings = new LaunchSettings();
 

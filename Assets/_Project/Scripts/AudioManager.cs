@@ -16,12 +16,14 @@ public enum AudioEventId
 
 public class AudioManager : MonoBehaviour
 {
+#pragma warning disable CS0649
     [Serializable]
     private class AudioEventEntry
     {
         public AudioEventId eventId;
         public AudioClip clip;
     }
+#pragma warning restore CS0649
 
     public static AudioManager Instance { get; private set; }
 

@@ -97,7 +97,10 @@ public static class ServiceRegistry
         if (!AllowLegacyFallback)
             return null;
 
-        return UnityEngine.Object.FindObjectOfType<T>(includeInactive);
+        FindObjectsInactive inactiveMode = includeInactive
+            ? FindObjectsInactive.Include
+            : FindObjectsInactive.Exclude;
+        return UnityEngine.Object.FindAnyObjectByType<T>(inactiveMode);
     }
 
     public static T[] LegacyFindAll<T>(bool includeInactive = false) where T : UnityEngine.Object
@@ -105,7 +108,10 @@ public static class ServiceRegistry
         if (!AllowLegacyFallback)
             return Array.Empty<T>();
 
-        return UnityEngine.Object.FindObjectsOfType<T>(includeInactive);
+        FindObjectsInactive inactiveMode = includeInactive
+            ? FindObjectsInactive.Include
+            : FindObjectsInactive.Exclude;
+        return UnityEngine.Object.FindObjectsByType<T>(inactiveMode, FindObjectsSortMode.None);
     }
 
     public static void Clear()

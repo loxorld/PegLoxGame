@@ -33,8 +33,10 @@ public class GameBootstrap : MonoBehaviour
 
     [Header("Scene Wiring Documentation")]
     [TextArea(4, 10)]
+#pragma warning disable CS0414
     [SerializeField] private string sceneWiringDocumentation =
         "Required refs: gameFlowManager always. mapManager only in MapScene. orbManager/relicManager in MapScene and CombatScene. Optional: mapNodeModalView (IMapNodeModalView). New scenes should keep allowLegacyFallback=false.";
+#pragma warning restore CS0414
 
     private ShopService shopService;
 

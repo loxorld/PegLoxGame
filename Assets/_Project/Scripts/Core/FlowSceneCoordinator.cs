@@ -29,13 +29,15 @@ public class FlowSceneCoordinator
         if (state != GameState.MapNavigation)
             return;
 
+        SceneCatalog catalog = sceneCatalogProvider?.Invoke();
+        string activeSceneName = activeSceneNameProvider?.Invoke();
+        if (catalog == null || !string.Equals(activeSceneName, catalog.MapScene, StringComparison.Ordinal))
+            return;
+
         if (tryStartMapAction != null && tryStartMapAction.Invoke())
             return;
 
-        SceneCatalog catalog = sceneCatalogProvider?.Invoke();
-        string activeSceneName = activeSceneNameProvider?.Invoke();
-        if (catalog != null && string.Equals(activeSceneName, catalog.MapScene, StringComparison.Ordinal))
-            Debug.LogError("[GameFlow] No se encontró MapManager en la escena de mapa.");
+        Debug.LogError("[GameFlow] No se encontró MapManager en la escena de mapa.");
     }
 
     public bool ContinueRunFromMenu(MapNodeData savedMapNode)

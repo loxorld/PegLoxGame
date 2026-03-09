@@ -19,6 +19,7 @@ public class StageBackgroundController : MonoBehaviour
     private const int AmbientVfxSortingOrder = -999;
     private const float ViewportCoveragePadding = 0.2f;
 
+#pragma warning disable CS0649
     [System.Serializable]
     private struct StageBackgroundStyle
     {
@@ -30,6 +31,7 @@ public class StageBackgroundController : MonoBehaviour
         public float scrollSpeedMid;
         public GameObject ambientVfxPrefab;
     }
+#pragma warning restore CS0649
 
     [SerializeField] private Image backgroundImage;
     [SerializeField] private bool applyOnStart = true;

@@ -10,6 +10,7 @@
 [Uu]ser[Ss]ettings/
 [Mm]emoryCaptures/
 [Rr]ecordings/
+.utmp/
 
 # Crash reports
 sysinfo.txt

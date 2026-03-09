@@ -489,19 +489,25 @@ public class GameFlowManager : MonoBehaviour
 
         MapNodeData[] candidates = Resources.LoadAll<MapNodeData>(string.Empty);
         for (int i = 0; i < candidates.Length; i++)
-        {
-            MapNodeData node = candidates[i];
-            if (node == null)
-                continue;
+            CacheMapNodeCandidate(candidates[i]);
 
-            string persistentId = BuildPersistentMapNodeId(node);
-            if (!string.IsNullOrWhiteSpace(persistentId) && !mapNodesByPersistentId.ContainsKey(persistentId))
-                mapNodesByPersistentId[persistentId] = node;
+        MapNodeData[] loadedCandidates = Resources.FindObjectsOfTypeAll<MapNodeData>();
+        for (int i = 0; i < loadedCandidates.Length; i++)
+            CacheMapNodeCandidate(loadedCandidates[i]);
+    }
 
-            string legacyName = string.IsNullOrWhiteSpace(node.name) ? null : node.name.Trim();
-            if (!string.IsNullOrWhiteSpace(legacyName) && !mapNodesByLegacyName.ContainsKey(legacyName))
-                mapNodesByLegacyName[legacyName] = node;
-        }
+    private void CacheMapNodeCandidate(MapNodeData node)
+    {
+        if (node == null)
+            return;
+
+        string persistentId = BuildPersistentMapNodeId(node);
+        if (!string.IsNullOrWhiteSpace(persistentId) && !mapNodesByPersistentId.ContainsKey(persistentId))
+            mapNodesByPersistentId[persistentId] = node;
+
+        string legacyName = string.IsNullOrWhiteSpace(node.name) ? null : node.name.Trim();
+        if (!string.IsNullOrWhiteSpace(legacyName) && !mapNodesByLegacyName.ContainsKey(legacyName))
+            mapNodesByLegacyName[legacyName] = node;
     }
 
     private MapNodeData ResolveMapNodeById(string mapNodeId, bool allowLegacyNameMigration)
@@ -512,9 +518,10 @@ public class GameFlowManager : MonoBehaviour
         if (mapNodesByPersistentId.TryGetValue(mapNodeId, out MapNodeData nodeByPersistentId) && nodeByPersistentId != null)
             return nodeByPersistentId;
 
-        if (allowLegacyNameMigration && mapNodesByLegacyName.TryGetValue(mapNodeId, out MapNodeData nodeByLegacyName) && nodeByLegacyName != null)
+        if (mapNodesByLegacyName.TryGetValue(mapNodeId, out MapNodeData nodeByLegacyName) && nodeByLegacyName != null)
         {
-            Debug.LogWarning($"[GameFlow] Migración save legacy: MapNodeData '{mapNodeId}' resuelto por name. Reguardar para persistir persistentId.");
+            string reason = allowLegacyNameMigration ? "Migración save legacy" : "Fallback de compatibilidad";
+            Debug.LogWarning($"[GameFlow] {reason}: MapNodeData '{mapNodeId}' resuelto por name. Reguardar para persistir persistentId.");
             return nodeByLegacyName;
         }
 

@@ -24,6 +24,7 @@ public class ShopScene : MonoBehaviour, IMapShopView
         public Action OnExit;
     }
 
+#pragma warning disable CS0649
     [Serializable]
     private struct ButtonArtTheme
     {
@@ -33,6 +34,7 @@ public class ShopScene : MonoBehaviour, IMapShopView
         public Sprite disabledSprite;
         public Color fallbackColor;
     }
+#pragma warning restore CS0649
 
     private enum SelectionVisualMode
     {
@@ -98,7 +100,7 @@ public class ShopScene : MonoBehaviour, IMapShopView
     private readonly Dictionary<string, int> refreshesByShopId = new Dictionary<string, int>();
     public static ShopScene GetOrCreate()
     {
-        ShopScene found = FindObjectOfType<ShopScene>(true);
+        ShopScene found = FindAnyObjectByType<ShopScene>(FindObjectsInactive.Include);
         if (found != null)
             return found;
 
@@ -534,7 +536,7 @@ public class ShopScene : MonoBehaviour, IMapShopView
 
         detailLabel = CreateText("Detail", panel.transform, 26, FontStyles.Normal);
         detailLabel.alignment = TextAlignmentOptions.TopLeft;
-        detailLabel.enableWordWrapping = true;
+        detailLabel.textWrappingMode = TextWrappingModes.Normal;
         SetAnchors(detailLabel.rectTransform, new Vector2(0.5f, 0f), new Vector2(1f, 0.7f), new Vector2(12f, 175f), new Vector2(-30f, -12f));
 
         priceLabel = CreateText("Price", panel.transform, 30, FontStyles.Bold);
@@ -733,7 +735,7 @@ public class ShopScene : MonoBehaviour, IMapShopView
 
         text.alignment = TextAlignmentOptions.Center;
         text.margin = Vector4.zero;
-        text.enableWordWrapping = false;
+        text.textWrappingMode = TextWrappingModes.NoWrap;
         text.enableAutoSizing = true;
         text.fontSizeMin = 14f;
         text.fontSizeMax = 24f;

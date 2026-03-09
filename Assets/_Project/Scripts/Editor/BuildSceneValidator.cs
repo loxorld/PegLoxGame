@@ -1,5 +1,6 @@
 ﻿
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor;
@@ -93,6 +94,15 @@ public sealed class SceneValidationReport
 public static class BuildSceneValidator
 {
     private const string Prefix = "[SceneValidation]";
+    private enum SceneValidationRole
+    {
+        Boot,
+        MainMenu,
+        Map,
+        Combat,
+        Shop,
+        Other
+    }
 
     public static SceneValidationReport ValidateBuildScenes()
     {
@@ -162,50 +172,23 @@ public static class BuildSceneValidator
     private static void ValidateOpenedScene(Scene scene, SceneValidationReport report)
     {
         string scenePath = scene.path;
-
-        GameFlowManager[] gameFlows = FindInScene<GameFlowManager>(scene);
-        MapManager[] mapManagers = FindInScene<MapManager>(scene);
-        MapNavigationUI[] mapUis = FindInScene<MapNavigationUI>(scene);
-        MonoBehaviour[] modalViews = FindModalViews(scene);
-
-        AddPresenceIssueIfMissing(report, SceneValidationSettings.CoreComponentSeverity, scenePath, nameof(GameFlowManager), gameFlows.Length);
-        AddPresenceIssueIfMissing(report, SceneValidationSettings.CoreComponentSeverity, scenePath, nameof(MapManager), mapManagers.Length);
-        AddPresenceIssueIfMissing(report, SceneValidationSettings.CoreComponentSeverity, scenePath, nameof(MapNavigationUI), mapUis.Length);
-        AddPresenceIssueIfMissing(report, SceneValidationSettings.CoreComponentSeverity, scenePath, "IMapNodeModalView", modalViews.Length);
-
-        for (int i = 0; i < gameFlows.Length; i++)
+        switch (ResolveSceneRole(scene))
         {
-            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, gameFlows[i], "mapManager");
-            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, gameFlows[i], "orbManager");
-            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, gameFlows[i], "relicManager");
-        }
-
-        for (int i = 0; i < mapManagers.Length; i++)
-        {
-            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, mapManagers[i], "currentMapStage");
-            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, mapManagers[i], "gameFlowManager");
-            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, mapManagers[i], "presentationController");
-            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, mapManagers[i], "mapNodeModalView");
-
-            ValidateStageConsistency(report, SceneValidationSettings.MapStageConsistencySeverity, scenePath, mapManagers[i]);
-        }
-
-        for (int i = 0; i < mapUis.Length; i++)
-        {
-            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, mapUis[i], "mapManager");
-            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, mapUis[i], "nodeContainer");
-            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, mapUis[i], "nodePrefab");
-        }
-
-        for (int i = 0; i < modalViews.Length; i++)
-        {
-            if (modalViews[i] is MapNodeModalUI modal)
-            {
-                ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, modal, "titleText");
-                ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, modal, "bodyText");
-                ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, modal, "buttonsContainer");
-                ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, modal, "buttonTemplate");
-            }
+            case SceneValidationRole.Boot:
+                ValidateBootScene(scene, scenePath, report);
+                break;
+            case SceneValidationRole.MainMenu:
+                ValidateMainMenuScene(scene, scenePath, report);
+                break;
+            case SceneValidationRole.Map:
+                ValidateMapScene(scene, scenePath, report);
+                break;
+            case SceneValidationRole.Combat:
+                ValidateCombatScene(scene, scenePath, report);
+                break;
+            case SceneValidationRole.Shop:
+                ValidateShopScene(scene, scenePath, report);
+                break;
         }
     }
 
@@ -230,6 +213,136 @@ public static class BuildSceneValidator
         }
 
         return found.ToArray();
+    }
+
+    private static SceneValidationRole ResolveSceneRole(Scene scene)
+    {
+        SceneCatalog catalog = SceneCatalog.Load();
+        string sceneName = scene.name;
+
+        if (string.Equals(sceneName, catalog.BootScene, StringComparison.Ordinal))
+            return SceneValidationRole.Boot;
+
+        if (string.Equals(sceneName, catalog.MainMenuScene, StringComparison.Ordinal))
+            return SceneValidationRole.MainMenu;
+
+        if (string.Equals(sceneName, catalog.MapScene, StringComparison.Ordinal))
+            return SceneValidationRole.Map;
+
+        if (string.Equals(sceneName, catalog.CombatScene, StringComparison.Ordinal))
+            return SceneValidationRole.Combat;
+
+        if (string.Equals(sceneName, "ShopScene", StringComparison.Ordinal))
+            return SceneValidationRole.Shop;
+
+        return SceneValidationRole.Other;
+    }
+
+    private static void ValidateBootScene(Scene scene, string scenePath, SceneValidationReport report)
+    {
+        BootSceneController[] controllers = FindInScene<BootSceneController>(scene);
+        AddPresenceIssueIfMissing(report, SceneValidationSettings.CoreComponentSeverity, scenePath, nameof(BootSceneController), controllers.Length);
+
+        for (int i = 0; i < controllers.Length; i++)
+            ValidateCollectionFieldHasEntries(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, controllers[i], "persistentPrefabs");
+    }
+
+    private static void ValidateMainMenuScene(Scene scene, string scenePath, SceneValidationReport report)
+    {
+        MainMenuController[] controllers = FindInScene<MainMenuController>(scene);
+        AddPresenceIssueIfMissing(report, SceneValidationSettings.CoreComponentSeverity, scenePath, nameof(MainMenuController), controllers.Length);
+
+        for (int i = 0; i < controllers.Length; i++)
+        {
+            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, controllers[i], "menuPanel");
+            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, controllers[i], "optionsPanel");
+        }
+    }
+
+    private static void ValidateMapScene(Scene scene, string scenePath, SceneValidationReport report)
+    {
+        MapManager[] mapManagers = FindInScene<MapManager>(scene);
+        MapNavigationUI[] mapUis = FindInScene<MapNavigationUI>(scene);
+        MonoBehaviour[] modalViews = FindModalViews(scene);
+
+        AddPresenceIssueIfMissing(report, SceneValidationSettings.CoreComponentSeverity, scenePath, nameof(MapManager), mapManagers.Length);
+        AddPresenceIssueIfMissing(report, SceneValidationSettings.CoreComponentSeverity, scenePath, nameof(MapNavigationUI), mapUis.Length);
+
+        bool hasModalFallbackPrefab = Resources.Load<GameObject>("MapNodeModalUI") != null;
+        if (modalViews.Length == 0 && !hasModalFallbackPrefab)
+        {
+            report.Issues.Add(new SceneValidationIssue(
+                SceneValidationSettings.SerializedReferenceSeverity,
+                scenePath,
+                "<SceneRoot>",
+                "IMapNodeModalView",
+                "<presence>",
+                "No hay modal view en escena ni prefab fallback en Resources/MapNodeModalUI."));
+        }
+
+        for (int i = 0; i < mapManagers.Length; i++)
+        {
+            ValidateMapStageConfiguration(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, mapManagers[i]);
+            ValidateStageConsistency(report, SceneValidationSettings.MapStageConsistencySeverity, scenePath, mapManagers[i]);
+        }
+
+        for (int i = 0; i < mapUis.Length; i++)
+        {
+            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, mapUis[i], "nodeContainer");
+            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, mapUis[i], "nodePrefab");
+        }
+
+        ValidateModalViews(report, scenePath, modalViews);
+    }
+
+    private static void ValidateCombatScene(Scene scene, string scenePath, SceneValidationReport report)
+    {
+        BattleManager[] battles = FindInScene<BattleManager>(scene);
+        RewardManager[] rewards = FindInScene<RewardManager>(scene);
+
+        AddPresenceIssueIfMissing(report, SceneValidationSettings.CoreComponentSeverity, scenePath, nameof(BattleManager), battles.Length);
+        AddPresenceIssueIfMissing(report, SceneValidationSettings.CoreComponentSeverity, scenePath, nameof(RewardManager), rewards.Length);
+
+        for (int i = 0; i < battles.Length; i++)
+        {
+            ValidateAtLeastOneObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, battles[i], "fallbackEnemy", "enemySpawnPoint");
+            ValidateCollectionFieldHasEntries(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, battles[i], "enemiesPool");
+        }
+    }
+
+    private static void ValidateShopScene(Scene scene, string scenePath, SceneValidationReport report)
+    {
+        ShopScene[] shopScenes = FindInScene<ShopScene>(scene);
+        AddPresenceIssueIfMissing(report, SceneValidationSettings.CoreComponentSeverity, scenePath, nameof(ShopScene), shopScenes.Length);
+
+        for (int i = 0; i < shopScenes.Length; i++)
+        {
+            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, shopScenes[i], "titleLabel");
+            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, shopScenes[i], "coinLabel");
+            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, shopScenes[i], "stockLabel");
+            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, shopScenes[i], "itemSlotsRoot");
+            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, shopScenes[i], "itemButtonTemplate");
+            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, shopScenes[i], "detailLabel");
+            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, shopScenes[i], "priceLabel");
+            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, shopScenes[i], "rarityLabel");
+            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, shopScenes[i], "buyButton");
+            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, shopScenes[i], "refreshButton");
+            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, shopScenes[i], "exitButton");
+        }
+    }
+
+    private static void ValidateModalViews(SceneValidationReport report, string scenePath, MonoBehaviour[] modalViews)
+    {
+        for (int i = 0; i < modalViews.Length; i++)
+        {
+            if (modalViews[i] is not MapNodeModalUI modal)
+                continue;
+
+            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, modal, "titleText");
+            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, modal, "bodyText");
+            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, modal, "buttonsContainer");
+            ValidateRequiredObjectField(report, SceneValidationSettings.SerializedReferenceSeverity, scenePath, modal, "buttonTemplate");
+        }
     }
 
     private static void AddPresenceIssueIfMissing(
@@ -278,10 +391,65 @@ public static class BuildSceneValidator
             GetGameObjectPath(component.gameObject),
             component.GetType().Name,
             fieldName,
-            "Referencia serializada crítica es nula."));
+                "Referencia serializada crítica es nula."));
     }
 
-    private static void ValidateStageConsistency(
+    private static void ValidateCollectionFieldHasEntries(
+        SceneValidationReport report,
+        ValidationSeverity severity,
+        string scenePath,
+        Component component,
+        string fieldName)
+    {
+        if (component == null)
+            return;
+
+        FieldInfo field = component.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+        if (field == null)
+            return;
+
+        if (field.GetValue(component) is ICollection collection && collection.Count > 0)
+            return;
+
+        report.Issues.Add(new SceneValidationIssue(
+            severity,
+            scenePath,
+            GetGameObjectPath(component.gameObject),
+            component.GetType().Name,
+            fieldName,
+            "Colección serializada crítica está vacía o no asignada."));
+    }
+
+    private static void ValidateAtLeastOneObjectField(
+        SceneValidationReport report,
+        ValidationSeverity severity,
+        string scenePath,
+        Component component,
+        params string[] fieldNames)
+    {
+        if (component == null || fieldNames == null || fieldNames.Length == 0)
+            return;
+
+        for (int i = 0; i < fieldNames.Length; i++)
+        {
+            FieldInfo field = component.GetType().GetField(fieldNames[i], BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            if (field == null || !typeof(UnityEngine.Object).IsAssignableFrom(field.FieldType))
+                continue;
+
+            if (field.GetValue(component) as UnityEngine.Object != null)
+                return;
+        }
+
+        report.Issues.Add(new SceneValidationIssue(
+            severity,
+            scenePath,
+            GetGameObjectPath(component.gameObject),
+            component.GetType().Name,
+            string.Join(" | ", fieldNames),
+            "Se requiere al menos una referencia serializada válida."));
+    }
+
+    private static void ValidateMapStageConfiguration(
         SceneValidationReport report,
         ValidationSeverity severity,
         string scenePath,
@@ -295,11 +463,24 @@ public static class BuildSceneValidator
 
         MapStage current = currentField.GetValue(mapManager) as MapStage;
         MapStage[] sequence = sequenceField.GetValue(mapManager) as MapStage[];
+        bool hasSequenceEntries = sequence != null && sequence.Length > 0;
+
+        if (current == null && !hasSequenceEntries)
+        {
+            report.Issues.Add(new SceneValidationIssue(
+                severity,
+                scenePath,
+                GetGameObjectPath(mapManager.gameObject),
+                nameof(MapManager),
+                "currentMapStage | stageSequence",
+                "MapManager necesita currentMapStage o stageSequence con al menos un stage."));
+            return;
+        }
 
         if (current != null)
             ValidateMapStageAsset(report, severity, scenePath, mapManager, current, "currentMapStage");
 
-        if (sequence == null)
+        if (!hasSequenceEntries)
             return;
 
         for (int i = 0; i < sequence.Length; i++)
@@ -319,6 +500,45 @@ public static class BuildSceneValidator
 
             ValidateMapStageAsset(report, severity, scenePath, mapManager, stage, $"stageSequence[{i}]");
         }
+    }
+
+    private static void ValidateStageConsistency(
+        SceneValidationReport report,
+        ValidationSeverity severity,
+        string scenePath,
+        MapManager mapManager)
+    {
+        FieldInfo currentField = typeof(MapManager).GetField("currentMapStage", BindingFlags.Instance | BindingFlags.NonPublic);
+        FieldInfo sequenceField = typeof(MapManager).GetField("stageSequence", BindingFlags.Instance | BindingFlags.NonPublic);
+
+        if (currentField == null || sequenceField == null)
+            return;
+
+        MapStage current = currentField.GetValue(mapManager) as MapStage;
+        MapStage[] sequence = sequenceField.GetValue(mapManager) as MapStage[];
+        if (current == null || sequence == null || sequence.Length == 0)
+            return;
+
+        int resolvedIndex = -1;
+        for (int i = 0; i < sequence.Length; i++)
+        {
+            if (sequence[i] == current)
+            {
+                resolvedIndex = i;
+                break;
+            }
+        }
+
+        if (resolvedIndex >= 0)
+            return;
+
+        report.Issues.Add(new SceneValidationIssue(
+            severity,
+            scenePath,
+            GetGameObjectPath(mapManager.gameObject),
+            nameof(MapManager),
+            "currentMapStage",
+            $"currentMapStage '{current.name}' no aparece dentro de stageSequence."));
     }
 
     private static void ValidateMapStageAsset(
