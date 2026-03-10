@@ -11,6 +11,20 @@ public class RunBalanceConfig : ScriptableObject
     [Header("Reward Chances (Stage Index)")]
     public AnimationCurve stageChanceOrbCurve = AnimationCurve.Linear(0f, 0.6f, 2f, 0.45f);
     public AnimationCurve stageChanceOrbUpgradeCurve = AnimationCurve.Linear(0f, 0.15f, 2f, 0.3f);
+    public AnimationCurve stageRewardHealChanceCurve = AnimationCurve.Linear(0f, 0.08f, 2f, 0.16f);
+    public AnimationCurve stageRewardHealMinCurve = AnimationCurve.Linear(0f, 5f, 2f, 10f);
+    public AnimationCurve stageRewardHealMaxCurve = AnimationCurve.Linear(0f, 8f, 2f, 16f);
+
+    [Header("Reward Encounter Modifiers")]
+    [Range(-1f, 1f)] public float rewardEliteOrbChanceModifier = -0.1f;
+    [Range(-1f, 1f)] public float rewardMiniBossOrbChanceModifier = -0.14f;
+    [Range(-1f, 1f)] public float rewardBossOrbChanceModifier = -0.18f;
+    [Range(-1f, 1f)] public float rewardEliteUpgradeChanceModifier = 0.16f;
+    [Range(-1f, 1f)] public float rewardMiniBossUpgradeChanceModifier = 0.22f;
+    [Range(-1f, 1f)] public float rewardBossUpgradeChanceModifier = 0.28f;
+    [Range(-1f, 1f)] public float rewardEliteHealChanceModifier = 0.02f;
+    [Range(-1f, 1f)] public float rewardMiniBossHealChanceModifier = 0.05f;
+    [Range(-1f, 1f)] public float rewardBossHealChanceModifier = 0.08f;
 
     [Header("Event Curves (Stage Index)")]
     public AnimationCurve stageEventGoodChanceCurve = AnimationCurve.Linear(0f, 0.55f, 2f, 0.45f);
@@ -75,6 +89,39 @@ public class RunBalanceConfig : ScriptableObject
     public float GetChanceOrbUpgrade(int stageIndex, float fallback)
     {
         return EvaluateChance(stageChanceOrbUpgradeCurve, stageIndex, fallback);
+    }
+
+    public float GetRewardHealChance(int stageIndex, float fallback)
+    {
+        return EvaluateChance(stageRewardHealChanceCurve, stageIndex, fallback);
+    }
+
+    public int GetRewardHealMin(int stageIndex, int fallback)
+    {
+        return EvaluateInt(stageRewardHealMinCurve, stageIndex, fallback, 1);
+    }
+
+    public int GetRewardHealMax(int stageIndex, int fallback)
+    {
+        return EvaluateInt(stageRewardHealMaxCurve, stageIndex, fallback, 1);
+    }
+
+    public float GetRewardOrbChanceForEncounter(int stageIndex, CombatEncounterType encounterType, float fallback)
+    {
+        float baseChance = GetChanceOrb(stageIndex, fallback);
+        return Mathf.Clamp01(baseChance + GetEncounterOrbChanceModifier(encounterType));
+    }
+
+    public float GetRewardUpgradeChanceForEncounter(int stageIndex, CombatEncounterType encounterType, float fallback)
+    {
+        float baseChance = GetChanceOrbUpgrade(stageIndex, fallback);
+        return Mathf.Clamp01(baseChance + GetEncounterUpgradeChanceModifier(encounterType));
+    }
+
+    public float GetRewardHealChanceForEncounter(int stageIndex, CombatEncounterType encounterType, float fallback)
+    {
+        float baseChance = GetRewardHealChance(stageIndex, fallback);
+        return Mathf.Clamp01(baseChance + GetEncounterHealChanceModifier(encounterType));
     }
 
     public float GetEventPositiveChance(int stageIndex, float fallback)
@@ -229,6 +276,39 @@ public class RunBalanceConfig : ScriptableObject
 
         int clamped = Mathf.Clamp(stageIndex, 0, combatStageBalances.Length - 1);
         return combatStageBalances[clamped];
+    }
+
+    private float GetEncounterOrbChanceModifier(CombatEncounterType encounterType)
+    {
+        return encounterType switch
+        {
+            CombatEncounterType.Elite => rewardEliteOrbChanceModifier,
+            CombatEncounterType.MiniBoss => rewardMiniBossOrbChanceModifier,
+            CombatEncounterType.Boss => rewardBossOrbChanceModifier,
+            _ => 0f
+        };
+    }
+
+    private float GetEncounterUpgradeChanceModifier(CombatEncounterType encounterType)
+    {
+        return encounterType switch
+        {
+            CombatEncounterType.Elite => rewardEliteUpgradeChanceModifier,
+            CombatEncounterType.MiniBoss => rewardMiniBossUpgradeChanceModifier,
+            CombatEncounterType.Boss => rewardBossUpgradeChanceModifier,
+            _ => 0f
+        };
+    }
+
+    private float GetEncounterHealChanceModifier(CombatEncounterType encounterType)
+    {
+        return encounterType switch
+        {
+            CombatEncounterType.Elite => rewardEliteHealChanceModifier,
+            CombatEncounterType.MiniBoss => rewardMiniBossHealChanceModifier,
+            CombatEncounterType.Boss => rewardBossHealChanceModifier,
+            _ => 0f
+        };
     }
 
     private static float EvaluateChance(AnimationCurve curve, int stageIndex, float fallback)

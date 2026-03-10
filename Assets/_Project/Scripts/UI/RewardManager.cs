@@ -621,28 +621,22 @@ public class RewardManager : MonoBehaviour
         GameFlowManager flow = GameFlowManager.Instance;
         int stageIndex = GetStageIndexForBalance(flow);
         RunBalanceConfig balance = ResolveBalanceConfig();
-        float stageChanceOrb = balance != null ? balance.GetChanceOrb(stageIndex, chanceOrb) : chanceOrb;
-        float stageChanceUpgrade = balance != null ? balance.GetChanceOrbUpgrade(stageIndex, chanceOrbUpgrade) : chanceOrbUpgrade;
-        if (encounterProfile.Type == CombatEncounterType.Elite)
-        {
-            stageChanceOrb = Mathf.Clamp01(stageChanceOrb - 0.08f);
-            stageChanceUpgrade = Mathf.Clamp01(stageChanceUpgrade + 0.18f);
-        }
-        else if (encounterProfile.Type == CombatEncounterType.MiniBoss || encounterProfile.Type == CombatEncounterType.Boss)
-        {
-            stageChanceOrb = Mathf.Clamp01(stageChanceOrb - 0.12f);
-            stageChanceUpgrade = Mathf.Clamp01(stageChanceUpgrade + 0.24f);
-        }
-        float stageChanceHeal = ResolveHealRewardChance(encounterProfile, flow);
+        float stageChanceOrb = balance != null
+            ? balance.GetRewardOrbChanceForEncounter(stageIndex, encounterProfile.Type, chanceOrb)
+            : chanceOrb;
+        float stageChanceUpgrade = balance != null
+            ? balance.GetRewardUpgradeChanceForEncounter(stageIndex, encounterProfile.Type, chanceOrbUpgrade)
+            : chanceOrbUpgrade;
+        float stageChanceHeal = ResolveHealRewardChance(encounterProfile, flow, balance, stageIndex);
 
         var usedOrbs = new HashSet<OrbData>();
-        var usedRelics = new HashSet<ShotEffectBase>();
+        var usedRelicIds = new HashSet<string>(StringComparer.Ordinal);
         var usedUpgradeOrbs = new HashSet<OrbInstance>();
 
         List<OrbInstance> upgradeableOrbs = allowOrbUpgrade ? GetUpgradeableOrbs() : new List<OrbInstance>();
         if (encounterProfile.GuaranteesRelicChoice)
         {
-            bool addedRelic = TryAddRelicChoice(result, usedRelics, encounterProfile, RewardOfferOrigin.GuaranteedRelic);
+            bool addedRelic = TryAddRelicChoice(result, usedRelicIds, encounterProfile, RewardOfferOrigin.GuaranteedRelic);
             if (!addedRelic)
             {
                 bool addedFallbackUpgrade = TryAddUpgradeChoice(result, upgradeableOrbs, usedUpgradeOrbs, encounterProfile, RewardOfferOrigin.RelicFallbackChoice);
@@ -663,7 +657,7 @@ public class RewardManager : MonoBehaviour
                 bool addedOrbFallback = TryAddOrbChoice(result, usedOrbs, usedUpgradeOrbs, encounterProfile, RewardOfferOrigin.UpgradeFallbackOrb);
                 if (!addedOrbFallback)
                 {
-                    bool addedRelicFallback = TryAddRelicChoice(result, usedRelics, encounterProfile, RewardOfferOrigin.UpgradeFallbackOrb);
+                    bool addedRelicFallback = TryAddRelicChoice(result, usedRelicIds, encounterProfile, RewardOfferOrigin.UpgradeFallbackOrb);
                     if (!addedRelicFallback)
                         TryAddHealChoice(result, encounterProfile, RewardOfferOrigin.HealFallbackChoice, stageIndex);
                 }
@@ -676,7 +670,7 @@ public class RewardManager : MonoBehaviour
             guard++;
 
             bool hasOrbChoices = HasAvailableOrbChoice(usedOrbs, usedUpgradeOrbs);
-            bool hasRelicChoices = HasAvailableRelicChoice(usedRelics);
+            bool hasRelicChoices = HasAvailableRelicChoice(usedRelicIds);
             bool hasUpgradeableOrbs = HasAvailableUpgradeChoice(upgradeableOrbs, usedUpgradeOrbs);
             bool hasHealChoices = CanOfferHealChoice(result);
 
@@ -708,7 +702,7 @@ public class RewardManager : MonoBehaviour
                     continue;
             }
 
-            if (TryAddRelicChoice(result, usedRelics, encounterProfile, RewardOfferOrigin.StandardRoll))
+            if (TryAddRelicChoice(result, usedRelicIds, encounterProfile, RewardOfferOrigin.StandardRoll))
                 continue;
 
             if (TryAddOrbChoice(result, usedOrbs, usedUpgradeOrbs, encounterProfile, RewardOfferOrigin.StandardRoll))
@@ -727,7 +721,11 @@ public class RewardManager : MonoBehaviour
         return result.ToArray();
     }
 
-    private float ResolveHealRewardChance(CombatEncounterProfile encounterProfile, GameFlowManager flow)
+    private float ResolveHealRewardChance(
+        CombatEncounterProfile encounterProfile,
+        GameFlowManager flow,
+        RunBalanceConfig balance,
+        int stageIndex)
     {
         if (!allowHealRewards)
             return 0f;
@@ -740,14 +738,11 @@ public class RewardManager : MonoBehaviour
         if (missingHp <= 0)
             return 0f;
 
-        float chance = chanceHealReward;
+        float chance = balance != null
+            ? balance.GetRewardHealChanceForEncounter(stageIndex, encounterProfile.Type, chanceHealReward)
+            : chanceHealReward;
         float missingRatio = Mathf.Clamp01((float)missingHp / maxHp);
         chance += missingRatio * 0.18f;
-
-        if (encounterProfile.Type == CombatEncounterType.Elite)
-            chance += 0.03f;
-        else if (encounterProfile.Type == CombatEncounterType.MiniBoss || encounterProfile.Type == CombatEncounterType.Boss)
-            chance += 0.05f;
 
         return Mathf.Clamp01(chance);
     }
@@ -819,7 +814,7 @@ public class RewardManager : MonoBehaviour
         return true;
     }
 
-    private bool HasAvailableRelicChoice(HashSet<ShotEffectBase> usedRelics)
+    private bool HasAvailableRelicChoice(HashSet<string> usedRelicIds)
     {
         if (relicPool == null || relicPool.Length == 0)
             return false;
@@ -830,10 +825,14 @@ public class RewardManager : MonoBehaviour
             if (relic == null)
                 continue;
 
-            if (relics != null && relics.HasRelic(relic))
+            string relicId = RelicManager.BuildRelicId(relic);
+            if (string.IsNullOrWhiteSpace(relicId))
                 continue;
 
-            if (avoidDuplicatesInSameRoll && usedRelics != null && usedRelics.Contains(relic))
+            if (relics != null && relics.HasRelicId(relicId))
+                continue;
+
+            if (avoidDuplicatesInSameRoll && usedRelicIds != null && usedRelicIds.Contains(relicId))
                 continue;
 
             return true;
@@ -878,7 +877,7 @@ public class RewardManager : MonoBehaviour
 
     private bool TryAddRelicChoice(
         List<RewardOption> result,
-        HashSet<ShotEffectBase> usedRelics,
+        HashSet<string> usedRelicIds,
         CombatEncounterProfile encounterProfile,
         RewardOfferOrigin offerOrigin)
     {
@@ -892,10 +891,14 @@ public class RewardManager : MonoBehaviour
             if (rewardRelic == null)
                 continue;
 
-            if (relics != null && relics.HasRelic(rewardRelic))
+            string relicId = RelicManager.BuildRelicId(rewardRelic);
+            if (string.IsNullOrWhiteSpace(relicId))
                 continue;
 
-            if (avoidDuplicatesInSameRoll && usedRelics.Contains(rewardRelic))
+            if (relics != null && relics.HasRelicId(relicId))
+                continue;
+
+            if (avoidDuplicatesInSameRoll && usedRelicIds.Contains(relicId))
                 continue;
 
             candidates.Add(rewardRelic);
@@ -905,7 +908,9 @@ public class RewardManager : MonoBehaviour
             return false;
 
         ShotEffectBase selectedRelic = candidates[UnityEngine.Random.Range(0, candidates.Count)];
-        usedRelics.Add(selectedRelic);
+        string selectedRelicId = RelicManager.BuildRelicId(selectedRelic);
+        if (!string.IsNullOrWhiteSpace(selectedRelicId))
+            usedRelicIds.Add(selectedRelicId);
         result.Add(new RewardOption
         {
             kind = RewardKind.Relic,
@@ -1076,12 +1081,18 @@ public class RewardManager : MonoBehaviour
     private int RollHealRewardAmount(int stageIndex)
     {
         GameFlowManager flow = GameFlowManager.Instance;
+        RunBalanceConfig balance = ResolveBalanceConfig();
         int missingHp = GetMissingPlayerHp(flow);
         if (missingHp <= 0)
             return 0;
 
-        int minHeal = Mathf.Max(1, healRewardMin + Mathf.Max(0, stageIndex) * healRewardPerStageBonus);
-        int maxHeal = Mathf.Max(minHeal, healRewardMax + Mathf.Max(0, stageIndex) * healRewardPerStageBonus);
+        int minHeal = balance != null
+            ? balance.GetRewardHealMin(stageIndex, healRewardMin + Mathf.Max(0, stageIndex) * healRewardPerStageBonus)
+            : Mathf.Max(1, healRewardMin + Mathf.Max(0, stageIndex) * healRewardPerStageBonus);
+        int maxHeal = balance != null
+            ? balance.GetRewardHealMax(stageIndex, healRewardMax + Mathf.Max(0, stageIndex) * healRewardPerStageBonus)
+            : Mathf.Max(minHeal, healRewardMax + Mathf.Max(0, stageIndex) * healRewardPerStageBonus);
+        maxHeal = Mathf.Max(minHeal, maxHeal);
         int rolledHeal = UnityEngine.Random.Range(minHeal, maxHeal + 1);
         return Mathf.Clamp(rolledHeal, 1, missingHp);
     }

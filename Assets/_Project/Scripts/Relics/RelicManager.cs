@@ -24,13 +24,30 @@ public class RelicManager : MonoBehaviour
     public void AddRelic(ShotEffectBase relic)
     {
         if (relic == null) return;
-        if (!activeRelics.Contains(relic))
-            activeRelics.Add(relic);
+        if (HasRelic(relic))
+            return;
+
+        activeRelics.Add(relic);
     }
 
     public bool HasRelic(ShotEffectBase relic)
     {
-        return relic != null && activeRelics.Contains(relic);
+        return HasRelicId(BuildRelicId(relic));
+    }
+
+    public bool HasRelicId(string relicId)
+    {
+        if (string.IsNullOrWhiteSpace(relicId) || activeRelics == null)
+            return false;
+
+        for (int i = 0; i < activeRelics.Count; i++)
+        {
+            ShotEffectBase activeRelic = activeRelics[i];
+            if (string.Equals(BuildRelicId(activeRelic), relicId, System.StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
     }
 
     public void ResetToDefaults()
@@ -49,7 +66,9 @@ public class RelicManager : MonoBehaviour
         {
             ShotEffectBase relic = activeRelics[i];
             if (relic == null) continue;
-            result.Add(relic.name);
+            string relicId = BuildRelicId(relic);
+            if (!string.IsNullOrWhiteSpace(relicId))
+                result.Add(relicId);
         }
 
         return result;
@@ -69,8 +88,16 @@ public class RelicManager : MonoBehaviour
 
             ShotEffectBase relic = ResolveRelicById(relicId);
             if (relic != null)
-                activeRelics.Add(relic);
+                AddRelic(relic);
         }
+    }
+
+    public static string BuildRelicId(ShotEffectBase relic)
+    {
+        if (relic == null || string.IsNullOrWhiteSpace(relic.name))
+            return null;
+
+        return relic.name.Trim();
     }
 
     private static ShotEffectBase ResolveRelicById(string relicId)

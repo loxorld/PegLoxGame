@@ -149,6 +149,22 @@ public class RewardPresentationTests
         Assert.AreSame(offeredRelic, choices[0].relic);
     }
 
+    [Test]
+    public void RelicManager_TreatsSameRelicNameAsAlreadyOwned()
+    {
+        SetupRewardManager();
+
+        ownedRelic = ScriptableObject.CreateInstance<TestRewardRelic>();
+        ownedRelic.name = "Duplicated Relic";
+        offeredRelic = ScriptableObject.CreateInstance<TestRewardRelic>();
+        offeredRelic.name = "Duplicated Relic";
+
+        relicManager.AddRelic(ownedRelic);
+
+        Assert.IsTrue(relicManager.HasRelic(offeredRelic));
+        Assert.IsTrue(relicManager.HasRelicId("Duplicated Relic"));
+    }
+
     private void SetupRewardManager()
     {
         rewardGameObject = new GameObject("RewardManagerTest");
