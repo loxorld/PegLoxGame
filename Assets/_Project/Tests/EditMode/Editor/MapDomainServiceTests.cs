@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -13,6 +14,11 @@ public class MapDomainServiceTests
         DestroyImmediateIfNeeded(detachedNode);
         DestroyImmediateIfNeeded(shopNode);
         DestroyImmediateIfNeeded(eventNode);
+        DestroyImmediateIfNeeded(optionNodeA);
+        DestroyImmediateIfNeeded(optionNodeB);
+        DestroyImmediateIfNeeded(optionNodeC);
+        DestroyImmediateIfNeeded(optionNodeD);
+        DestroyImmediateIfNeeded(rejectedOptionNode);
         DestroyImmediateIfNeeded(directEventDefinition);
         DestroyImmediateIfNeeded(pooledEventDefinition);
     }
@@ -148,6 +154,35 @@ public class MapDomainServiceTests
         Assert.AreEqual("Sale mal.", outcome.ResultDescription);
     }
 
+    [Test]
+    public void ResolveSelectableNextNodes_ReturnsOnlyTwoStableOptions_WhenPoolIsLarger()
+    {
+        var service = new MapDomainService();
+        CreateChoicePoolStage();
+
+        IReadOnlyList<MapNodeData> firstPass = service.ResolveSelectableNextNodes(testStage, startNode, null, stageIndex: 1, stepIndex: 2, maxChoices: 2);
+        IReadOnlyList<MapNodeData> secondPass = service.ResolveSelectableNextNodes(testStage, startNode, null, stageIndex: 1, stepIndex: 2, maxChoices: 2);
+
+        Assert.AreEqual(2, firstPass.Count);
+        Assert.AreEqual(firstPass[0], secondPass[0]);
+        Assert.AreEqual(firstPass[1], secondPass[1]);
+        Assert.AreNotEqual(firstPass[0], firstPass[1]);
+        CollectionAssert.DoesNotContain(firstPass, testStage.bossNode);
+    }
+
+    [Test]
+    public void IsSelectableNextNode_RejectsNodesOutsideTheResolvedSubset()
+    {
+        var service = new MapDomainService();
+        CreateChoicePoolStage();
+
+        IReadOnlyList<MapNodeData> options = service.ResolveSelectableNextNodes(testStage, startNode, null, stageIndex: 0, stepIndex: 0, maxChoices: 2);
+        rejectedOptionNode = FindFirstNodeOutsideSelection(options, optionNodeA, optionNodeB, optionNodeC, optionNodeD);
+
+        Assert.IsNotNull(rejectedOptionNode);
+        Assert.IsFalse(service.IsSelectableNextNode(testStage, startNode, rejectedOptionNode, null, stageIndex: 0, stepIndex: 0, maxChoices: 2));
+    }
+
     private MapStage testStage;
     private MapNodeData startNode;
     private MapNodeData midNode;
@@ -155,6 +190,11 @@ public class MapDomainServiceTests
     private MapNodeData detachedNode;
     private MapNodeData shopNode;
     private MapNodeData eventNode;
+    private MapNodeData optionNodeA;
+    private MapNodeData optionNodeB;
+    private MapNodeData optionNodeC;
+    private MapNodeData optionNodeD;
+    private MapNodeData rejectedOptionNode;
     private EventDefinition directEventDefinition;
     private EventDefinition pooledEventDefinition;
 
@@ -175,6 +215,38 @@ public class MapDomainServiceTests
         leafNode.nextNodes = null;
 
         testStage = ScriptableObject.CreateInstance<MapStage>();
+        testStage.startingNode = startNode;
+        testStage.bossNode = leafNode;
+    }
+
+    private void CreateChoicePoolStage()
+    {
+        startNode = ScriptableObject.CreateInstance<MapNodeData>();
+        optionNodeA = ScriptableObject.CreateInstance<MapNodeData>();
+        optionNodeB = ScriptableObject.CreateInstance<MapNodeData>();
+        optionNodeC = ScriptableObject.CreateInstance<MapNodeData>();
+        optionNodeD = ScriptableObject.CreateInstance<MapNodeData>();
+        leafNode = ScriptableObject.CreateInstance<MapNodeData>();
+
+        startNode.title = "Inicio";
+        optionNodeA.title = "Combate";
+        optionNodeB.title = "Ruinas";
+        optionNodeC.title = "Tienda";
+        optionNodeD.title = "Elite";
+        leafNode.title = "Jefe";
+
+        startNode.nextNodes = new[]
+        {
+            new MapNodeConnection { targetNode = optionNodeA },
+            new MapNodeConnection { targetNode = optionNodeB },
+            new MapNodeConnection { targetNode = optionNodeC },
+            new MapNodeConnection { targetNode = optionNodeD },
+            new MapNodeConnection { targetNode = optionNodeA },
+            new MapNodeConnection { targetNode = leafNode }
+        };
+
+        testStage = ScriptableObject.CreateInstance<MapStage>();
+        testStage.stageName = "Bosque";
         testStage.startingNode = startNode;
         testStage.bossNode = leafNode;
     }
@@ -211,6 +283,28 @@ public class MapDomainServiceTests
             }
         };
         return definition;
+    }
+
+    private static MapNodeData FindFirstNodeOutsideSelection(IReadOnlyList<MapNodeData> selection, params MapNodeData[] candidates)
+    {
+        for (int i = 0; i < candidates.Length; i++)
+        {
+            MapNodeData candidate = candidates[i];
+            bool found = false;
+            for (int j = 0; j < selection.Count; j++)
+            {
+                if (selection[j] == candidate)
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found)
+                return candidate;
+        }
+
+        return null;
     }
 
     private static void DestroyImmediateIfNeeded(Object obj)

@@ -8,7 +8,9 @@ public sealed class GeneratedCsProjectPostprocessor : AssetPostprocessor
     private static readonly string[] AssemblyCSharpCompileIncludes =
     {
         @"Assets\_Project\Scripts\Gameplay\Map\MapDomainService.Events.cs",
-        @"Assets\_Project\Scripts\Gameplay\Map\MapDomainService.Progression.cs"
+        @"Assets\_Project\Scripts\Gameplay\Map\MapDomainService.Progression.cs",
+        @"Assets\_Project\Scripts\UI\Map\MapGraphConnectionsGraphic.cs",
+        @"Assets\_Project\Scripts\UI\Map\MapGraphLayoutService.cs"
     };
 
     public static string OnGeneratedCSProject(string path, string content)

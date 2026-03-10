@@ -158,7 +158,25 @@ public partial class MapManager : MonoBehaviour
 
     public void SelectPath(MapNodeData nextNode)
     {
+        if (nextNode == null)
+        {
+            Debug.LogWarning("[MapManager] SelectPath recibido con destino nulo.");
+            return;
+        }
+
         GameFlowManager flow = ResolveGameFlowManager();
+        int nodesVisited = flow != null ? flow.NodesVisited : 0;
+        int stageIndex = GetStageIndexForBalance(flow);
+        MapNodeData forcedBossNode = null;
+        if (domainService.ShouldForceBossNode(currentMapStage, nodesVisited, GetBossAfterNodes(), out MapNodeData resolvedBossNode))
+            forcedBossNode = resolvedBossNode;
+
+        if (!domainService.IsSelectableNextNode(currentMapStage, currentNode, nextNode, forcedBossNode, stageIndex, nodesVisited, maxChoices: 2))
+        {
+            Debug.LogWarning($"[MapManager] Seleccion invalida. El nodo '{nextNode.title}' no forma parte de las opciones activas del mapa.");
+            return;
+        }
+
         if (flow != null)
         {
             flow.SaveMapNode(nextNode);
