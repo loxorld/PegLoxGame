@@ -5,25 +5,34 @@ public class PegColliderController : MonoBehaviour
 {
     private Collider2D activeCollider;
     private SpriteRenderer spriteRenderer;
+    private PegVisualController visualController;
     private PegDefinition definition;
     private Sprite fallbackSprite;
-    private float normalizedScaleMultiplier = 1f;
+    private float baseUniformScale = 1f;
+    private float fallbackLocalRadius;
+    private bool hasCapturedFallbackLocalRadius;
 
     private void Awake()
     {
         activeCollider = GetComponent<Collider2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
+        visualController = GetComponent<PegVisualController>();
         fallbackSprite = spriteRenderer != null ? spriteRenderer.sprite : null;
+        CaptureFallbackLocalRadius();
+
+        baseUniformScale = ResolveBaseUniformScale();
     }
 
     public void SetDefinition(PegDefinition pegDefinition)
     {
         if (activeCollider == null) activeCollider = GetComponent<Collider2D>();
         if (spriteRenderer == null) spriteRenderer = GetComponent<SpriteRenderer>();
+        if (visualController == null) visualController = GetComponent<PegVisualController>();
         if (fallbackSprite == null && spriteRenderer != null) fallbackSprite = spriteRenderer.sprite;
+        CaptureFallbackLocalRadius();
 
         definition = pegDefinition;
-        normalizedScaleMultiplier = PegSizingUtility.CalculateVisualScaleMultiplier(definition, fallbackSprite);
+        baseUniformScale = ResolveBaseUniformScale();
 
         ApplyCollisionSettings();
     }
@@ -56,36 +65,40 @@ public class PegColliderController : MonoBehaviour
             return;
         }
 
-        float radius = Mathf.Max(0.01f, settings.circleRadius);
-        if (settings.autoFitToSprite)
-        {
-            float spriteRadius = GetReferenceSpriteRadius();
-            if (spriteRadius > 0f)
-            {
-                radius = spriteRadius * Mathf.Max(0.1f, settings.autoFitScale);
-            }
-        }
-
-        if (settings.useNormalizedVisualSize)
-        {
-            radius *= Mathf.Max(0.01f, normalizedScaleMultiplier);
-        }
-
         circle.offset = settings.offset;
-        circle.radius = radius;
+        circle.radius = PegSizingUtility.CalculateLocalCircleRadius(
+            definition,
+            fallbackSprite,
+            GetCurrentUniformScale(),
+            baseUniformScale,
+            fallbackLocalRadius
+        );
     }
 
-    private float GetReferenceSpriteRadius()
+    private float ResolveBaseUniformScale()
     {
-        Sprite reference = definition != null && definition.idleSprite != null
-            ? definition.idleSprite
-            : fallbackSprite;
+        if (visualController != null)
+            return visualController.BaseUniformScale;
 
-        if (reference == null)
-            return 0f;
+        return GetCurrentUniformScale();
+    }
 
-        Vector2 size = reference.bounds.size;
-        return Mathf.Max(size.x, size.y) * 0.5f;
+    private void CaptureFallbackLocalRadius()
+    {
+        if (hasCapturedFallbackLocalRadius)
+            return;
+
+        if (activeCollider is CircleCollider2D circle)
+        {
+            fallbackLocalRadius = circle.radius;
+            hasCapturedFallbackLocalRadius = true;
+        }
+    }
+
+    private float GetCurrentUniformScale()
+    {
+        Vector3 scale = transform.lossyScale;
+        return Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Epsilon);
     }
 
 #if UNITY_EDITOR

@@ -17,6 +17,15 @@ public class PegVisualController : MonoBehaviour
     private float activeScaleMultiplier = 1f;
     private bool initialized;
 
+    public float BaseUniformScale
+    {
+        get
+        {
+            EnsureInitialized();
+            return GetUniformScale(baseLocalScale);
+        }
+    }
+
     private void Awake()
     {
         EnsureInitialized();
@@ -184,5 +193,10 @@ public class PegVisualController : MonoBehaviour
     private void ApplyScaleMultiplier()
     {
         transform.localScale = baseLocalScale * activeScaleMultiplier;
+    }
+
+    private static float GetUniformScale(Vector3 scale)
+    {
+        return Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Epsilon);
     }
 }

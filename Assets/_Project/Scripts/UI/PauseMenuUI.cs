@@ -41,17 +41,21 @@ public class PauseMenuUI : MonoBehaviour
 
     private void Awake()
     {
+        if (!Application.isPlaying)
+            return;
+
         if (root != null) root.SetActive(false);
 
         if (resumeButton != null) resumeButton.onClick.AddListener(OnResume);
         if (restartButton != null) restartButton.onClick.AddListener(OnRestart);
         if (menuButton != null) menuButton.onClick.AddListener(OnMenu); // Nuevo listener
-
-        ApplyVisualTheme();
     }
 
     private void OnEnable()
     {
+        if (!Application.isPlaying)
+            return;
+
         RefreshFlowSubscription();
         ApplyVisualTheme();
         Sync();

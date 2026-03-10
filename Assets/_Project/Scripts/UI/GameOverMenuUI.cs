@@ -23,18 +23,22 @@ public class GameOverMenuUI : MonoBehaviour
 
     private void Awake()
     {
+        if (!Application.isPlaying)
+            return;
+
         if (flow == null) flow = GameFlowManager.Instance;
 
         if (root != null) root.SetActive(false);
 
         if (restartButton != null)
             restartButton.onClick.AddListener(Restart);
-
-        ApplyVisualTheme();
     }
 
     private void OnEnable()
     {
+        if (!Application.isPlaying)
+            return;
+
         if (player != null)
             player.Died += OnPlayerDied;
 

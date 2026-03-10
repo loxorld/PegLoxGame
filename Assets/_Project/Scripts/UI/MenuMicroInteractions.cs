@@ -62,12 +62,18 @@ public class MenuMicroInteractions : MonoBehaviour
 
     private void Awake()
     {
+        if (!Application.isPlaying)
+            return;
+
         CacheReferences();
         SetupEventForwarders();
     }
 
     private void OnEnable()
     {
+        if (!Application.isPlaying)
+            return;
+
         RefreshLayoutBeforeIntro();
         PlayIntroSequence();
         StartIdlePulseIfNeeded();

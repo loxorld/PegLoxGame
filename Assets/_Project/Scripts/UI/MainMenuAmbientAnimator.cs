@@ -50,11 +50,17 @@ public class MainMenuAmbientAnimator : MonoBehaviour
 
     private void Awake()
     {
+        if (!Application.isPlaying)
+            return;
+
         CacheLayerData(resetOffsets: true);
     }
 
     private void OnEnable()
     {
+        if (!Application.isPlaying)
+            return;
+
         if (recacheOnEnable)
         {
             CacheLayerData(resetOffsets: false);
@@ -63,6 +69,9 @@ public class MainMenuAmbientAnimator : MonoBehaviour
 
     private void Update()
     {
+        if (!Application.isPlaying)
+            return;
+
         float deltaTime = useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
         if (deltaTime <= 0f)
         {

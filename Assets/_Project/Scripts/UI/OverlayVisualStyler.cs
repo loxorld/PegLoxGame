@@ -185,8 +185,15 @@ public static class OverlayVisualStyler
             }
         }
 
-        Image image = EnsureComponent<Image>(button.gameObject);
-        UIArtUtility.ApplyImageStyle(image, normalColor, true, Image.Type.Sliced, GetBuiltinSprite());
+        UIArtUtility.ApplyButtonStyle(
+            button,
+            normalColor,
+            highlightedColor,
+            pressedColor,
+            new Color(0.32f, 0.32f, 0.32f, 0.5f),
+            true,
+            Image.Type.Sliced,
+            GetBuiltinSprite());
 
         if (UIArtUtility.AllowsGeneratedDecor(button))
         {
@@ -199,19 +206,6 @@ public static class OverlayVisualStyler
             outline.effectColor = new Color(1f, 1f, 1f, primary ? 0.14f : 0.09f);
             outline.effectDistance = new Vector2(1f, -1f);
             outline.useGraphicAlpha = true;
-        }
-
-        if (!UIArtUtility.ShouldPreserveButtonTransitions(button))
-        {
-            ColorBlock colors = button.colors;
-            colors.normalColor = normalColor;
-            colors.highlightedColor = highlightedColor;
-            colors.pressedColor = pressedColor;
-            colors.selectedColor = highlightedColor;
-            colors.disabledColor = new Color(0.32f, 0.32f, 0.32f, 0.5f);
-            colors.colorMultiplier = 1f;
-            colors.fadeDuration = 0.08f;
-            button.colors = colors;
         }
 
         TMP_Text label = button.GetComponentInChildren<TMP_Text>(true);

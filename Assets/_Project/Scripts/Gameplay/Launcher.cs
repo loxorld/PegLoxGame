@@ -4,6 +4,20 @@ using UnityEngine.InputSystem;
 
 public partial class Launcher : MonoBehaviour
 {
+    private struct LaunchComputationData
+    {
+        public Vector2 Velocity;
+        public float Power01;
+    }
+
+    private struct PreviewPhysicsSettings
+    {
+        public float Radius;
+        public float GravityScale;
+        public float LinearDrag;
+        public float BallBounciness;
+    }
+
     [System.Serializable]
     public class LaunchSettings
     {
@@ -98,14 +112,19 @@ public partial class Launcher : MonoBehaviour
         ballRadiusWorld = GetBallWorldRadius();
         ConfigureTrajectoryLine();
         ApplyLaunchSettingsFromPrefs();
+        SetTrajectoryVisible(false);
+        ClearTrajectory();
     }
 
     private void OnEnable()
     {
         ResolveReferences();
         ValidateRequiredReferences(nameof(OnEnable));
+        ballRadiusWorld = GetBallWorldRadius();
         ConfigureTrajectoryLine();
         ApplyLaunchSettingsFromPrefs();
+        SetTrajectoryVisible(false);
+        ClearTrajectory();
     }
 
 #if UNITY_EDITOR
@@ -217,5 +236,31 @@ public partial class Launcher : MonoBehaviour
         }
 
         return false;
+    }
+
+    private OrbInstance GetActiveOrb()
+    {
+        return orbManager != null ? orbManager.CurrentOrb : null;
+    }
+
+    private PreviewPhysicsSettings GetPreviewPhysicsSettings()
+    {
+        OrbInstance orb = GetActiveOrb();
+        return new PreviewPhysicsSettings
+        {
+            Radius = ballRadiusWorld > 0f ? ballRadiusWorld : previewBallRadiusFallback,
+            GravityScale = ballPrefab != null ? ballPrefab.gravityScale : 1f,
+            LinearDrag = orb != null ? orb.LinearDrag : (ballPrefab != null ? ballPrefab.linearDamping : 0f),
+            BallBounciness = orb != null ? orb.Bounciness : GetBallBouncinessFromPrefab()
+        };
+    }
+
+    private float GetBallBouncinessFromPrefab()
+    {
+        if (ballPrefab == null)
+            return 0.9f;
+
+        Collider2D collider = ballPrefab.GetComponent<Collider2D>();
+        return BallPhysicsUtility.GetColliderBounciness(collider, 0.9f);
     }
 }

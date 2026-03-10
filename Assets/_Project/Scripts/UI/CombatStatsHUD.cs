@@ -21,6 +21,9 @@ public class CombatStatsHUD : MonoBehaviour
 
     private void Awake()
     {
+        if (!Application.isPlaying)
+            return;
+
         if (canvasGroup == null) canvasGroup = GetComponent<CanvasGroup>();
         if (canvasGroup == null) canvasGroup = gameObject.AddComponent<CanvasGroup>();
         rectTransform = transform as RectTransform;
@@ -34,6 +37,9 @@ public class CombatStatsHUD : MonoBehaviour
 
     private void OnEnable()
     {
+        if (!Application.isPlaying)
+            return;
+
         // Intento inmediato
         TrySubscribe();
 
@@ -44,6 +50,9 @@ public class CombatStatsHUD : MonoBehaviour
 
     private void Start()
     {
+        if (!Application.isPlaying)
+            return;
+
         // Reintento extra por orden de ejecucion
         if (!subscribed)
             TrySubscribe();
@@ -131,6 +140,9 @@ public class CombatStatsHUD : MonoBehaviour
 
     private void PulsePanel()
     {
+        if (!Application.isPlaying)
+            return;
+
         if (canvasGroup != null)
         {
             canvasGroup.DOKill(false);

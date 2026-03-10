@@ -33,6 +33,9 @@ public class HealthBarUI : MonoBehaviour
 
     private void Awake()
     {
+        if (!Application.isPlaying)
+            return;
+
         EnsureReferences();
         EnsureVisuals();
         RefreshTheme();
@@ -79,7 +82,7 @@ public class HealthBarUI : MonoBehaviour
         RefreshLabelColor(ratio);
         RefreshFillColor(ratio);
 
-        if (current != lastValue && slider != null && slider.fillRect != null)
+        if (Application.isPlaying && current != lastValue && slider != null && slider.fillRect != null)
         {
             slider.fillRect.DOKill(false);
             slider.fillRect.localScale = Vector3.one;

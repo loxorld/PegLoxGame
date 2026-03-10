@@ -5,18 +5,32 @@ public partial class Launcher
 {
     private Vector2 ComputeLaunchVelocity(Vector2 rawDirectionWorld, Vector2 currentScreenPos)
     {
-        if (!TryComputePowerData(rawDirectionWorld, currentScreenPos, out Vector2 dirWorld, out _, out float power01))
-            return Vector2.zero;
-
-        float speed = Mathf.Lerp(effectiveMinLaunchSpeed, effectiveMaxLaunchSpeed, power01);
-        return dirWorld.normalized * speed;
+        return TryBuildLaunchComputation(rawDirectionWorld, currentScreenPos, out LaunchComputationData launchData)
+            ? launchData.Velocity
+            : Vector2.zero;
     }
 
     private float ComputePower01(Vector2 rawDirectionWorld, Vector2 currentScreenPos)
     {
-        return TryComputePowerData(rawDirectionWorld, currentScreenPos, out _, out _, out float power01)
-            ? power01
+        return TryBuildLaunchComputation(rawDirectionWorld, currentScreenPos, out LaunchComputationData launchData)
+            ? launchData.Power01
             : 0f;
+    }
+
+    private bool TryBuildLaunchComputation(Vector2 rawDirectionWorld, Vector2 currentScreenPos, out LaunchComputationData launchData)
+    {
+        launchData = default;
+        if (!TryComputePowerData(rawDirectionWorld, currentScreenPos, out Vector2 directionWorld, out _, out float power01))
+            return false;
+
+        float speed = Mathf.Lerp(effectiveMinLaunchSpeed, effectiveMaxLaunchSpeed, power01);
+        launchData = new LaunchComputationData
+        {
+            Velocity = directionWorld.normalized * speed,
+            Power01 = power01
+        };
+
+        return true;
     }
 
     private bool TryComputePowerData(
@@ -97,7 +111,13 @@ public partial class Launcher
             return;
         }
 
-        Vector2 velocity = ComputeLaunchVelocity(directionWorld, currentScreenPos);
+        if (!TryBuildLaunchComputation(directionWorld, currentScreenPos, out LaunchComputationData launchData))
+        {
+            ClearTrajectory();
+            return;
+        }
+
+        Vector2 velocity = launchData.Velocity;
         if (velocity.sqrMagnitude < 0.0001f)
         {
             ClearTrajectory();
@@ -107,33 +127,32 @@ public partial class Launcher
         if (velocity.magnitude > maxPreviewSpeed)
             velocity = velocity.normalized * maxPreviewSpeed;
 
+        PreviewPhysicsSettings physicsSettings = GetPreviewPhysicsSettings();
         Vector2 pos = launchPoint.position;
-        float radius = ballRadiusWorld > 0f ? ballRadiusWorld : previewBallRadiusFallback;
+        float radius = physicsSettings.Radius;
 
         trajectoryPoints.Clear();
         trajectoryPoints.Add(pos);
 
-        float power01 = ComputePower01(directionWorld, currentScreenPos);
-        ApplyTrajectoryPowerStyling(power01);
+        ApplyTrajectoryPowerStyling(launchData.Power01);
         float minLen = 0.8f;
-        float maxPreviewDistance = Mathf.Lerp(minLen, maxDistancePerSegment, power01);
+        float maxPreviewDistance = Mathf.Lerp(minLen, maxDistancePerSegment, launchData.Power01);
 
         int previewBounces = Mathf.Max(0, maxBounces + GetPreviewBounceBonus());
         int bounces = 0;
         int steps = Mathf.Max(1, previewSteps);
         int minSteps = Mathf.Max(1, Mathf.FloorToInt(steps * 0.25f));
-        steps = Mathf.RoundToInt(Mathf.Lerp(minSteps, steps, power01));
+        steps = Mathf.RoundToInt(Mathf.Lerp(minSteps, steps, launchData.Power01));
         float timeStep = Mathf.Max(0.001f, previewTimeStep);
-        float gravityScale = ballPrefab != null ? ballPrefab.gravityScale : 1f;
-        float linearDrag = ballPrefab != null ? ballPrefab.linearDamping : 0f;
-        Vector2 gravity = Physics2D.gravity * gravityScale;
+        Vector2 gravity = Physics2D.gravity * physicsSettings.GravityScale;
         float remainingDistance = maxPreviewDistance;
+        float surfaceSkin = Mathf.Max(0.005f, Physics2D.defaultContactOffset);
 
         for (int step = 0; step < steps; step++)
         {
             velocity += gravity * timeStep;
-            if (linearDrag > 0f)
-                velocity *= 1f / (1f + linearDrag * timeStep);
+            if (physicsSettings.LinearDrag > 0f)
+                velocity *= 1f / (1f + physicsSettings.LinearDrag * timeStep);
 
             Vector2 displacement = velocity * timeStep;
             float distance = displacement.magnitude;
@@ -163,14 +182,26 @@ public partial class Launcher
                 continue;
             }
 
-            trajectoryPoints.Add(hit.point);
+            Vector2 hitSimulationPosition = hit.centroid;
+            Vector2 hitDisplayPosition = hit.point;
+            trajectoryPoints.Add(hitDisplayPosition);
 
             if (bounces >= previewBounces)
                 break;
 
             bounces++;
-            velocity = Vector2.Reflect(velocity, hit.normal);
-            pos = hit.point + hit.normal * (radius + 0.01f);
+            float surfaceBounciness = BallPhysicsUtility.GetColliderBounciness(hit.collider);
+            velocity = BallPhysicsUtility.CalculateBounceVelocity(
+                velocity,
+                hit.normal,
+                physicsSettings.BallBounciness,
+                surfaceBounciness
+            );
+
+            if (velocity.sqrMagnitude < 0.0001f)
+                break;
+
+            pos = hitSimulationPosition + hit.normal * surfaceSkin;
             remainingDistance = bounceTailLength;
         }
 
@@ -227,6 +258,8 @@ public partial class Launcher
 
         trajectoryLine.numCornerVertices = previewCornerVertices;
         trajectoryLine.numCapVertices = previewCapVertices;
+        trajectoryLine.useWorldSpace = true;
+        trajectoryLine.loop = false;
         baseTrajectoryGradient = trajectoryLine.colorGradient;
         baseTrajectoryWidthMultiplier = trajectoryLine.widthMultiplier;
         EnsurePowerStylingDefaults();
@@ -273,8 +306,8 @@ public partial class Launcher
         CircleCollider2D circle = ballPrefab.GetComponent<CircleCollider2D>();
         if (circle != null)
         {
-            Vector3 lossyScale = ballPrefab.transform.lossyScale;
-            float effectiveScale = Mathf.Max(lossyScale.x, lossyScale.y);
+            Vector3 localScale = ballPrefab.transform.localScale;
+            float effectiveScale = Mathf.Max(Mathf.Abs(localScale.x), Mathf.Abs(localScale.y));
             return circle.radius * effectiveScale;
         }
 

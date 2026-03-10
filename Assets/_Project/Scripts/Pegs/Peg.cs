@@ -10,6 +10,8 @@ public class Peg : MonoBehaviour
     private Collider2D col;
     private PegVisualController visualController;
     private PegColliderController colliderController;
+    private bool hasPersistentColorOverride;
+    private Color persistentColorOverride;
 
     // Para Durable (o futuras mecánicas)
     private int hitPointsRemaining = 1;
@@ -71,6 +73,7 @@ public class Peg : MonoBehaviour
     {
         consumed = false;
         hitPointsRemaining = 1;
+        hasPersistentColorOverride = false;
 
         if (col != null) col.enabled = true;
         visualController?.PlayIdle();
@@ -90,6 +93,7 @@ public class Peg : MonoBehaviour
     public void RestoreForSameEncounter()
     {
         consumed = false;
+        hasPersistentColorOverride = false;
         if (col != null) col.enabled = true;
         visualController?.PlayRestore(withFeedback: true);
 
@@ -112,6 +116,7 @@ public class Peg : MonoBehaviour
     private void Consume()
     {
         consumed = true;
+        hasPersistentColorOverride = false;
 
         // visual
         visualController?.PlayConsume();
@@ -167,6 +172,9 @@ public class Peg : MonoBehaviour
         else
         {
             visualController?.PlayHit();
+
+            if (hasPersistentColorOverride)
+                visualController?.SetColor(persistentColorOverride);
         }
     }
 
@@ -185,11 +193,14 @@ public class Peg : MonoBehaviour
 
     public void SetColor(Color c)
     {
+        hasPersistentColorOverride = true;
+        persistentColorOverride = c;
         visualController?.SetColor(c);
     }
 
     public void SetColorToIdle()
     {
+        hasPersistentColorOverride = false;
         visualController?.SetColorToIdle();
     }
 

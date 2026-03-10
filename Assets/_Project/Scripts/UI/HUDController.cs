@@ -78,6 +78,9 @@ public partial class HUDController : MonoBehaviour
 
     private void Awake()
     {
+        if (!Application.isPlaying)
+            return;
+
         ResolveReferences();
 
         if (enemyBar != null)
@@ -124,6 +127,9 @@ public partial class HUDController : MonoBehaviour
 
     private void OnEnable()
     {
+        if (!Application.isPlaying)
+            return;
+
         ResolveReferences();
         ConfigureHudLayout();
 
@@ -145,6 +151,9 @@ public partial class HUDController : MonoBehaviour
 
     private void Update()
     {
+        if (!Application.isPlaying)
+            return;
+
         if (flow == null || orbs == null || player == null || battle == null)
             ResolveReferences();
 
@@ -157,6 +166,9 @@ public partial class HUDController : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (!Application.isPlaying)
+            return;
+
         if (!followEnemyInWorldSpace)
             return;
 
@@ -975,8 +987,16 @@ public partial class HUDController : MonoBehaviour
             if (button == null)
                 continue;
 
-            Image image = EnsureComponent<Image>(button.gameObject);
-            UIArtUtility.ApplyImageStyle(image, new Color(0.27f, 0.18f, 0.1f, 0.96f), true, Image.Type.Sliced, GetBuiltinPanelSprite());
+            UIArtUtility.ApplyButtonStyle(
+                button,
+                new Color(0.27f, 0.18f, 0.1f, 1f),
+                new Color(0.39f, 0.27f, 0.16f, 1f),
+                new Color(0.2f, 0.13f, 0.08f, 1f),
+                new Color(0.25f, 0.2f, 0.16f, 0.55f),
+                true,
+                Image.Type.Sliced,
+                GetBuiltinPanelSprite(),
+                0.08f);
 
             if (UIArtUtility.AllowsGeneratedDecor(button))
             {
@@ -987,18 +1007,6 @@ public partial class HUDController : MonoBehaviour
             }
 
             UIButtonMotion.Attach(button.transform as RectTransform, 1.03f, 0.965f, 0.12f);
-
-            if (!UIArtUtility.ShouldPreserveButtonTransitions(button))
-            {
-                ColorBlock colors = button.colors;
-                colors.normalColor = new Color(0.27f, 0.18f, 0.1f, 1f);
-                colors.highlightedColor = new Color(0.39f, 0.27f, 0.16f, 1f);
-                colors.pressedColor = new Color(0.2f, 0.13f, 0.08f, 1f);
-                colors.selectedColor = colors.highlightedColor;
-                colors.disabledColor = new Color(0.25f, 0.2f, 0.16f, 0.55f);
-                colors.colorMultiplier = 1f;
-                button.colors = colors;
-            }
 
             TMP_Text buttonText = button.GetComponentInChildren<TMP_Text>(true);
             if (buttonText != null)
@@ -1025,8 +1033,16 @@ public partial class HUDController : MonoBehaviour
             return;
 
         Button button = pauseRoot.GetComponent<Button>();
-        Image image = EnsureComponent<Image>(pauseRoot.gameObject);
-        UIArtUtility.ApplyImageStyle(image, new Color(0.34f, 0.24f, 0.14f, 0.96f), true, Image.Type.Sliced, GetBuiltinPanelSprite());
+        UIArtUtility.ApplyButtonStyle(
+            button,
+            new Color(0.34f, 0.24f, 0.14f, 1f),
+            new Color(0.48f, 0.34f, 0.2f, 1f),
+            new Color(0.24f, 0.16f, 0.1f, 1f),
+            new Color(0.25f, 0.2f, 0.16f, 0.55f),
+            true,
+            Image.Type.Sliced,
+            GetBuiltinPanelSprite(),
+            0.08f);
 
         if (UIArtUtility.AllowsGeneratedDecor(pauseRoot))
         {
@@ -1037,18 +1053,6 @@ public partial class HUDController : MonoBehaviour
         }
 
         UIButtonMotion.Attach(pauseRoot, 1.03f, 0.96f, 0.12f);
-
-        if (button != null && !UIArtUtility.ShouldPreserveButtonTransitions(button))
-        {
-            ColorBlock colors = button.colors;
-            colors.normalColor = new Color(0.34f, 0.24f, 0.14f, 1f);
-            colors.highlightedColor = new Color(0.48f, 0.34f, 0.2f, 1f);
-            colors.pressedColor = new Color(0.24f, 0.16f, 0.1f, 1f);
-            colors.selectedColor = colors.highlightedColor;
-            colors.disabledColor = new Color(0.25f, 0.2f, 0.16f, 0.55f);
-            colors.colorMultiplier = 1f;
-            button.colors = colors;
-        }
 
         TMP_Text pauseLabel = pauseRoot.GetComponentInChildren<TMP_Text>(true);
         if (pauseLabel != null)

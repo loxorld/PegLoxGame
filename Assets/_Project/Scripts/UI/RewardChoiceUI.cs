@@ -67,8 +67,13 @@ public class RewardChoiceUI : MonoBehaviour
 
     private void Awake()
     {
+        if (!Application.isPlaying)
+        {
+            ResolveReferences(suppressFallbackLogging: true);
+            return;
+        }
+
         ResolveReferences(suppressFallbackLogging: true);
-        EnsureOverlayPresentation();
 
         if (root != null)
             root.SetActive(false);
@@ -82,12 +87,14 @@ public class RewardChoiceUI : MonoBehaviour
     private void OnValidate()
     {
         ResolveReferences(suppressFallbackLogging: true);
-        EnsureOverlayPresentation();
     }
 #endif
 
     private void Start()
     {
+        if (!Application.isPlaying)
+            return;
+
         ResolveReferences();
         EnsureOverlayPresentation();
         TrySubscribeFlow();
@@ -96,6 +103,9 @@ public class RewardChoiceUI : MonoBehaviour
 
     private void OnEnable()
     {
+        if (!Application.isPlaying)
+            return;
+
         ResolveReferences();
         EnsureOverlayPresentation();
 
@@ -112,6 +122,9 @@ public class RewardChoiceUI : MonoBehaviour
 
     private void Update()
     {
+        if (!Application.isPlaying)
+            return;
+
         if (flow == null || rewards == null)
         {
             ResolveReferences();

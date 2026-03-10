@@ -105,6 +105,54 @@ public static class UIArtUtility
         image.raycastTarget = raycastTarget;
     }
 
+    public static void ApplyButtonStyle(
+        Button button,
+        Color normalColor,
+        Color highlightedColor,
+        Color pressedColor,
+        Color disabledColor,
+        bool raycastTarget,
+        Image.Type fallbackType = Image.Type.Sliced,
+        Sprite fallbackSprite = null,
+        float fadeDuration = 0.08f)
+    {
+        if (button == null)
+            return;
+
+        Image image = button.targetGraphic as Image ?? button.GetComponent<Image>();
+        if (image == null)
+            image = button.gameObject.AddComponent<Image>();
+
+        UIArtDirectives directives = GetDirectives(button);
+        bool preserveAssignedColors = directives != null && directives.PreserveAssignedColors;
+        bool preserveButtonTransitions = directives != null && directives.PreserveButtonTransitions;
+
+        if (!ShouldPreserveSprite(image))
+        {
+            image.sprite = fallbackSprite != null ? fallbackSprite : BuiltinPanelSprite;
+            image.type = fallbackType;
+        }
+
+        if (!preserveAssignedColors)
+            image.color = normalColor;
+
+        image.raycastTarget = raycastTarget;
+        button.targetGraphic = image;
+
+        if (preserveButtonTransitions)
+            return;
+
+        ColorBlock colors = button.colors;
+        colors.normalColor = normalColor;
+        colors.highlightedColor = highlightedColor;
+        colors.pressedColor = pressedColor;
+        colors.selectedColor = highlightedColor;
+        colors.disabledColor = disabledColor;
+        colors.colorMultiplier = 1f;
+        colors.fadeDuration = fadeDuration;
+        button.colors = colors;
+    }
+
     public static string ResolveDynamicText(TMP_Text text, string plainText, string richText)
     {
         return ShouldPreserveTextStyling(text) ? plainText : richText;

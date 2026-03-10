@@ -22,19 +22,27 @@ public class OverlayAnimator : MonoBehaviour
 
     private void Awake()
     {
+        if (!Application.isPlaying)
+            return;
+
         Initialize();
     }
 
     private void OnEnable()
     {
+        if (!Application.isPlaying)
+            return;
+
         Initialize();
     }
 
     private void Initialize()
     {
-        if (cg != null) return;
-        cg = GetComponent<CanvasGroup>();
-        if (cg == null) return;
+        if (cg == null)
+            cg = GetComponent<CanvasGroup>();
+
+        if (cg == null || !Application.isPlaying)
+            return;
 
         cg.alpha = 0f;
         cg.interactable = false;
@@ -58,6 +66,9 @@ public class OverlayAnimator : MonoBehaviour
 
     public void Show()
     {
+        if (!Application.isPlaying)
+            return;
+
         Initialize();
         if (cg == null) return;
 
@@ -85,6 +96,9 @@ public class OverlayAnimator : MonoBehaviour
 
     public void Hide()
     {
+        if (!Application.isPlaying)
+            return;
+
         Initialize();
         if (cg == null) return;
 

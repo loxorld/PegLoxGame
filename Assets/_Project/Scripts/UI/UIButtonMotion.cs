@@ -20,6 +20,9 @@ public sealed class UIButtonMotion : MonoBehaviour, IPointerEnterHandler, IPoint
             return null;
 
         UIButtonMotion motion = targetRect.GetComponent<UIButtonMotion>();
+        if (motion == null && !Application.isPlaying)
+            return null;
+
         if (motion == null)
             motion = targetRect.gameObject.AddComponent<UIButtonMotion>();
 
@@ -33,6 +36,9 @@ public sealed class UIButtonMotion : MonoBehaviour, IPointerEnterHandler, IPoint
 
     private void Awake()
     {
+        if (!Application.isPlaying)
+            return;
+
         if (target == null)
             target = transform as RectTransform;
 
@@ -41,6 +47,9 @@ public sealed class UIButtonMotion : MonoBehaviour, IPointerEnterHandler, IPoint
 
     private void OnEnable()
     {
+        if (!Application.isPlaying)
+            return;
+
         CacheBaseScale();
     }
 
