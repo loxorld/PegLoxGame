@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8804bd718ef296a42b06a1fdb871ef08, type: 3}
   m_Name: Orb_Heavy
   m_EditorClassIdentifier: Assembly-CSharp::OrbData
-  orbName: Heavy
+  orbName: Orbe Yunque
   icon: {fileID: 0}
-  description: "Orbe est\xE1ndar y balanceado."
+  description: Golpea mas fuerte y rebota menos. El primer critico duplica su dano por impacto.
   damagePerHit: 3
   bounciness: 0.6
   linearDrag: 0.2

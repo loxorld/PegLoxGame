@@ -28,6 +28,11 @@ public class RelicManager : MonoBehaviour
             activeRelics.Add(relic);
     }
 
+    public bool HasRelic(ShotEffectBase relic)
+    {
+        return relic != null && activeRelics.Contains(relic);
+    }
+
     public void ResetToDefaults()
     {
         activeRelics.Clear();

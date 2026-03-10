@@ -13,6 +13,19 @@ MonoBehaviour:
   m_Name: Enemy_Brute
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
   enemyName: Brute
-  maxHP: 10
-  attackDamage: 8
+  epithet: Guardarraiz
+  combatHint: Bloquea 3 dano por tirada.
+  maxHP: 16
+  attackDamage: 6
   enemyPrefab: {fileID: 689132391747191276, guid: d63cabf70a6924e4b8553dcbbc94cc67, type: 3}
+  minStageIndex: 0
+  maxStageIndex: 1
+  minEncounterInStage: 0
+  allowRegularEncounters: 1
+  encounterWeight: 3
+  flatDamageReduction: 3
+  rageDamageOnSurvive: 0
+  healOnSurvive: 0
+  desperationThreshold: 0
+  desperationAttackBonus: 0
+  desperationHeal: 0

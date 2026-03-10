@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8804bd718ef296a42b06a1fdb871ef08, type: 3}
   m_Name: Orb_PierceLike
   m_EditorClassIdentifier: Assembly-CSharp::OrbData
-  orbName: Pierce
+  orbName: Orbe Aguja
   icon: {fileID: 0}
-  description: "Orbe est\xE1ndar y balanceado."
+  description: Ligero y muy rebotador. El primer critico duplica su dano por impacto.
   damagePerHit: 2
   bounciness: 0.95
   linearDrag: 0

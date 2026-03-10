@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f3b76b3dac74688b52e5728ec59bf91, type: 3}
+  m_Name: Castillo_BibliotecaSellada
+  m_EditorClassIdentifier: Assembly-CSharp::EventDefinition
+  title: Biblioteca Sellada
+  description: Tomos rotos giran en el aire y protegen un atril cubierto de polvo espectral.
+  conditions:
+    useStageRange: 1
+    minStageIndex: 2
+    maxStageIndex: 2
+  options:
+  - optionLabel: Quemar el grimorio mayor
+    successProbability: 1
+    useSuccessProbability: 0
+    useRequirements: 1
+    minCoins: 0
+    minHp: 14
+    requiredRelicId: 
+    successOutcome:
+      coinDelta: 24
+      hpDelta: -7
+      resultDescription: El grimorio estalla y deja ver una caja real. +24 monedas, -7 HP.
+    failureOutcome:
+      coinDelta: 0
+      hpDelta: 0
+      resultDescription: ''
+  - optionLabel: Resolver el acertijo
+    successProbability: 0.55
+    useSuccessProbability: 1
+    useRequirements: 0
+    minCoins: 0
+    minHp: 0
+    requiredRelicId: 
+    successOutcome:
+      coinDelta: 30
+      hpDelta: 0
+      resultDescription: Encuentras la combinacion del tesoro. +30 monedas.
+    failureOutcome:
+      coinDelta: 0
+      hpDelta: -8
+      resultDescription: Los tomos te persiguen con paginas afiladas. -8 HP.
+  - optionLabel: Saquear los escritorios
+    successProbability: 1
+    useSuccessProbability: 0
+    useRequirements: 0
+    minCoins: 0
+    minHp: 0
+    requiredRelicId: 
+    successOutcome:
+      coinDelta: 12
+      hpDelta: 0
+      resultDescription: Solo rescatas unas pocas monedas antiguas. +12 monedas.
+    failureOutcome:
+      coinDelta: 0
+      hpDelta: 0
+      resultDescription: ''

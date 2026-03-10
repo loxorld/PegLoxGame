@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f3b76b3dac74688b52e5728ec59bf91, type: 3}
+  m_Name: Bosque_FogataRastreador
+  m_EditorClassIdentifier: Assembly-CSharp::EventDefinition
+  title: Fogata del Rastreador
+  description: Un viejo cazador deja brasas, provisiones y marcas recientes sobre la tierra.
+  conditions:
+    useStageRange: 1
+    minStageIndex: 0
+    maxStageIndex: 0
+  options:
+  - optionLabel: Pagar por provisiones
+    successProbability: 1
+    useSuccessProbability: 0
+    useRequirements: 1
+    minCoins: 10
+    minHp: 0
+    requiredRelicId: 
+    successOutcome:
+      coinDelta: -10
+      hpDelta: 8
+      resultDescription: El cazador te vende comida seca y vendajes. -10 monedas, +8 HP.
+    failureOutcome:
+      coinDelta: 0
+      hpDelta: 0
+      resultDescription: ''
+  - optionLabel: Seguir las huellas del jabali
+    successProbability: 0.65
+    useSuccessProbability: 1
+    useRequirements: 0
+    minCoins: 0
+    minHp: 0
+    requiredRelicId: 
+    successOutcome:
+      coinDelta: 18
+      hpDelta: 0
+      resultDescription: Das con un escondite de cazadores furtivos. +18 monedas.
+    failureOutcome:
+      coinDelta: 0
+      hpDelta: -6
+      resultDescription: El jabali te embiste entre los arboles. -6 HP.
+  - optionLabel: Rebuscar la fogata
+    successProbability: 1
+    useSuccessProbability: 0
+    useRequirements: 0
+    minCoins: 0
+    minHp: 0
+    requiredRelicId: 
+    successOutcome:
+      coinDelta: 7
+      hpDelta: 0
+      resultDescription: Recuperas restos utiles antes de seguir. +7 monedas.
+    failureOutcome:
+      coinDelta: 0
+      hpDelta: 0
+      resultDescription: ''

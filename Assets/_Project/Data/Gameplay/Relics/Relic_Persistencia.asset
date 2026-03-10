@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 07eccb6cea27f58419aece08845289cf, type: 3}
   m_Name: Relic_Persistencia
   m_EditorClassIdentifier: Assembly-CSharp::RelicPersistencia
-  displayName: Persistencia
+  displayName: Brida de Trayectoria
   icon: {fileID: 0}
-  description: 
+  description: Suma +1 rebote a la previsualizacion de la trayectoria.
   bonusPreviewBounces: 1

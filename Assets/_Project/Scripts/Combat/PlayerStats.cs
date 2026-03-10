@@ -57,5 +57,23 @@ public class PlayerStats : MonoBehaviour
         }
     }
 
+    public int Heal(int amount)
+    {
+        if (amount <= 0)
+            return 0;
+
+        int previousHp = CurrentHP;
+        CurrentHP = Mathf.Clamp(CurrentHP + amount, 0, maxHP);
+        int restored = CurrentHP - previousHp;
+
+        if (restored > 0)
+        {
+            GameFlowManager.Instance?.SavePlayerHP(CurrentHP);
+            Debug.Log($"Player healed {restored}. HP: {CurrentHP}/{maxHP}");
+        }
+
+        return restored;
+    }
+
     public bool IsDead => isDead;
 }

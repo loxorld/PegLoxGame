@@ -14,6 +14,14 @@ public class PauseMenuUI : MonoBehaviour
     [SerializeField] private Button restartButton;
     [SerializeField] private Button menuButton; // Nuevo boton para volver al menu
 
+    private void ApplyVisualTheme()
+    {
+        RectTransform card = overlayAnim != null
+            ? overlayAnim.Card
+            : (root != null && root.transform.childCount > 0 ? root.transform.GetChild(0) as RectTransform : null);
+        OverlayVisualStyler.StylePauseOverlay(root, card, resumeButton, restartButton, menuButton);
+    }
+
     private void RefreshFlowSubscription()
     {
         GameFlowManager current = flow != null
@@ -38,11 +46,14 @@ public class PauseMenuUI : MonoBehaviour
         if (resumeButton != null) resumeButton.onClick.AddListener(OnResume);
         if (restartButton != null) restartButton.onClick.AddListener(OnRestart);
         if (menuButton != null) menuButton.onClick.AddListener(OnMenu); // Nuevo listener
+
+        ApplyVisualTheme();
     }
 
     private void OnEnable()
     {
         RefreshFlowSubscription();
+        ApplyVisualTheme();
         Sync();
     }
 
@@ -124,7 +135,7 @@ public class PauseMenuUI : MonoBehaviour
         flow?.SaveRun();
         flow?.Resume();
 
-        // Si por alguna razón no está disponible GameFlow, evitamos que el menú quede congelado.
+        // Si por alguna razï¿½n no estï¿½ disponible GameFlow, evitamos que el menï¿½ quede congelado.
         Time.timeScale = 1f;
 
         // Cargar la escena del menu principal en modo Single

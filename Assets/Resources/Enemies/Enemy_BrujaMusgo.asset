@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 614e1c4132ddcb34f972131d7db4e81a, type: 3}
+  m_Name: Enemy_BrujaMusgo
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyData
+  enemyName: Bruja del Musgo
+  epithet: Curandera
+  combatHint: Se cura 3 HP si aguanta.
+  maxHP: 13
+  attackDamage: 5
+  enemyPrefab: {fileID: 7738368802206118143, guid: 13cf66407a909444d9d2e9cb3ab710d4, type: 3}
+  minStageIndex: 0
+  maxStageIndex: 0
+  minEncounterInStage: 0
+  allowRegularEncounters: 1
+  encounterWeight: 2
+  flatDamageReduction: 0
+  rageDamageOnSurvive: 0
+  healOnSurvive: 3
+  desperationThreshold: 0
+  desperationAttackBonus: 0
+  desperationHeal: 0

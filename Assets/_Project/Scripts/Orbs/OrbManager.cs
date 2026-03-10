@@ -86,6 +86,16 @@ public class OrbManager : MonoBehaviour
         Debug.Log($"[OrbManager] Orb gained: {orb.orbName}");
     }
 
+    public bool HasOrb(OrbData orb)
+    {
+        return FindOwnedOrbInstance(orb) != null;
+    }
+
+    public OrbInstance FindOwnedOrbInstance(OrbData orb)
+    {
+        return FindInstanceForOrb(orb);
+    }
+
     private int currentIndex = 0;
 
     private void Start()

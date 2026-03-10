@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8804bd718ef296a42b06a1fdb871ef08, type: 3}
   m_Name: Orb_Basic
   m_EditorClassIdentifier: Assembly-CSharp::OrbData
-  orbName: Basic
+  orbName: Orbe Base
   icon: {fileID: 0}
-  description: "Orbe est\xE1ndar y balanceado."
+  description: Tirada equilibrada. Sin efectos extra.
   damagePerHit: 2
   bounciness: 0.9
   linearDrag: 0

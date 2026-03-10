@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8804bd718ef296a42b06a1fdb871ef08, type: 3}
   m_Name: Orb_Sangrado
   m_EditorClassIdentifier: Assembly-CSharp::OrbData
-  orbName: Sangrado
+  orbName: Orbe Sangrante
   icon: {fileID: 0}
-  description: asdasd
+  description: Al final de la tirada suma +1 de dano bonus por cada impacto realizado.
   damagePerHit: 2
   bounciness: 0.9
   linearDrag: 0

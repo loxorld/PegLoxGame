@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 614e1c4132ddcb34f972131d7db4e81a, type: 3}
+  m_Name: Enemy_TreantAncestral
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyData
+  enemyName: Treant Ancestral
+  epithet: Guardian del Claro
+  combatHint: Bloquea 2, se cura 3 y entra en fase al 40%.
+  maxHP: 24
+  attackDamage: 7
+  enemyPrefab: {fileID: 689132391747191276, guid: d63cabf70a6924e4b8553dcbbc94cc67, type: 3}
+  worldSpriteOverride: {fileID: 0}
+  minStageIndex: 0
+  maxStageIndex: 0
+  minEncounterInStage: 0
+  allowRegularEncounters: 0
+  encounterWeight: 1
+  allowEliteEncounters: 0
+  minEliteEncounterInStage: 1
+  eliteEncounterWeight: 1
+  allowMiniBossEncounters: 1
+  minMiniBossEncounterInStage: 2
+  miniBossEncounterWeight: 1
+  flatDamageReduction: 2
+  rageDamageOnSurvive: 0
+  healOnSurvive: 3
+  desperationThreshold: 0.4
+  desperationAttackBonus: 3
+  desperationHeal: 4

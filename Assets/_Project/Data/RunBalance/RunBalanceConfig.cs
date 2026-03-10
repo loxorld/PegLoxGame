@@ -31,6 +31,19 @@ public class RunBalanceConfig : ScriptableObject
     [Header("Boss & Event Frequency (Stage Index)")]
     public AnimationCurve stageBossAfterNodesCurve = AnimationCurve.Linear(0f, 10f, 2f, 8f);
 
+    [Header("Special Encounter Frequency (Stage Index)")]
+    public AnimationCurve stageEliteFirstEncounterCurve = AnimationCurve.Linear(0f, 1f, 2f, 1f);
+    public AnimationCurve stageEliteCadenceCurve = AnimationCurve.Linear(0f, 2f, 2f, 2f);
+    public AnimationCurve stageMiniBossEncounterCurve = AnimationCurve.Linear(0f, 2f, 2f, 3f);
+
+    [Header("Special Encounter Reward & Difficulty")]
+    public AnimationCurve stageEliteHpMultiplierCurve = AnimationCurve.Linear(0f, 1.35f, 2f, 1.5f);
+    public AnimationCurve stageEliteDamageMultiplierCurve = AnimationCurve.Linear(0f, 1.15f, 2f, 1.3f);
+    public AnimationCurve stageEliteCoinsBonusCurve = AnimationCurve.Linear(0f, 6f, 2f, 9f);
+    public AnimationCurve stageMiniBossHpMultiplierCurve = AnimationCurve.Linear(0f, 1.8f, 2f, 2f);
+    public AnimationCurve stageMiniBossDamageMultiplierCurve = AnimationCurve.Linear(0f, 1.35f, 2f, 1.5f);
+    public AnimationCurve stageMiniBossCoinsBonusCurve = AnimationCurve.Linear(0f, 10f, 2f, 14f);
+
     [Header("Combat Stage Profiles")]
     public CombatStageBalance[] combatStageBalances =
     {
@@ -162,6 +175,51 @@ public class RunBalanceConfig : ScriptableObject
     public int GetBossAfterNodes(int stageIndex, int fallback)
     {
         return EvaluateInt(stageBossAfterNodesCurve, stageIndex, fallback, 1);
+    }
+
+    public int GetEliteFirstEncounterInStage(int stageIndex, int fallback)
+    {
+        return EvaluateInt(stageEliteFirstEncounterCurve, stageIndex, fallback, 0);
+    }
+
+    public int GetEliteEncounterCadence(int stageIndex, int fallback)
+    {
+        return EvaluateInt(stageEliteCadenceCurve, stageIndex, fallback, 1);
+    }
+
+    public int GetMiniBossEncounterInStage(int stageIndex, int fallback)
+    {
+        return EvaluateInt(stageMiniBossEncounterCurve, stageIndex, fallback, 0);
+    }
+
+    public float GetEliteHpMultiplier(int stageIndex, float fallback)
+    {
+        return EvaluateFloat(stageEliteHpMultiplierCurve, stageIndex, fallback, 1f);
+    }
+
+    public float GetEliteDamageMultiplier(int stageIndex, float fallback)
+    {
+        return EvaluateFloat(stageEliteDamageMultiplierCurve, stageIndex, fallback, 1f);
+    }
+
+    public int GetEliteCoinsBonus(int stageIndex, int fallback)
+    {
+        return EvaluateInt(stageEliteCoinsBonusCurve, stageIndex, fallback, 0);
+    }
+
+    public float GetMiniBossHpMultiplier(int stageIndex, float fallback)
+    {
+        return EvaluateFloat(stageMiniBossHpMultiplierCurve, stageIndex, fallback, 1f);
+    }
+
+    public float GetMiniBossDamageMultiplier(int stageIndex, float fallback)
+    {
+        return EvaluateFloat(stageMiniBossDamageMultiplierCurve, stageIndex, fallback, 1f);
+    }
+
+    public int GetMiniBossCoinsBonus(int stageIndex, int fallback)
+    {
+        return EvaluateInt(stageMiniBossCoinsBonusCurve, stageIndex, fallback, 0);
     }
 
     private CombatStageBalance ResolveCombatStage(int stageIndex)

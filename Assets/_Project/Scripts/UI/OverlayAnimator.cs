@@ -18,6 +18,8 @@ public class OverlayAnimator : MonoBehaviour
     private CanvasGroup cg;
     private Tween tween;
 
+    public RectTransform Card => card;
+
     private void Awake()
     {
         Initialize();

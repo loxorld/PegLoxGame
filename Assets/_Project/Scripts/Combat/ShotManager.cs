@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 
 public class ShotManager : MonoBehaviour
@@ -174,7 +174,8 @@ public class ShotManager : MonoBehaviour
             return;
         }
 
-        int damage = (currentShot.TotalHits * currentShot.DamagePerHit * currentShot.Multiplier) + currentShot.BonusDamage;
+        int rawDamage = (currentShot.TotalHits * currentShot.DamagePerHit * currentShot.Multiplier) + currentShot.BonusDamage;
+        int damage = enemy.ResolveIncomingDamage(rawDamage);
 
         ShotResolved?.Invoke(new ShotSummary(
             currentShot.Orb != null ? currentShot.Orb.OrbName : "None",
@@ -182,7 +183,8 @@ public class ShotManager : MonoBehaviour
             currentShot.CriticalHits,
             currentShot.DamagePerHit,
             currentShot.Multiplier,
-            currentShot.BonusDamage
+            currentShot.BonusDamage,
+            damage
         ));
 
         enemy.TakeDamage(damage);
@@ -193,6 +195,8 @@ public class ShotManager : MonoBehaviour
             currentShot = null;
             return;
         }
+
+        enemy.OnShotResolved(rawDamage, damage, currentShot.TotalHits, currentShot.CriticalHits);
 
         // Contraataque
         if (!currentShot.SkipCounterattack)

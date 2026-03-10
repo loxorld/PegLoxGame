@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dd74a613d29346a4e867bfa0ba5dfc74, type: 3}
   m_Name: Relic_FirstCritDoubleDPH
   m_EditorClassIdentifier: Assembly-CSharp::RelicFirstCritDoubleDPH
-  displayName: primercritico
+  displayName: Filo Inicial
   icon: {fileID: 0}
-  description: asdasdasd
+  description: El primer critico de cada disparo duplica el dano por impacto.

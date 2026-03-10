@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 614e1c4132ddcb34f972131d7db4e81a, type: 3}
+  m_Name: Enemy_ReyEspectral
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyData
+  enemyName: Rey Espectral
+  epithet: Desatado
+  combatHint: Bloquea 2. Si aguanta, gana +2 ATQ. Fase al 55%.
+  maxHP: 22
+  attackDamage: 10
+  enemyPrefab: {fileID: 7738368802206118143, guid: 13cf66407a909444d9d2e9cb3ab710d4, type: 3}
+  minStageIndex: 2
+  maxStageIndex: 2
+  minEncounterInStage: 0
+  allowRegularEncounters: 0
+  encounterWeight: 1
+  flatDamageReduction: 2
+  rageDamageOnSurvive: 2
+  healOnSurvive: 0
+  desperationThreshold: 0.55
+  desperationAttackBonus: 5
+  desperationHeal: 4

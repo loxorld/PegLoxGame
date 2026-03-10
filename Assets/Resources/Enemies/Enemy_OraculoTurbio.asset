@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 614e1c4132ddcb34f972131d7db4e81a, type: 3}
+  m_Name: Enemy_OraculoTurbio
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyData
+  enemyName: Oraculo Turbio
+  epithet: Ahogado
+  combatHint: Se cura 5 HP si aguanta.
+  maxHP: 18
+  attackDamage: 5
+  enemyPrefab: {fileID: 7738368802206118143, guid: 13cf66407a909444d9d2e9cb3ab710d4, type: 3}
+  minStageIndex: 1
+  maxStageIndex: 1
+  minEncounterInStage: 1
+  allowRegularEncounters: 1
+  encounterWeight: 3
+  flatDamageReduction: 0
+  rageDamageOnSurvive: 0
+  healOnSurvive: 5
+  desperationThreshold: 0
+  desperationAttackBonus: 0
+  desperationHeal: 0

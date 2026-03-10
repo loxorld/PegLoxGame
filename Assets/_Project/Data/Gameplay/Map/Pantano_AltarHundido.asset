@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f3b76b3dac74688b52e5728ec59bf91, type: 3}
+  m_Name: Pantano_AltarHundido
+  m_EditorClassIdentifier: Assembly-CSharp::EventDefinition
+  title: Altar Hundido
+  description: Un monolito emerge del barro y filtra vapores oscuros a traves de grietas antiguas.
+  conditions:
+    useStageRange: 1
+    minStageIndex: 1
+    maxStageIndex: 1
+  options:
+  - optionLabel: Drenar el fango del altar
+    successProbability: 1
+    useSuccessProbability: 0
+    useRequirements: 1
+    minCoins: 0
+    minHp: 10
+    requiredRelicId: 
+    successOutcome:
+      coinDelta: 20
+      hpDelta: -5
+      resultDescription: Levantas el monolito y recuperas reliquias anegadas. +20 monedas, -5 HP.
+    failureOutcome:
+      coinDelta: 0
+      hpDelta: 0
+      resultDescription: ''
+  - optionLabel: Apostar contra la marea
+    successProbability: 0.5
+    useSuccessProbability: 1
+    useRequirements: 0
+    minCoins: 0
+    minHp: 0
+    requiredRelicId: 
+    successOutcome:
+      coinDelta: 28
+      hpDelta: 0
+      resultDescription: Calculas bien el flujo y tomas un cofre entero. +28 monedas.
+    failureOutcome:
+      coinDelta: -12
+      hpDelta: 0
+      resultDescription: La corriente arrastra parte de tu bolsa. -12 monedas.
+  - optionLabel: Buscar hierbas negras
+    successProbability: 1
+    useSuccessProbability: 0
+    useRequirements: 1
+    minCoins: 8
+    minHp: 0
+    requiredRelicId: 
+    successOutcome:
+      coinDelta: -8
+      hpDelta: 7
+      resultDescription: Mezclas un emplasto pestilente pero efectivo. -8 monedas, +7 HP.
+    failureOutcome:
+      coinDelta: 0
+      hpDelta: 0
+      resultDescription: ''

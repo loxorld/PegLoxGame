@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using System.Collections;
 using System.Globalization;
@@ -15,6 +16,7 @@ public class BattleManager : MonoBehaviour
 
     public event Action EncounterStarted;
     public event Action EncounterCompleted;
+    public event Action<Enemy> CurrentEnemyChanged;
 
     [Header("Encounter Fallback")]
     [SerializeField, Min(1)] private int enemiesToDefeatFallback = 3;
@@ -22,6 +24,10 @@ public class BattleManager : MonoBehaviour
     [Header("Flow")]
     [SerializeField, Min(0f)] private float respawnDelay = 0.5f;
     [SerializeField] private bool autoStartOnLoad = true;
+
+    [Header("Encounter Catalog")]
+    [SerializeField] private bool mergeResourceEnemies = true;
+    [SerializeField] private string resourceEnemiesPath = "Enemies";
 
     private int defeatedCount = 0;
     private bool waitingForRewards = false;
@@ -35,8 +41,12 @@ public class BattleManager : MonoBehaviour
     private float currentEnemyDamageMultiplier = 1f;
     private bool isBossEncounter;
     private bool lastEncounterWasBoss;
+    private CombatEncounterProfile currentEncounterProfile;
 
     private Enemy currentEnemy;
+    private EnemyData[] resourceEnemyCache;
+    private readonly EnemyEncounterSelector enemyEncounterSelector = new EnemyEncounterSelector();
+    private readonly CombatEncounterProfilePlanner encounterProfilePlanner = new CombatEncounterProfilePlanner();
 
     public Enemy CurrentEnemy => currentEnemy;
     public bool WaitingForRewards => waitingForRewards;
@@ -45,11 +55,17 @@ public class BattleManager : MonoBehaviour
     public int EncounterInStage => encounterInStage;
     public int EnemiesToDefeat => enemiesToDefeat;
     public int CurrentStageIndex => currentStageIndex;
-    public float EnemyHpMultiplier => currentEnemyHpMultiplier;
-    public float EnemyDamageMultiplier => currentEnemyDamageMultiplier;
+    public float EnemyHpMultiplier => currentEnemyHpMultiplier * currentEncounterProfile.HpMultiplier;
+    public float EnemyDamageMultiplier => currentEnemyDamageMultiplier * currentEncounterProfile.DamageMultiplier;
     public int EnemyHpBonus => 0;
     public int EnemyDamageBonus => 0;
     public bool HasBalanceConfig => balanceConfig != null;
+    public CombatEncounterType CurrentEncounterType => currentEncounterProfile.Type;
+    public string CurrentEncounterLabel => string.IsNullOrWhiteSpace(currentEncounterProfile.Label) ? "Combate" : currentEncounterProfile.Label;
+    public int CurrentEncounterBonusCoins => currentEncounterProfile.BonusCoins;
+    public bool CurrentEncounterGuaranteesRelicChoice => currentEncounterProfile.GuaranteesRelicChoice;
+    public bool CurrentEncounterGuaranteesUpgradeChoice => currentEncounterProfile.GuaranteesUpgradeChoice;
+    public CombatEncounterProfile CurrentEncounterProfile => currentEncounterProfile;
 
     public string StageName
     {
@@ -66,9 +82,9 @@ public class BattleManager : MonoBehaviour
     {
         get
         {
-            string hpMultiplier = currentEnemyHpMultiplier.ToString("0.##", CultureInfo.InvariantCulture);
-            string dmgMultiplier = currentEnemyDamageMultiplier.ToString("0.##", CultureInfo.InvariantCulture);
-            return $"{StageName} | HP x{hpMultiplier} | DMG x{dmgMultiplier} | N={enemiesToDefeat}";
+            string hpMultiplier = EnemyHpMultiplier.ToString("0.##", CultureInfo.InvariantCulture);
+            string dmgMultiplier = EnemyDamageMultiplier.ToString("0.##", CultureInfo.InvariantCulture);
+            return $"{StageName} | {CurrentEncounterLabel} | HP x{hpMultiplier} | DMG x{dmgMultiplier} | N={enemiesToDefeat}";
         }
     }
 
@@ -105,6 +121,7 @@ public class BattleManager : MonoBehaviour
         defeatedCount = 0;
         waitingForRewards = false;
         lastEncounterWasBoss = false;
+        currentEncounterProfile = CombatEncounterProfile.CreateRegular();
 
         SyncEncounterIndexFromFlow();
         ResolveBalanceConfig();
@@ -124,11 +141,15 @@ public class BattleManager : MonoBehaviour
         if (isBossEncounter)
             enemiesToDefeat = 1;
 
+        EnemyData[] encounterCatalog = BuildEncounterCatalog();
+        currentEncounterProfile = ResolveEncounterProfile(encounterCatalog);
+        if (currentEncounterProfile.SingleEnemy)
+            enemiesToDefeat = 1;
 
         EncounterStarted?.Invoke();
         Debug.Log("[BattleManager] Evento EncounterStarted disparado");
 
-        SpawnRandomEnemy();
+        SpawnEncounterEnemy(encounterCatalog);
     }
 
     private void OnEnemyDefeated()
@@ -140,7 +161,7 @@ public class BattleManager : MonoBehaviour
         if (defeatedCount >= enemiesToDefeat)
         {
             waitingForRewards = true;
-            lastEncounterWasBoss = isBossEncounter;
+            lastEncounterWasBoss = currentEncounterProfile.Type == CombatEncounterType.Boss;
             if (isBossEncounter)
             {
                 GameFlowManager flow = GameFlowManager.Instance;
@@ -162,7 +183,7 @@ public class BattleManager : MonoBehaviour
     {
         if (!waitingForRewards) return;
 
-        // Subimos dificultad para el próximo encounter
+        // Subimos dificultad para el prÃ³ximo encounter
         GameFlowManager flow = GameFlowManager.Instance;
         if (flow != null)
             flow.AdvanceEncounter();
@@ -174,22 +195,66 @@ public class BattleManager : MonoBehaviour
 
     private void SpawnRandomEnemy()
     {
+        SpawnEncounterEnemy(BuildEncounterCatalog());
+    }
+
+    private void SpawnEncounterEnemy(EnemyData[] encounterCatalog)
+    {
         if (waitingForRewards) return;
 
-        if (enemiesPool == null || enemiesPool.Length == 0)
+        if (currentEncounterProfile.Type == CombatEncounterType.Boss)
+        {
+            EnemyData bossEnemy = GameFlowManager.Instance?.BossEnemy;
+            if (bossEnemy != null)
+            {
+                SpawnEnemy(bossEnemy);
+                return;
+            }
+        }
+
+        if (encounterCatalog == null || encounterCatalog.Length == 0)
         {
             Debug.LogError("[Battle] enemiesPool is empty.");
             return;
         }
 
-        EnemyData chosen = enemiesPool[UnityEngine.Random.Range(0, enemiesPool.Length)];
-        if (isBossEncounter)
+        EnemyData chosen = currentEncounterProfile.Type switch
         {
-            EnemyData bossEnemy = GameFlowManager.Instance?.BossEnemy;
-            if (bossEnemy != null)
-                chosen = bossEnemy;
+            CombatEncounterType.Elite => enemyEncounterSelector.SelectEliteEncounterEnemy(
+                encounterCatalog,
+                currentStageIndex,
+                encounterInStage,
+                (min, max) => UnityEngine.Random.Range(min, max)),
+            CombatEncounterType.MiniBoss => enemyEncounterSelector.SelectMiniBossEncounterEnemy(
+                encounterCatalog,
+                currentStageIndex,
+                encounterInStage,
+                (min, max) => UnityEngine.Random.Range(min, max)),
+            _ => enemyEncounterSelector.SelectRegularEncounterEnemy(
+                encounterCatalog,
+                currentStageIndex,
+                encounterInStage,
+                (min, max) => UnityEngine.Random.Range(min, max))
+        };
+
+        if (chosen == null && currentEncounterProfile.Type != CombatEncounterType.Regular)
+        {
+            currentEncounterProfile = CombatEncounterProfile.CreateRegular();
+            enemiesToDefeat = Mathf.Max(1, balanceConfig != null
+                ? balanceConfig.GetEnemiesToDefeat(currentStageIndex, encounterInStage, enemiesToDefeatFallback)
+                : enemiesToDefeatFallback);
+            chosen = enemyEncounterSelector.SelectRegularEncounterEnemy(
+                encounterCatalog,
+                currentStageIndex,
+                encounterInStage,
+                (min, max) => UnityEngine.Random.Range(min, max));
         }
 
+        SpawnEnemy(chosen);
+    }
+
+    private void SpawnEnemy(EnemyData chosen)
+    {
         Enemy prefab = chosen != null ? chosen.enemyPrefab : null;
         if (prefab == null)
             prefab = fallbackEnemy;
@@ -208,6 +273,12 @@ public class BattleManager : MonoBehaviour
 
             int scaledHp = Mathf.RoundToInt(baseHp * currentEnemyHpMultiplier);
             int scaledDmg = Mathf.RoundToInt(baseDmg * currentEnemyDamageMultiplier);
+
+            if (currentEncounterProfile.Type == CombatEncounterType.Elite || currentEncounterProfile.Type == CombatEncounterType.MiniBoss)
+            {
+                scaledHp = Mathf.RoundToInt(scaledHp * currentEncounterProfile.HpMultiplier);
+                scaledDmg = Mathf.RoundToInt(scaledDmg * currentEncounterProfile.DamageMultiplier);
+            }
 
             if (isBossEncounter)
             {
@@ -230,6 +301,50 @@ public class BattleManager : MonoBehaviour
                 currentEnemy.ApplyDifficulty(scaledHp, scaledDmg);
             }
         }
+    }
+
+    private EnemyData[] BuildEncounterCatalog()
+    {
+        var catalog = new System.Collections.Generic.List<EnemyData>();
+        var seen = new System.Collections.Generic.HashSet<EnemyData>();
+
+        if (enemiesPool != null)
+        {
+            for (int i = 0; i < enemiesPool.Length; i++)
+            {
+                EnemyData enemy = enemiesPool[i];
+                if (enemy != null && seen.Add(enemy))
+                    catalog.Add(enemy);
+            }
+        }
+
+        if (mergeResourceEnemies)
+        {
+            EnemyData[] resourceEnemies = LoadResourceEnemies();
+            for (int i = 0; i < resourceEnemies.Length; i++)
+            {
+                EnemyData enemy = resourceEnemies[i];
+                if (enemy != null && seen.Add(enemy))
+                    catalog.Add(enemy);
+            }
+        }
+
+        return catalog.ToArray();
+    }
+
+    private EnemyData[] LoadResourceEnemies()
+    {
+        if (resourceEnemyCache != null)
+            return resourceEnemyCache;
+
+        if (string.IsNullOrWhiteSpace(resourceEnemiesPath))
+        {
+            resourceEnemyCache = Array.Empty<EnemyData>();
+            return resourceEnemyCache;
+        }
+
+        resourceEnemyCache = Resources.LoadAll<EnemyData>(resourceEnemiesPath) ?? Array.Empty<EnemyData>();
+        return resourceEnemyCache;
     }
 
     public void StartEncounterFromMap()
@@ -310,6 +425,24 @@ public class BattleManager : MonoBehaviour
 
         currentEnemy.gameObject.SetActive(true);
         currentEnemy.Defeated += OnEnemyDefeated;
+        CurrentEnemyChanged?.Invoke(currentEnemy);
+    }
+
+    private CombatEncounterProfile ResolveEncounterProfile(IReadOnlyList<EnemyData> encounterCatalog)
+    {
+        if (isBossEncounter)
+            return CombatEncounterProfile.CreateBoss();
+
+        bool hasEliteCandidates = enemyEncounterSelector.BuildEliteEncounterCandidates(encounterCatalog, currentStageIndex, encounterInStage).Count > 0;
+        bool hasMiniBossCandidates = enemyEncounterSelector.BuildMiniBossEncounterCandidates(encounterCatalog, currentStageIndex, encounterInStage).Count > 0;
+
+        return encounterProfilePlanner.Resolve(
+            balanceConfig,
+            currentStageIndex,
+            encounterInStage,
+            isBossEncounter,
+            hasEliteCandidates,
+            hasMiniBossCandidates);
     }
 
 }

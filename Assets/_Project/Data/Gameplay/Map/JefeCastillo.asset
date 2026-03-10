@@ -16,7 +16,7 @@ MonoBehaviour:
   title: Rey Espectral
   description: Jefe final del castillo.
   nextNodes: []
-  bossEnemy: {fileID: 11400000, guid: 4beab10c2fa6dac4a97716ff0d5ef953, type: 2}
+  bossEnemy: {fileID: 11400000, guid: f80ad82c07eb4e7fa9b369a170958888, type: 2}
   bossHpMultiplier: 7
   bossDamageMultiplier: 2.0
   bossHpBonus: 0

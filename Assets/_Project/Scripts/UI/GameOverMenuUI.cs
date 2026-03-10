@@ -13,6 +13,14 @@ public class GameOverMenuUI : MonoBehaviour
     [SerializeField] private OverlayAnimator overlayAnim; // OverlayAnimator en el root
     [SerializeField] private Button restartButton;
 
+    private void ApplyVisualTheme()
+    {
+        RectTransform card = overlayAnim != null
+            ? overlayAnim.Card
+            : (root != null && root.transform.childCount > 0 ? root.transform.GetChild(0) as RectTransform : null);
+        OverlayVisualStyler.StyleGameOverOverlay(root, card, restartButton);
+    }
+
     private void Awake()
     {
         if (flow == null) flow = GameFlowManager.Instance;
@@ -21,6 +29,8 @@ public class GameOverMenuUI : MonoBehaviour
 
         if (restartButton != null)
             restartButton.onClick.AddListener(Restart);
+
+        ApplyVisualTheme();
     }
 
     private void OnEnable()
@@ -31,6 +41,7 @@ public class GameOverMenuUI : MonoBehaviour
         if (flow != null)
             flow.OnStateChanged += OnStateChanged;
 
+        ApplyVisualTheme();
         Sync();
     }
 

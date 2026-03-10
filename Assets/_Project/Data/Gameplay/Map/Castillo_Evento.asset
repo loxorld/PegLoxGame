@@ -15,8 +15,11 @@ MonoBehaviour:
   nodeType: 2
   title: Camara Antigua
   description: Ecos magicos recorren los pasillos.
-  eventDefinition: {fileID: 11400000, guid: cfea73eb71cd4beab28b79c782510df8, type: 2}
-  eventDefinitionPool: []
+  eventDefinition: {fileID: 0}
+  eventDefinitionPool:
+  - {fileID: 11400000, guid: cfea73eb71cd4beab28b79c782510df8, type: 2}
+  - {fileID: 11400000, guid: 5f8de6151bf64ac6ebd489a567849005, type: 2}
+  - {fileID: 11400000, guid: 609ef7262cf74bd7fce59ab67895006, type: 2}
   nextNodes:
   - label: Camino A
     targetNode: {fileID: 11400000, guid: e7e7b2b6aa4f4ec78c7db593c4622c56, type: 2}

@@ -32,8 +32,16 @@ public class OrbSwitchUI : MonoBehaviour
     private void Start()
     {
         ResolveReferences();
-        prevButton.onClick.AddListener(OnPrevOrb);
-        nextButton.onClick.AddListener(OnNextOrb);
+        if (prevButton != null)
+        {
+            prevButton.onClick.AddListener(OnPrevOrb);
+            UIButtonMotion.Attach(prevButton.transform as RectTransform, 1.03f, 0.965f, 0.12f);
+        }
+        if (nextButton != null)
+        {
+            nextButton.onClick.AddListener(OnNextOrb);
+            UIButtonMotion.Attach(nextButton.transform as RectTransform, 1.03f, 0.965f, 0.12f);
+        }
         UpdateUI();
     }
 
@@ -45,8 +53,10 @@ public class OrbSwitchUI : MonoBehaviour
         if (orbManager == null || gameFlowManager == null || shotManager == null) return;
 
         bool canChange = gameFlowManager.State == GameState.Combat && !shotManager.ShotInProgress;
-        prevButton.interactable = canChange;
-        nextButton.interactable = canChange;
+        if (prevButton != null)
+            prevButton.interactable = canChange;
+        if (nextButton != null)
+            nextButton.interactable = canChange;
     }
 
     private void OnPrevOrb()
@@ -67,7 +77,18 @@ public class OrbSwitchUI : MonoBehaviour
     {
         if (orbNameLabel != null)
         {
-            orbNameLabel.text = orbManager != null ? (orbManager.CurrentOrb?.OrbName ?? "Orb") : "Orb";
+            OrbInstance orb = orbManager != null ? orbManager.CurrentOrb : null;
+            if (orb != null)
+            {
+                string orbHex = ColorUtility.ToHtmlStringRGB(Color.Lerp(orb.Color, Color.white, 0.18f));
+                string plainText = $"{orb.OrbName}\nLv {orb.Level}";
+                string richText = $"<color=#{orbHex}><b>{orb.OrbName}</b></color>\n<size=72%><color=#F0DEC1CC>Lv {orb.Level}</color></size>";
+                orbNameLabel.text = UIArtUtility.ResolveDynamicText(orbNameLabel, plainText, richText);
+            }
+            else
+            {
+                orbNameLabel.text = UIArtUtility.ResolveDynamicText(orbNameLabel, "Sin orbe", "<color=#F0DEC1CC>Sin orbe</color>");
+            }
         }
     }
 }

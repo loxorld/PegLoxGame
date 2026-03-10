@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3cd0b98ed1997314291223dd63a5d909, type: 3}
   m_Name: Relic_BonusDamagePerHit
   m_EditorClassIdentifier: Assembly-CSharp::RelicBonusDamagePerHit
-  displayName: bonus
+  displayName: Puas de Guerra
   icon: {fileID: 0}
-  description: asdasdasd
+  description: Cada disparo empieza con +1 de dano por impacto.
   bonus: 1

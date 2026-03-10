@@ -15,8 +15,11 @@ MonoBehaviour:
   nodeType: 2
   title: Ruinas Hundidas
   description: Las ruinas del pantano esconden recompensas... o riesgos.
-  eventDefinition: {fileID: 11400000, guid: e639b1b88c354782beeaefbfdb525b38, type: 2}
-  eventDefinitionPool: []
+  eventDefinition: {fileID: 0}
+  eventDefinitionPool:
+  - {fileID: 11400000, guid: e639b1b88c354782beeaefbfdb525b38, type: 2}
+  - {fileID: 11400000, guid: 3d6bc4f3f9d44ea4c9c2678345629003, type: 2}
+  - {fileID: 11400000, guid: 4e7cd5040ae54fb5dad3789456739004, type: 2}
   nextNodes:
   - label: Camino A
     targetNode: {fileID: 11400000, guid: 5b37c614d6b5449fa78d64e84f87f715, type: 2}

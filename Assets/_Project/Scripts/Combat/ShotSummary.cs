@@ -18,7 +18,8 @@ public struct ShotSummary
         int criticalHits,
         int damagePerHit,
         int multiplier,
-        int bonusDamage)
+        int bonusDamage,
+        int predictedDamageOverride = -1)
     {
         OrbName = orbName;
         NormalHits = normalHits;
@@ -27,6 +28,8 @@ public struct ShotSummary
         DamagePerHit = damagePerHit;
         Multiplier = multiplier;
         BonusDamage = bonusDamage;
-        PredictedDamage = (TotalHits * DamagePerHit * Multiplier) + BonusDamage;
+        PredictedDamage = predictedDamageOverride >= 0
+            ? predictedDamageOverride
+            : (TotalHits * DamagePerHit * Multiplier) + BonusDamage;
     }
 }

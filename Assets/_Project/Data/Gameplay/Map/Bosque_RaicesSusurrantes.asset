@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f3b76b3dac74688b52e5728ec59bf91, type: 3}
+  m_Name: Bosque_RaicesSusurrantes
+  m_EditorClassIdentifier: Assembly-CSharp::EventDefinition
+  title: Raices Susurrantes
+  description: Las raices palpitan bajo tus pies y piden una ofrenda antes de apartarse.
+  conditions:
+    useStageRange: 1
+    minStageIndex: 0
+    maxStageIndex: 0
+  options:
+  - optionLabel: Ofrecer sangre al bosque
+    successProbability: 1
+    useSuccessProbability: 0
+    useRequirements: 1
+    minCoins: 0
+    minHp: 12
+    requiredRelicId: 
+    successOutcome:
+      coinDelta: 22
+      hpDelta: -6
+      resultDescription: Las raices aceptan el tributo y revelan un alijo. +22 monedas, -6 HP.
+    failureOutcome:
+      coinDelta: 0
+      hpDelta: 0
+      resultDescription: ''
+  - optionLabel: Escuchar los susurros
+    successProbability: 0.5
+    useSuccessProbability: 1
+    useRequirements: 0
+    minCoins: 0
+    minHp: 0
+    requiredRelicId: 
+    successOutcome:
+      coinDelta: 14
+      hpDelta: 0
+      resultDescription: Descifras un sendero oculto. +14 monedas.
+    failureOutcome:
+      coinDelta: 0
+      hpDelta: -4
+      resultDescription: El bosque te extravia durante horas. -4 HP.
+  - optionLabel: Retroceder con cuidado
+    successProbability: 1
+    useSuccessProbability: 0
+    useRequirements: 0
+    minCoins: 0
+    minHp: 0
+    requiredRelicId: 
+    successOutcome:
+      coinDelta: 5
+      hpDelta: 0
+      resultDescription: Evitas el peligro, pero rescatas unas pocas monedas. +5 monedas.
+    failureOutcome:
+      coinDelta: 0
+      hpDelta: 0
+      resultDescription: ''

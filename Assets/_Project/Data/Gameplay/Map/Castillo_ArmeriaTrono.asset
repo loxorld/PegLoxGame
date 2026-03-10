@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f3b76b3dac74688b52e5728ec59bf91, type: 3}
+  m_Name: Castillo_ArmeriaTrono
+  m_EditorClassIdentifier: Assembly-CSharp::EventDefinition
+  title: Armeria del Trono
+  description: Lanzas y armaduras encantadas tiemblan al sentir tu presencia.
+  conditions:
+    useStageRange: 1
+    minStageIndex: 2
+    maxStageIndex: 2
+  options:
+  - optionLabel: Romper las vitrinas encantadas
+    successProbability: 0.7
+    useSuccessProbability: 1
+    useRequirements: 0
+    minCoins: 0
+    minHp: 0
+    requiredRelicId: 
+    successOutcome:
+      coinDelta: 26
+      hpDelta: 0
+      resultDescription: Consigues un lote de armas nobles para vender. +26 monedas.
+    failureOutcome:
+      coinDelta: 0
+      hpDelta: -6
+      resultDescription: Las vitrinas explotan en fragmentos arcanos. -6 HP.
+  - optionLabel: Sobornar a los espectros custodios
+    successProbability: 1
+    useSuccessProbability: 0
+    useRequirements: 1
+    minCoins: 15
+    minHp: 0
+    requiredRelicId: 
+    successOutcome:
+      coinDelta: -15
+      hpDelta: 9
+      resultDescription: Los espectros aceptan tu tributo y te dejan un elixir. -15 monedas, +9 HP.
+    failureOutcome:
+      coinDelta: 0
+      hpDelta: 0
+      resultDescription: ''
+  - optionLabel: Buscar un pasadizo de servicio
+    successProbability: 1
+    useSuccessProbability: 0
+    useRequirements: 0
+    minCoins: 0
+    minHp: 0
+    requiredRelicId: 
+    successOutcome:
+      coinDelta: 10
+      hpDelta: 0
+      resultDescription: Encuentras un alijo menor tras un muro falso. +10 monedas.
+    failureOutcome:
+      coinDelta: 0
+      hpDelta: 0
+      resultDescription: ''

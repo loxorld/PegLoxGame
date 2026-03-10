@@ -20,7 +20,7 @@ MonoBehaviour:
     targetNode: {fileID: 0}
   - label: 
     targetNode: {fileID: 0}
-  bossEnemy: {fileID: 11400000, guid: 4beab10c2fa6dac4a97716ff0d5ef953, type: 2}
+  bossEnemy: {fileID: 11400000, guid: d6e8b60ae5c94c7d90f14e7f6e736666, type: 2}
   bossHpMultiplier: 5
   bossDamageMultiplier: 1.5
   bossHpBonus: 0

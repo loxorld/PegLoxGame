@@ -15,8 +15,11 @@ MonoBehaviour:
   nodeType: 2
   title: Ruinas
   description: Llegaste a ruinas
-  eventDefinition: {fileID: 11400000, guid: f4e214dcb9e14edc990005e312cad194, type: 2}
-  eventDefinitionPool: []
+  eventDefinition: {fileID: 0}
+  eventDefinitionPool:
+  - {fileID: 11400000, guid: f4e214dcb9e14edc990005e312cad194, type: 2}
+  - {fileID: 11400000, guid: 1b4fa2d1d7b24c82a7a0456123409001, type: 2}
+  - {fileID: 11400000, guid: 2c5ab3e2e8c34d93b8b1567234519002, type: 2}
   nextNodes:
   - label: Camino A
     targetNode: {fileID: 11400000, guid: 40fd2f38b86854e44a73565df3ed0d11, type: 2}

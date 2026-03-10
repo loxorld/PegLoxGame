@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e489749788f6ac4baca507373cd270d, type: 3}
   m_Name: Relic_Cadena
   m_EditorClassIdentifier: Assembly-CSharp::RelicCadena
-  displayName: Cadena
+  displayName: Cadena Ritual
   icon: {fileID: 0}
-  description: 
+  description: Cada 4 impactos seguidos al mismo tipo de peg agrega +4 de dano bonus.
   chainThreshold: 4
   bonusDamage: 4

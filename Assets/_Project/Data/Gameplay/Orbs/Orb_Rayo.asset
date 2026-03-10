@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8804bd718ef296a42b06a1fdb871ef08, type: 3}
   m_Name: Orb_Rayo
   m_EditorClassIdentifier: Assembly-CSharp::OrbData
-  orbName: Rayo
+  orbName: Orbe Rayo
   icon: {fileID: 0}
-  description: asdasd
+  description: 20% de probabilidad por impacto de sumar +3 de dano bonus.
   damagePerHit: 2
   bounciness: 0.9
   linearDrag: 0

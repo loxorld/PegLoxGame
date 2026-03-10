@@ -16,7 +16,7 @@ MonoBehaviour:
   title: Hidra del Pantano
   description: Jefe final del pantano.
   nextNodes: []
-  bossEnemy: {fileID: 11400000, guid: 4beab10c2fa6dac4a97716ff0d5ef953, type: 2}
+  bossEnemy: {fileID: 11400000, guid: e7f9c71bf6da4d6e87a258906f847777, type: 2}
   bossHpMultiplier: 6
   bossDamageMultiplier: 1.8
   bossHpBonus: 0

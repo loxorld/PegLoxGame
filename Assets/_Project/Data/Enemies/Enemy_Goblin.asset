@@ -13,6 +13,19 @@ MonoBehaviour:
   m_Name: Enemy_Goblin
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
   enemyName: Goblin
-  maxHP: 10
-  attackDamage: 5
+  epithet: Merodeador
+  combatHint: Si aguanta, gana +1 ATQ.
+  maxHP: 12
+  attackDamage: 4
   enemyPrefab: {fileID: 191534006137774108, guid: dcbb4725543951045a8ed59daab895a1, type: 3}
+  minStageIndex: 0
+  maxStageIndex: 0
+  minEncounterInStage: 0
+  allowRegularEncounters: 1
+  encounterWeight: 5
+  flatDamageReduction: 0
+  rageDamageOnSurvive: 1
+  healOnSurvive: 0
+  desperationThreshold: 0
+  desperationAttackBonus: 0
+  desperationHeal: 0

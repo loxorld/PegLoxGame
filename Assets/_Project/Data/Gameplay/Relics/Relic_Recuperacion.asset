@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60c7e9c20ae8bc342b9bd0e29be31620, type: 3}
   m_Name: Relic_Recuperacion
   m_EditorClassIdentifier: Assembly-CSharp::RelicRecuperacion
-  displayName: Recuperacion
+  displayName: Segunda Oportunidad
   icon: {fileID: 0}
-  description: 
+  description: Si una tirada no golpea nada evita un contraataque una vez por encuentro.

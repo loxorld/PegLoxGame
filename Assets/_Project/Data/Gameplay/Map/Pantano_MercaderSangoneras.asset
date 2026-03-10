@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f3b76b3dac74688b52e5728ec59bf91, type: 3}
+  m_Name: Pantano_MercaderSangoneras
+  m_EditorClassIdentifier: Assembly-CSharp::EventDefinition
+  title: Mercader de Sangoneras
+  description: Un buhonero cubierto de barro ofrece remedios dudosos a cambio de unas pocas monedas.
+  conditions:
+    useStageRange: 1
+    minStageIndex: 1
+    maxStageIndex: 1
+  options:
+  - optionLabel: Comprar ungüentos
+    successProbability: 1
+    useSuccessProbability: 0
+    useRequirements: 1
+    minCoins: 12
+    minHp: 0
+    requiredRelicId: 
+    successOutcome:
+      coinDelta: -12
+      hpDelta: 10
+      resultDescription: El remedio apesta, pero funciona. -12 monedas, +10 HP.
+    failureOutcome:
+      coinDelta: 0
+      hpDelta: 0
+      resultDescription: ''
+  - optionLabel: Cazar bestias del barro
+    successProbability: 0.6
+    useSuccessProbability: 1
+    useRequirements: 0
+    minCoins: 0
+    minHp: 0
+    requiredRelicId: 
+    successOutcome:
+      coinDelta: 16
+      hpDelta: 0
+      resultDescription: Cobras una recompensa por las presas. +16 monedas.
+    failureOutcome:
+      coinDelta: 0
+      hpDelta: -7
+      resultDescription: Las bestias te cercan en el lodo. -7 HP.
+  - optionLabel: Esperar a que baje la niebla
+    successProbability: 1
+    useSuccessProbability: 0
+    useRequirements: 0
+    minCoins: 0
+    minHp: 0
+    requiredRelicId: 
+    successOutcome:
+      coinDelta: 9
+      hpDelta: 0
+      resultDescription: La paciencia te regala un botin menor. +9 monedas.
+    failureOutcome:
+      coinDelta: 0
+      hpDelta: 0
+      resultDescription: ''
