@@ -23,13 +23,19 @@ public sealed class ShopDomainService
         int fallbackHealCost,
         int fallbackHealAmount,
         int fallbackUpgradeCost,
+        ShopService.PlayerShopState playerState = null,
         bool allowDuplicateOffersWhenStockAvailable = false)
     {
         if (config == null || config.OfferTable == null || config.OfferTable.Count == 0)
             return GenerateLegacyOffers(balance, stageIndex, fallbackHealCost, fallbackHealAmount, fallbackUpgradeCost);
 
         int amount = UnityEngine.Random.Range(config.MinOffersPerVisit, config.MaxOffersPerVisit + 1);
-        List<ShopConfig.OfferTemplate> selectedTemplates = SelectOfferTemplates(config, amount, allowDuplicateOffersWhenStockAvailable);
+        List<ShopConfig.OfferTemplate> selectedTemplates = SelectOfferTemplates(
+            config,
+            amount,
+            playerState,
+            stageIndex,
+            allowDuplicateOffersWhenStockAvailable);
         List<ShopService.ShopOfferData> generated = BuildGeneratedOffers(
             selectedTemplates,
             config,
@@ -128,6 +134,14 @@ public sealed class ShopDomainService
             return false;
         }
 
+        if (offer.Type == ShopService.ShopOfferType.FocusedUpgrade && !state.CurrentOrbCanUpgrade)
+        {
+            reason = state.HasCurrentOrb
+                ? "El orbe actual ya esta al maximo."
+                : "No tienes un orbe equipado para mejorar.";
+            return false;
+        }
+
         return true;
     }
 
@@ -144,6 +158,8 @@ public sealed class ShopDomainService
             case ShopService.ShopOfferType.OrbUpgrade:
             case ShopService.ShopOfferType.OrbUpgradeDiscount:
                 return RunResult(TryUpgradeOrb(flow, orbManager, offer.Cost, offer, out string upgrade), upgrade);
+            case ShopService.ShopOfferType.FocusedUpgrade:
+                return RunResult(TryFocusedUpgrade(flow, orbManager, offer.Cost, offer, out string focusedUpgrade), focusedUpgrade);
             case ShopService.ShopOfferType.RecoveryPack:
                 return RunResult(TryRecoveryPack(flow, offer.Cost, offer.PrimaryValue, offer, out string pack), pack);
             case ShopService.ShopOfferType.VitalityBoost:
@@ -159,13 +175,23 @@ public sealed class ShopDomainService
         int orbCount = ownedOrbs != null ? ownedOrbs.Count : 0;
         int upgradable = GetUpgradableOrbs(ownedOrbs).Count;
         bool missingHp = flow != null && flow.HasSavedPlayerHP && flow.SavedPlayerHP < flow.PlayerMaxHP;
+        OrbInstance currentOrb = orbManager != null ? orbManager.CurrentOrb : null;
+        int maxHp = flow != null ? Mathf.Max(1, flow.PlayerMaxHP) : 0;
+        int currentHp = flow != null
+            ? (flow.HasSavedPlayerHP ? Mathf.Clamp(flow.SavedPlayerHP, 0, maxHp) : maxHp)
+            : 0;
 
         return new ShopService.PlayerShopState
         {
             Coins = flow != null ? flow.Coins : 0,
             OrbCount = orbCount,
             UpgradableOrbCount = upgradable,
-            HasMissingHp = missingHp
+            HasMissingHp = missingHp,
+            CurrentHp = currentHp,
+            MaxHp = maxHp,
+            HasCurrentOrb = currentOrb != null,
+            CurrentOrbCanUpgrade = currentOrb != null && currentOrb.CanLevelUp,
+            CurrentOrbName = currentOrb != null ? currentOrb.OrbName : string.Empty
         };
     }
 
@@ -210,6 +236,7 @@ public sealed class ShopDomainService
             case ShopService.ShopOfferType.Heal:
                 return balance != null ? balance.GetShopHealCost(stageIndex, template.BaseCost) : template.BaseCost;
             case ShopService.ShopOfferType.OrbUpgrade:
+            case ShopService.ShopOfferType.FocusedUpgrade:
             case ShopService.ShopOfferType.OrbUpgradeDiscount:
                 return balance != null ? balance.GetShopOrbUpgradeCost(stageIndex, template.BaseCost) : template.BaseCost;
             default:
@@ -220,7 +247,20 @@ public sealed class ShopDomainService
         }
     }
 
-    private static List<ShopConfig.OfferTemplate> SelectOfferTemplates(ShopConfig config, int amount, bool allowDuplicateOffersWhenStockAvailable)
+    private enum ShopSelectionIntent
+    {
+        Wildcard,
+        Sustain,
+        FocusCurrentOrb,
+        Growth
+    }
+
+    private static List<ShopConfig.OfferTemplate> SelectOfferTemplates(
+        ShopConfig config,
+        int amount,
+        ShopService.PlayerShopState playerState,
+        int stageIndex,
+        bool allowDuplicateOffersWhenStockAvailable)
     {
         var selectedTemplates = new List<ShopConfig.OfferTemplate>(Mathf.Max(0, amount));
         if (config == null || config.OfferTable == null || config.OfferTable.Count == 0 || amount <= 0)
@@ -228,6 +268,7 @@ public sealed class ShopDomainService
 
         Dictionary<string, int> listingCapacityByOfferId = BuildListingCapacityByOfferId(config.OfferTable, allowDuplicateOffersWhenStockAvailable);
         var selectedCountsByOfferId = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        List<ShopSelectionIntent> selectionPlan = BuildSelectionPlan(playerState, amount);
 
         for (int i = 0; i < amount; i++)
         {
@@ -238,7 +279,10 @@ public sealed class ShopDomainService
             if (availableTemplates.Count == 0)
                 break;
 
-            ShopConfig.OfferTemplate pickedTemplate = PickTemplateByRarity(availableTemplates, config.RarityWeights);
+            ShopSelectionIntent intent = i < selectionPlan.Count ? selectionPlan[i] : ShopSelectionIntent.Wildcard;
+            List<ShopConfig.OfferTemplate> preferredTemplates = BuildPreferredTemplates(availableTemplates, playerState, intent);
+            IReadOnlyList<ShopConfig.OfferTemplate> pool = preferredTemplates.Count > 0 ? preferredTemplates : availableTemplates;
+            ShopConfig.OfferTemplate pickedTemplate = PickTemplateByRarity(pool, config.RarityWeights, playerState, stageIndex);
             if (pickedTemplate == null)
                 break;
 
@@ -247,6 +291,98 @@ public sealed class ShopDomainService
         }
 
         return selectedTemplates;
+    }
+
+    private static List<ShopSelectionIntent> BuildSelectionPlan(ShopService.PlayerShopState playerState, int amount)
+    {
+        var plan = new List<ShopSelectionIntent>(Mathf.Max(0, amount));
+        if (amount <= 0)
+            return plan;
+
+        if (playerState != null && playerState.HasMissingHp)
+            plan.Add(ShopSelectionIntent.Sustain);
+
+        if (playerState != null && playerState.CurrentOrbCanUpgrade)
+            plan.Add(ShopSelectionIntent.FocusCurrentOrb);
+        else if (playerState != null && playerState.UpgradableOrbCount > 0)
+            plan.Add(ShopSelectionIntent.Growth);
+
+        while (plan.Count < amount)
+            plan.Add(ShopSelectionIntent.Wildcard);
+
+        return plan;
+    }
+
+    private static List<ShopConfig.OfferTemplate> BuildPreferredTemplates(
+        IReadOnlyList<ShopConfig.OfferTemplate> availableTemplates,
+        ShopService.PlayerShopState playerState,
+        ShopSelectionIntent intent)
+    {
+        var preferred = new List<ShopConfig.OfferTemplate>();
+        if (availableTemplates == null)
+            return preferred;
+
+        for (int i = 0; i < availableTemplates.Count; i++)
+        {
+            ShopConfig.OfferTemplate template = availableTemplates[i];
+            if (template == null)
+                continue;
+
+            if (!IsTemplateUsableForState(template, playerState))
+                continue;
+
+            if (MatchesIntent(template, intent))
+                preferred.Add(template);
+        }
+
+        if (preferred.Count > 0)
+            return preferred;
+
+        for (int i = 0; i < availableTemplates.Count; i++)
+        {
+            ShopConfig.OfferTemplate template = availableTemplates[i];
+            if (template != null && IsTemplateUsableForState(template, playerState))
+                preferred.Add(template);
+        }
+
+        return preferred;
+    }
+
+    private static bool MatchesIntent(ShopConfig.OfferTemplate template, ShopSelectionIntent intent)
+    {
+        if (template == null)
+            return false;
+
+        return intent switch
+        {
+            ShopSelectionIntent.Sustain => template.Type == ShopService.ShopOfferType.Heal || template.Type == ShopService.ShopOfferType.RecoveryPack,
+            ShopSelectionIntent.FocusCurrentOrb => template.Type == ShopService.ShopOfferType.FocusedUpgrade,
+            ShopSelectionIntent.Growth => template.Type == ShopService.ShopOfferType.OrbUpgrade
+                || template.Type == ShopService.ShopOfferType.OrbUpgradeDiscount
+                || template.Type == ShopService.ShopOfferType.FocusedUpgrade
+                || template.Type == ShopService.ShopOfferType.VitalityBoost,
+            _ => true
+        };
+    }
+
+    private static bool IsTemplateUsableForState(ShopConfig.OfferTemplate template, ShopService.PlayerShopState playerState)
+    {
+        if (template == null || playerState == null)
+            return true;
+
+        if (template.RequiresMissingHp && !playerState.HasMissingHp)
+            return false;
+
+        if (template.RequiresAnyOrb && playerState.OrbCount <= 0)
+            return false;
+
+        if (template.RequiresUpgradableOrb && playerState.UpgradableOrbCount <= 0)
+            return false;
+
+        if (template.Type == ShopService.ShopOfferType.FocusedUpgrade && !playerState.CurrentOrbCanUpgrade)
+            return false;
+
+        return true;
     }
 
     private static List<ShopService.ShopOfferData> BuildGeneratedOffers(
@@ -422,65 +558,92 @@ public sealed class ShopDomainService
 
     private static ShopConfig.OfferTemplate PickTemplateByRarity(
         IReadOnlyList<ShopConfig.OfferTemplate> availableTemplates,
-        IReadOnlyList<ShopConfig.RarityWeight> rarityWeights)
+        IReadOnlyList<ShopConfig.RarityWeight> rarityWeights,
+        ShopService.PlayerShopState playerState,
+        int stageIndex)
     {
         if (availableTemplates == null || availableTemplates.Count == 0)
             return null;
 
         float total = 0f;
-        for (int i = 0; i < rarityWeights.Count; i++)
+        var weightedTemplates = new List<(ShopConfig.OfferTemplate Template, float Weight)>(availableTemplates.Count);
+        for (int i = 0; i < availableTemplates.Count; i++)
         {
-            ShopConfig.RarityWeight weight = rarityWeights[i];
-            if (weight == null || weight.Weight <= 0f)
+            ShopConfig.OfferTemplate template = availableTemplates[i];
+            if (template == null)
                 continue;
 
-            if (HasTemplateWithRarity(availableTemplates, weight.Rarity))
-                total += weight.Weight;
+            float rarityWeight = GetRarityWeight(rarityWeights, template.Rarity);
+            float contextWeight = GetTemplateContextWeight(template, playerState, stageIndex);
+            float finalWeight = Mathf.Max(0.01f, rarityWeight * contextWeight);
+            weightedTemplates.Add((template, finalWeight));
+            total += finalWeight;
         }
 
         if (total <= 0f)
             return availableTemplates[UnityEngine.Random.Range(0, availableTemplates.Count)];
 
         float roll = UnityEngine.Random.Range(0f, total);
-        ShopService.ShopOfferRarity picked = ShopService.ShopOfferRarity.Common;
         float cumulative = 0f;
+        for (int i = 0; i < weightedTemplates.Count; i++)
+        {
+            cumulative += weightedTemplates[i].Weight;
+            if (roll <= cumulative)
+                return weightedTemplates[i].Template;
+        }
+
+        return weightedTemplates[weightedTemplates.Count - 1].Template;
+    }
+
+    private static float GetRarityWeight(IReadOnlyList<ShopConfig.RarityWeight> rarityWeights, ShopService.ShopOfferRarity rarity)
+    {
+        if (rarityWeights == null)
+            return 1f;
+
         for (int i = 0; i < rarityWeights.Count; i++)
         {
             ShopConfig.RarityWeight weight = rarityWeights[i];
-            if (weight == null || weight.Weight <= 0f || !HasTemplateWithRarity(availableTemplates, weight.Rarity))
-                continue;
-
-            cumulative += weight.Weight;
-            if (roll <= cumulative)
-            {
-                picked = weight.Rarity;
-                break;
-            }
+            if (weight != null && weight.Rarity == rarity)
+                return Mathf.Max(0.01f, weight.Weight);
         }
 
-        var filtered = new List<ShopConfig.OfferTemplate>();
-        for (int i = 0; i < availableTemplates.Count; i++)
-        {
-            if (availableTemplates[i].Rarity == picked)
-                filtered.Add(availableTemplates[i]);
-        }
-
-        if (filtered.Count == 0)
-            filtered = new List<ShopConfig.OfferTemplate>(availableTemplates);
-
-        return filtered[UnityEngine.Random.Range(0, filtered.Count)];
+        return 1f;
     }
 
-    private static bool HasTemplateWithRarity(IReadOnlyList<ShopConfig.OfferTemplate> templates, ShopService.ShopOfferRarity rarity)
+    private static float GetTemplateContextWeight(
+        ShopConfig.OfferTemplate template,
+        ShopService.PlayerShopState playerState,
+        int stageIndex)
     {
-        for (int i = 0; i < templates.Count; i++)
-        {
-            ShopConfig.OfferTemplate template = templates[i];
-            if (template != null && template.Rarity == rarity)
-                return true;
-        }
+        if (template == null)
+            return 0.01f;
 
-        return false;
+        float weight = 1f;
+        if (playerState == null)
+            return weight;
+
+        if (template.Type == ShopService.ShopOfferType.Heal)
+            weight *= playerState.HasMissingHp ? 2.4f : 0.18f;
+        else if (template.Type == ShopService.ShopOfferType.RecoveryPack)
+            weight *= playerState.HasMissingHp ? 1.8f : 0.95f;
+        else if (template.Type == ShopService.ShopOfferType.OrbUpgrade || template.Type == ShopService.ShopOfferType.OrbUpgradeDiscount)
+            weight *= playerState.UpgradableOrbCount > 0 ? 2.1f : 0.15f;
+        else if (template.Type == ShopService.ShopOfferType.FocusedUpgrade)
+            weight *= playerState.CurrentOrbCanUpgrade ? 2.6f : 0.08f;
+        else if (template.Type == ShopService.ShopOfferType.VitalityBoost)
+            weight *= playerState.HasMissingHp ? 1.35f : 1.1f;
+
+        if (playerState.Coins < template.BaseCost)
+            weight *= 0.82f;
+        else
+            weight *= 1.08f;
+
+        if (stageIndex >= 2 && template.Type == ShopService.ShopOfferType.VitalityBoost)
+            weight *= 1.25f;
+        if (stageIndex == 0 && template.Type == ShopService.ShopOfferType.Heal)
+            weight *= 1.1f;
+
+        return Mathf.Max(0.01f, weight);
     }
 
     private bool TryHeal(GameFlowManager flow, int healCost, int healAmount, ShopService.ShopOfferData offer, out string message)
@@ -538,6 +701,42 @@ public sealed class ShopDomainService
         message = chosenOrb.Level > prev
             ? $"Mejoraste {chosenOrb.OrbName} a nivel {chosenOrb.Level}."
             : $"{chosenOrb.OrbName} ya está al máximo.";
+        return true;
+    }
+
+    private bool TryFocusedUpgrade(GameFlowManager flow, OrbManager orbManager, int upgradeCost, ShopService.ShopOfferData offer, out string message)
+    {
+        message = null;
+        OrbInstance currentOrb = orbManager != null ? orbManager.CurrentOrb : null;
+        if (currentOrb == null)
+        {
+            message = "No tienes un orbe equipado.";
+            return false;
+        }
+
+        if (!currentOrb.CanLevelUp)
+        {
+            message = $"{currentOrb.OrbName} ya esta al maximo.";
+            return false;
+        }
+
+        if (!flow.SpendCoins(upgradeCost))
+        {
+            message = "No alcanzan las monedas para esta mejora.";
+            return false;
+        }
+
+        if (ShouldFailIntermediateForTests(offer))
+        {
+            message = "Fallo intermedio en la compra.";
+            return false;
+        }
+
+        int previousLevel = currentOrb.Level;
+        currentOrb.LevelUp();
+        message = currentOrb.Level > previousLevel
+            ? $"{currentOrb.OrbName} sube a nivel {currentOrb.Level}."
+            : $"{currentOrb.OrbName} ya esta al maximo.";
         return true;
     }
 
@@ -695,6 +894,7 @@ public sealed class ShopDomainService
             new ShopService.ShopOfferData { OfferId = "heal_common", Type = ShopService.ShopOfferType.Heal, Cost = healCost, Stock = 2, Rarity = ShopService.ShopOfferRarity.Common, PrimaryValue = healAmount, RequiresMissingHp = true },
             new ShopService.ShopOfferData { OfferId = "heal_rare", Type = ShopService.ShopOfferType.Heal, Cost = Mathf.Max(0, healCost + 4), Stock = 1, Rarity = ShopService.ShopOfferRarity.Rare, PrimaryValue = healAmount + 4, RequiresMissingHp = true },
             new ShopService.ShopOfferData { OfferId = "upgrade_standard", Type = ShopService.ShopOfferType.OrbUpgrade, Cost = upgradeCost, Stock = 1, Rarity = ShopService.ShopOfferRarity.Common, PrimaryValue = 1, RequiresUpgradableOrb = true, RequiresAnyOrb = true },
+            new ShopService.ShopOfferData { OfferId = "upgrade_focus", Type = ShopService.ShopOfferType.FocusedUpgrade, Cost = Mathf.Max(0, upgradeCost + 2), Stock = 1, Rarity = ShopService.ShopOfferRarity.Rare, PrimaryValue = 1, RequiresAnyOrb = true },
             new ShopService.ShopOfferData { OfferId = "upgrade_discount", Type = ShopService.ShopOfferType.OrbUpgradeDiscount, Cost = Mathf.Max(0, upgradeCost - 4), Stock = 1, Rarity = ShopService.ShopOfferRarity.Epic, PrimaryValue = 1, RequiresUpgradableOrb = true, RequiresAnyOrb = true },
             new ShopService.ShopOfferData { OfferId = "recovery_pack", Type = ShopService.ShopOfferType.RecoveryPack, Cost = Mathf.Max(0, healCost + 1), Stock = 1, Rarity = ShopService.ShopOfferRarity.Rare, PrimaryValue = Mathf.Max(6, healAmount - 1) },
             new ShopService.ShopOfferData { OfferId = "vitality_boost", Type = ShopService.ShopOfferType.VitalityBoost, Cost = Mathf.Max(0, upgradeCost - 3), Stock = 1, Rarity = ShopService.ShopOfferRarity.Legendary, PrimaryValue = 3 + stageIndex }

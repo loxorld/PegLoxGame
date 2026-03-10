@@ -90,6 +90,7 @@ public partial class ShopScene : MonoBehaviour, IMapShopView
     private Image runtimeDimmerImage;
     private Image runtimeWindowImage;
     private Image runtimeOffersImage;
+    private Image runtimeDetailImage;
 
     private readonly List<Button> spawnedButtons = new List<Button>();
 
@@ -169,6 +170,7 @@ public partial class ShopScene : MonoBehaviour, IMapShopView
 
         activeCatalog = current.Service.BuildOrLoadCatalog(
             current.Flow,
+            current.OrbManager,
             shopConfig,
             current.Balance,
             current.StageIndex,
@@ -199,25 +201,40 @@ public partial class ShopScene : MonoBehaviour, IMapShopView
             ShopService.ShopOfferData offer = activeCatalog[i];
             Button button = Instantiate(itemButtonTemplate, itemSlotsRoot);
             button.gameObject.SetActive(true);
+            button.interactable = true;
             TMP_Text label = button.GetComponentInChildren<TMP_Text>();
+            ShopService.PlayerShopState playerState = current.Service.BuildPlayerState(current.Flow, current.OrbManager);
+            ShopService.ShopOfferPresentation presentation = current.Service.BuildOfferPresentation(playerState, offer);
             if (label != null)
             {
-                label.text = BuildShortLabel(offer);
-                label.color = GetRarityTextColor(offer.Rarity);
-                label.alignment = TextAlignmentOptions.MidlineLeft;
-                label.margin = new Vector4(8f, 0f, 8f, 0f);
+                label.richText = true;
+                label.text = BuildOfferButtonLabel(presentation, offer);
+                label.color = Color.white;
+                label.alignment = TextAlignmentOptions.TopLeft;
+                label.margin = new Vector4(14f, 8f, 14f, 8f);
                 label.enableAutoSizing = true;
-                label.fontSizeMin = 14f;
-                label.fontSizeMax = 24f;
+                label.fontSizeMin = 12f;
+                label.fontSizeMax = 23f;
+                label.textWrappingMode = TextWrappingModes.Normal;
             }
 
             ApplyButtonArt(button, offerButtonTheme);
-
             Image buttonImage = button.GetComponent<Image>();
-            if (buttonImage != null && offerButtonTheme.normalSprite == null)
-                buttonImage.color = GetRarityButtonColor(offer.Rarity);
+            if (buttonImage != null)
+            {
+                if (offerButtonTheme.normalSprite == null)
+                    buttonImage.color = presentation.CardColor;
+
+                ApplyOfferButtonFrame(button, presentation, idx == selectedIndex);
+            }
 
             SyncButtonColorBlockWithImage(button);
+
+            LayoutElement layout = button.GetComponent<LayoutElement>();
+            if (layout == null)
+                layout = button.gameObject.AddComponent<LayoutElement>();
+            layout.preferredHeight = 102f;
+            layout.minHeight = 94f;
 
             button.onClick.RemoveAllListeners();
             button.onClick.AddListener(() => SelectIndex(idx));
@@ -230,24 +247,26 @@ public partial class ShopScene : MonoBehaviour, IMapShopView
         selectedIndex = index;
         if (index < 0 || index >= activeCatalog.Count)
         {
-            detailLabel.text = "Sin selección";
+            detailLabel.text = BuildShopIntroText();
             priceLabel.text = string.Empty;
             rarityLabel.text = string.Empty;
             buyButton.interactable = false;
+            SetButtonText(buyButton, "Comprar");
             return;
         }
 
         ShopService.ShopOfferData offer = activeCatalog[index];
         ShopService.PlayerShopState state = current.Service.BuildPlayerState(current.Flow, current.OrbManager);
         bool enabled = current.Service.IsOfferEnabled(state, offer, out string reason);
+        ShopService.ShopOfferPresentation presentation = current.Service.BuildOfferPresentation(state, offer);
 
-        detailLabel.text = BuildDetail(offer);
-        priceLabel.text = $"Precio: {offer.Cost}";
-        rarityLabel.text = $"Rareza: {offer.Rarity}";
-        rarityLabel.color = GetRarityTextColor(offer.Rarity);
+        detailLabel.text = BuildDetailPanelText(presentation, offer, state, reason);
+        priceLabel.text = BuildPriceLabel(presentation, offer, enabled, reason);
+        rarityLabel.text = presentation.Badge;
+        rarityLabel.color = presentation.AccentColor;
         buyButton.interactable = enabled;
-        if (!enabled && !string.IsNullOrWhiteSpace(reason))
-            detailLabel.text += $"\n\n{reason}";
+        SetButtonText(buyButton, enabled ? $"Comprar {offer.Cost}g" : "No disponible");
+        StyleBuyButton(enabled, presentation);
 
         UpdateSelectionVisual();
     }
@@ -300,7 +319,14 @@ public partial class ShopScene : MonoBehaviour, IMapShopView
     private void UpdateMetaLabels()
     {
         int coins = current?.Flow != null ? Mathf.Max(0, current.Flow.Coins) : 0;
-        coinLabel.text = $"Monedas: {coins}";
+        ShopService.PlayerShopState state = current != null
+            ? current.Service.BuildPlayerState(current.Flow, current.OrbManager)
+            : null;
+        int currentHp = state != null ? state.CurrentHp : 0;
+        int maxHp = state != null ? state.MaxHp : 0;
+        int upgradable = state != null ? state.UpgradableOrbCount : 0;
+        string currentOrb = state != null && state.HasCurrentOrb ? state.CurrentOrbName : "Sin orbe";
+        coinLabel.text = $"Oro {coins} · HP {currentHp}/{maxHp} · Upgrades {upgradable}\nActual: {currentOrb}";
 
         int stock = 0;
         for (int i = 0; i < activeCatalog.Count; i++)
@@ -316,6 +342,7 @@ public partial class ShopScene : MonoBehaviour, IMapShopView
         refreshButton.interactable = canRefresh;
 
         int refreshesRemaining = shopConfig != null ? Mathf.Max(0, shopConfig.MaxRefreshesPerVisit - refreshesUsed) : 0;
+        stockLabel.text = $"Ofertas {activeCatalog.Count} · Stock {stock} · Refresh {refreshesRemaining}";
         if (refreshButton != null)
         {
             TMP_Text refreshText = refreshButton.GetComponentInChildren<TMP_Text>();
@@ -327,11 +354,6 @@ public partial class ShopScene : MonoBehaviour, IMapShopView
         }
 
         ApplyStandardButtonTextStyle(refreshButton);
-    }
-
-    private static string BuildShortLabel(ShopService.ShopOfferData offer)
-    {
-        return $"{GetRarityPrefix(offer.Rarity)} {GetOfferTypeLabel(offer.Type)} · {offer.Cost}g";
     }
 
     private int GetRefreshesForCurrentShop()
@@ -355,54 +377,6 @@ public partial class ShopScene : MonoBehaviour, IMapShopView
             return;
 
         refreshesByShopId[shopId] = refreshesUsed;
-    }
-
-
-    private static string GetOfferTypeLabel(ShopService.ShopOfferType type)
-    {
-        switch (type)
-        {
-            case ShopService.ShopOfferType.Heal:
-                return "Curación";
-            case ShopService.ShopOfferType.OrbUpgrade:
-                return "Mejora de orbe";
-            case ShopService.ShopOfferType.OrbUpgradeDiscount:
-                return "Mejora barata";
-            case ShopService.ShopOfferType.RecoveryPack:
-                return "Botiquín";
-            case ShopService.ShopOfferType.VitalityBoost:
-                return "Vitalidad";
-            default:
-                return "Oferta";
-        }
-    }
-
-    private static string BuildDetail(ShopService.ShopOfferData offer)
-    {
-        string description;
-        switch (offer.Type)
-        {
-            case ShopService.ShopOfferType.Heal:
-                description = $"Recupera {offer.PrimaryValue} HP del personaje.";
-                break;
-            case ShopService.ShopOfferType.OrbUpgrade:
-                description = "Mejora un orbe aleatorio que todavía pueda subir de nivel.";
-                break;
-            case ShopService.ShopOfferType.OrbUpgradeDiscount:
-                description = "Mejora un orbe con precio reducido.";
-                break;
-            case ShopService.ShopOfferType.RecoveryPack:
-                description = $"Recupera {offer.PrimaryValue} HP y además suma +1 de vida máxima.";
-                break;
-            case ShopService.ShopOfferType.VitalityBoost:
-                description = $"Aumenta HP máximo en {offer.PrimaryValue}.";
-                break;
-            default:
-                description = "Oferta especial.";
-                break;
-        }
-
-        return $"{description}\n\nValor: {offer.PrimaryValue}\nStock disponible: {offer.Stock}";
     }
 
     private void Awake()
@@ -501,23 +475,6 @@ public partial class ShopScene : MonoBehaviour, IMapShopView
                 return Color.white;
         }
     }
-
-    private static string GetRarityPrefix(ShopService.ShopOfferRarity rarity)
-    {
-        switch (rarity)
-        {
-            case ShopService.ShopOfferRarity.Common:
-                return "[Común]";
-            case ShopService.ShopOfferRarity.Rare:
-                return "[Rara]";
-            case ShopService.ShopOfferRarity.Epic:
-                return "[Épica]";
-            case ShopService.ShopOfferRarity.Legendary:
-                return "[Legendaria]";
-            default:
-                return "[?]";
-        }
-    }
    
     private void UpdateSelectionVisual()
     {
@@ -526,6 +483,13 @@ public partial class ShopScene : MonoBehaviour, IMapShopView
             Button button = spawnedButtons[i];
             bool isSelected = i == selectedIndex;
             Outline outline = button.GetComponent<Outline>();
+            if (current != null && i >= 0 && i < activeCatalog.Count)
+            {
+                ShopService.ShopOfferPresentation presentation = current.Service.BuildOfferPresentation(
+                    current.Service.BuildPlayerState(current.Flow, current.OrbManager),
+                    activeCatalog[i]);
+                ApplyOfferButtonFrame(button, presentation, isSelected);
+            }
 
             if (selectionVisualMode == SelectionVisualMode.Outline)
             {
@@ -573,5 +537,106 @@ public partial class ShopScene : MonoBehaviour, IMapShopView
         {
             eventSystem.SetSelectedGameObject(null);
         }
+    }
+
+    private string BuildShopIntroText()
+    {
+        string intro = current != null ? current.ShopOutcome.Description : string.Empty;
+        if (string.IsNullOrWhiteSpace(intro))
+            intro = "Selecciona una oferta para ver sus detalles.";
+
+        return $"{intro}\n\nExplora la tienda, compara poder contra sustain y compra cuando el timing te convenga.";
+    }
+
+    private static string BuildOfferButtonLabel(ShopService.ShopOfferPresentation presentation, ShopService.ShopOfferData offer)
+    {
+        if (presentation == null || offer == null)
+            return string.Empty;
+
+        string accent = ColorUtility.ToHtmlStringRGB(presentation.AccentColor);
+        string stockLabel = offer.Stock > 1 ? $"Stock {offer.Stock}" : "Unica";
+        return
+            $"<size=62%><color=#{accent}>{presentation.Badge}</color></size>\n" +
+            $"<b>{presentation.Title}</b>\n" +
+            $"<size=70%>{presentation.Subtitle}</size>\n" +
+            $"<size=64%><color=#EAD9A3>{presentation.CostText}</color> · {stockLabel}</size>";
+    }
+
+    private static string BuildDetailPanelText(
+        ShopService.ShopOfferPresentation presentation,
+        ShopService.ShopOfferData offer,
+        ShopService.PlayerShopState state,
+        string reason)
+    {
+        if (presentation == null || offer == null)
+            return "Sin seleccion";
+
+        string stateLine = presentation.StatusText;
+        if (!string.IsNullOrWhiteSpace(reason) && !presentation.IsEnabled)
+            stateLine = reason;
+
+        string hpContext = state != null ? $"HP actual: {state.CurrentHp}/{state.MaxHp}" : string.Empty;
+        return $"<b>{presentation.Title}</b>\n{presentation.Detail}\n\nEstado: {stateLine}\n{hpContext}";
+    }
+
+    private static string BuildPriceLabel(
+        ShopService.ShopOfferPresentation presentation,
+        ShopService.ShopOfferData offer,
+        bool enabled,
+        string reason)
+    {
+        if (presentation == null || offer == null)
+            return string.Empty;
+
+        string availability = enabled ? "Compra disponible" : (string.IsNullOrWhiteSpace(reason) ? "Compra bloqueada" : reason);
+        return $"{presentation.CostText} · {availability}";
+    }
+
+    private void StyleBuyButton(bool enabled, ShopService.ShopOfferPresentation presentation)
+    {
+        if (buyButton == null)
+            return;
+
+        Image image = buyButton.GetComponent<Image>();
+        if (image != null && actionButtonTheme.normalSprite == null)
+        {
+            image.color = enabled
+                ? (presentation != null ? presentation.BadgeColor : new Color(0.26f, 0.42f, 0.52f, 1f))
+                : new Color(0.2f, 0.2f, 0.2f, 0.85f);
+        }
+
+        SyncButtonColorBlockWithImage(buyButton);
+        ApplyStandardButtonTextStyle(buyButton);
+    }
+
+    private void ApplyOfferButtonFrame(Button button, ShopService.ShopOfferPresentation presentation, bool isSelected)
+    {
+        if (button == null || presentation == null)
+            return;
+
+        Image image = button.GetComponent<Image>();
+        if (image != null && offerButtonTheme.normalSprite == null)
+            image.color = isSelected
+                ? Color.Lerp(presentation.CardColor, presentation.AccentColor, 0.14f)
+                : presentation.CardColor;
+
+        Shadow shadow = button.GetComponent<Shadow>();
+        if (shadow == null)
+            shadow = button.gameObject.AddComponent<Shadow>();
+        shadow.effectColor = isSelected
+            ? new Color(presentation.AccentColor.r, presentation.AccentColor.g, presentation.AccentColor.b, 0.45f)
+            : new Color(0f, 0f, 0f, 0.24f);
+        shadow.effectDistance = isSelected ? new Vector2(0f, -6f) : new Vector2(0f, -3f);
+        shadow.useGraphicAlpha = true;
+    }
+
+    private static void SetButtonText(Button button, string text)
+    {
+        if (button == null)
+            return;
+
+        TMP_Text label = button.GetComponentInChildren<TMP_Text>();
+        if (label != null)
+            label.text = text ?? string.Empty;
     }
 }

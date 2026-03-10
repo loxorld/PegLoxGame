@@ -155,6 +155,36 @@ public class ShopDomainServiceTests
     }
 
     [Test]
+    public void TryPurchaseAtomic_FocusedUpgrade_LevelsCurrentOrb()
+    {
+        OrbData basicOrb = AssetDatabase.LoadAssetAtPath<OrbData>(BasicOrbAssetPath);
+        Assert.NotNull(basicOrb);
+
+        ShopDomainService service = new ShopDomainService();
+        GameFlowManager flow = CreateFlowWithCoins(20, out OrbManager orbManager);
+        Assert.NotNull(orbManager);
+
+        orbManager.SetCurrentOrb(basicOrb);
+        OrbInstance currentOrb = orbManager.CurrentOrb;
+        Assert.NotNull(currentOrb);
+        int initialLevel = currentOrb.Level;
+
+        ShopService.ShopOfferData offer = BuildOffer(
+            stock: 1,
+            cost: 6,
+            primaryValue: 1,
+            type: ShopService.ShopOfferType.FocusedUpgrade);
+        flow.SaveShopCatalog(ShopId, new List<ShopService.ShopOfferData> { offer });
+
+        ShopDomainService.PurchaseResult result = service.TryPurchaseAtomic(flow, orbManager, ShopId, offer);
+
+        Assert.IsTrue(result.Success);
+        Assert.AreEqual(initialLevel + 1, orbManager.CurrentOrb.Level);
+        Assert.AreEqual(14, flow.Coins);
+        Assert.AreEqual(0, GetRemainingStock(flow, offer.OfferId));
+    }
+
+    [Test]
     public void GenerateOffers_ReturnsUniqueOfferFamilies_WhenDuplicatesAreDisabled()
     {
         ShopDomainService service = new ShopDomainService();
@@ -235,6 +265,38 @@ public class ShopDomainServiceTests
         Assert.AreEqual(1, generated.Count);
         Assert.AreEqual(12, generated[0].Cost);
         Assert.AreEqual(ShopService.ShopOfferRarity.Rare, generated[0].Rarity);
+    }
+
+    [Test]
+    public void GenerateOffers_PrefersContextualSustainWhenPlayerIsHurt()
+    {
+        ShopDomainService service = new ShopDomainService();
+        ShopConfig config = CreateShopConfig(
+            minOffers: 1,
+            maxOffers: 1,
+            offers: new[]
+            {
+                CreateOfferTemplate("heal", ShopService.ShopOfferType.Heal, ShopService.ShopOfferRarity.Common, baseCost: 10, baseStock: 1, primaryValue: 4, requiresMissingHp: true),
+                CreateOfferTemplate("focus", ShopService.ShopOfferType.FocusedUpgrade, ShopService.ShopOfferRarity.Common, baseCost: 15, baseStock: 1, primaryValue: 1, requiresAnyOrb: true)
+            });
+
+        var state = new ShopService.PlayerShopState
+        {
+            Coins = 20,
+            OrbCount = 1,
+            UpgradableOrbCount = 0,
+            HasMissingHp = true,
+            CurrentHp = 12,
+            MaxHp = 20,
+            HasCurrentOrb = true,
+            CurrentOrbCanUpgrade = false,
+            CurrentOrbName = "Basico"
+        };
+
+        List<ShopService.ShopOfferData> generated = service.GenerateOffers(config, null, 0, 10, 4, 15, state);
+
+        Assert.AreEqual(1, generated.Count);
+        Assert.AreEqual(ShopService.ShopOfferType.Heal, generated[0].Type);
     }
 
     private static GameFlowManager CreateFlowWithCoins(int coins)

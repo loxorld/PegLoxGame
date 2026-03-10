@@ -47,14 +47,19 @@ public partial class ShopScene
 
         GameObject panel = CreateUiObject("Panel", dimmer.transform);
         Image panelImage = panel.AddComponent<Image>();
-        panelImage.color = new Color(0.1f, 0.12f, 0.16f, 0.98f);
+        panelImage.color = new Color(0.08f, 0.11f, 0.13f, 0.98f);
         runtimeWindowImage = panelImage;
         RectTransform panelRect = panel.GetComponent<RectTransform>();
         panelRect.anchorMin = new Vector2(0.5f, 0.5f);
         panelRect.anchorMax = new Vector2(0.5f, 0.5f);
         panelRect.pivot = new Vector2(0.5f, 0.5f);
-        panelRect.sizeDelta = new Vector2(1100f, 720f);
+        panelRect.sizeDelta = new Vector2(1180f, 760f);
         panelRect.anchoredPosition = Vector2.zero;
+
+        Shadow panelShadow = panel.AddComponent<Shadow>();
+        panelShadow.effectColor = new Color(0f, 0f, 0f, 0.32f);
+        panelShadow.effectDistance = new Vector2(0f, -12f);
+        panelShadow.useGraphicAlpha = true;
 
         titleLabel = CreateText("Title", panel.transform, 44, FontStyles.Bold);
         titleLabel.alignment = TextAlignmentOptions.TopLeft;
@@ -62,18 +67,25 @@ public partial class ShopScene
 
         coinLabel = CreateText("Coins", panel.transform, 30, FontStyles.Bold);
         coinLabel.alignment = TextAlignmentOptions.TopLeft;
-        SetAnchors(coinLabel.rectTransform, new Vector2(0f, 1f), new Vector2(0.45f, 1f), new Vector2(30f, -92f), new Vector2(-10f, -140f));
+        SetAnchors(coinLabel.rectTransform, new Vector2(0f, 1f), new Vector2(0.48f, 1f), new Vector2(30f, -92f), new Vector2(-10f, -154f));
 
         stockLabel = CreateText("Stock", panel.transform, 30, FontStyles.Bold);
         stockLabel.alignment = TextAlignmentOptions.TopRight;
-        SetAnchors(stockLabel.rectTransform, new Vector2(0.55f, 1f), new Vector2(1f, 1f), new Vector2(10f, -92f), new Vector2(-30f, -140f));
+        SetAnchors(stockLabel.rectTransform, new Vector2(0.52f, 1f), new Vector2(1f, 1f), new Vector2(10f, -92f), new Vector2(-30f, -154f));
 
         GameObject itemsRoot = CreateUiObject("ItemsRoot", panel.transform);
         Image itemsBg = itemsRoot.AddComponent<Image>();
-        itemsBg.color = new Color(0.05f, 0.07f, 0.1f, 0.92f);
+        itemsBg.color = new Color(0.04f, 0.07f, 0.08f, 0.94f);
         runtimeOffersImage = itemsBg;
         RectTransform itemsRootRect = itemsRoot.GetComponent<RectTransform>();
-        SetAnchors(itemsRootRect, new Vector2(0f, 0f), new Vector2(0.45f, 1f), new Vector2(30f, 95f), new Vector2(-10f, -150f));
+        SetAnchors(itemsRootRect, new Vector2(0f, 0f), new Vector2(0.46f, 1f), new Vector2(30f, 100f), new Vector2(-12f, -164f));
+
+        GameObject detailRoot = CreateUiObject("DetailRoot", panel.transform);
+        Image detailBg = detailRoot.AddComponent<Image>();
+        detailBg.color = new Color(0.06f, 0.08f, 0.09f, 0.94f);
+        runtimeDetailImage = detailBg;
+        RectTransform detailRect = detailRoot.GetComponent<RectTransform>();
+        SetAnchors(detailRect, new Vector2(0.48f, 0f), new Vector2(1f, 1f), new Vector2(10f, 100f), new Vector2(-30f, -164f));
 
         GameObject scrollObject = CreateUiObject("ItemsScroll", itemsRoot.transform);
         ScrollRect scroll = scrollObject.AddComponent<ScrollRect>();
@@ -114,21 +126,21 @@ public partial class ShopScene
 
         itemButtonTemplate = CreateButton("ItemButtonTemplate", content.transform, "Oferta");
         LayoutElement itemLayout = itemButtonTemplate.gameObject.AddComponent<LayoutElement>();
-        itemLayout.preferredHeight = 64f;
+        itemLayout.preferredHeight = 102f;
         itemButtonTemplate.gameObject.SetActive(false);
 
-        detailLabel = CreateText("Detail", panel.transform, 26, FontStyles.Normal);
+        detailLabel = CreateText("Detail", detailRoot.transform, 26, FontStyles.Normal);
         detailLabel.alignment = TextAlignmentOptions.TopLeft;
         detailLabel.textWrappingMode = TextWrappingModes.Normal;
-        SetAnchors(detailLabel.rectTransform, new Vector2(0.5f, 0f), new Vector2(1f, 0.7f), new Vector2(12f, 175f), new Vector2(-30f, -12f));
+        SetAnchors(detailLabel.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0.68f), new Vector2(18f, 24f), new Vector2(-18f, -18f));
 
-        priceLabel = CreateText("Price", panel.transform, 30, FontStyles.Bold);
+        priceLabel = CreateText("Price", detailRoot.transform, 30, FontStyles.Bold);
         priceLabel.alignment = TextAlignmentOptions.TopLeft;
-        SetAnchors(priceLabel.rectTransform, new Vector2(0.5f, 0.7f), new Vector2(1f, 0.78f), new Vector2(12f, -6f), new Vector2(-30f, -8f));
+        SetAnchors(priceLabel.rectTransform, new Vector2(0f, 0.68f), new Vector2(1f, 0.78f), new Vector2(18f, -8f), new Vector2(-18f, -8f));
 
-        rarityLabel = CreateText("Rarity", panel.transform, 28, FontStyles.Bold);
+        rarityLabel = CreateText("Rarity", detailRoot.transform, 28, FontStyles.Bold);
         rarityLabel.alignment = TextAlignmentOptions.TopLeft;
-        SetAnchors(rarityLabel.rectTransform, new Vector2(0.5f, 0.78f), new Vector2(1f, 0.86f), new Vector2(12f, -6f), new Vector2(-30f, -8f));
+        SetAnchors(rarityLabel.rectTransform, new Vector2(0f, 0.8f), new Vector2(1f, 0.9f), new Vector2(18f, -8f), new Vector2(-18f, -8f));
 
         buyButton = CreateButton("BuyButton", panel.transform, "Comprar");
         SetAnchors((RectTransform)buyButton.transform, new Vector2(0.5f, 0f), new Vector2(0.72f, 0f), new Vector2(12f, 24f), new Vector2(-8f, 82f));
@@ -152,6 +164,7 @@ public partial class ShopScene
         ApplyImageSprite(dimmerBackgroundImage, dimmerBackgroundSprite);
         ApplyImageSprite(windowBackgroundImage, windowBackgroundSprite);
         ApplyImageSprite(offersBackgroundImage, offersBackgroundSprite);
+        ApplyImageSprite(runtimeDetailImage, offersBackgroundSprite);
     }
 
     private static GameObject CreateUiObject(string name, Transform parent)
@@ -176,12 +189,13 @@ public partial class ShopScene
     {
         GameObject buttonObject = CreateUiObject(name, parent);
         Image image = buttonObject.AddComponent<Image>();
-        image.color = new Color(0.2f, 0.35f, 0.5f, 1f);
+        image.color = new Color(0.19f, 0.29f, 0.4f, 1f);
         Button button = buttonObject.AddComponent<Button>();
 
         TMP_Text buttonText = CreateText("Label", buttonObject.transform, 24, FontStyles.Bold);
-        buttonText.alignment = TextAlignmentOptions.Center;
+        buttonText.alignment = TextAlignmentOptions.MidlineLeft;
         buttonText.text = label;
+        buttonText.margin = new Vector4(16f, 10f, 16f, 10f);
         StretchRect(buttonText.rectTransform);
 
         return button;
