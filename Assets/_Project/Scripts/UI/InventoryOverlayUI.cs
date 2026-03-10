@@ -295,10 +295,10 @@ public sealed class InventoryOverlayUI : MonoBehaviour
         SetAnchors((RectTransform)orbsTabButton.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -84f), new Vector2(188f, -132f));
         SetAnchors((RectTransform)relicsTabButton.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(198f, -84f), new Vector2(398f, -132f));
 
-        RectTransform listPanel = EnsurePanel(cardRoot, "ListPanel", new Color(0.1f, 0.1f, 0.08f, 0.96f));
+        RectTransform listPanel = EnsurePanel(cardRoot, "ListPanel", new Color(0.11f, 0.1f, 0.07f, 0.97f));
         SetAnchors(listPanel, new Vector2(0f, 0f), new Vector2(0.4f, 1f), new Vector2(28f, 28f), new Vector2(-12f, -148f));
 
-        RectTransform detailPanel = EnsurePanel(cardRoot, "DetailPanel", new Color(0.09f, 0.1f, 0.11f, 0.96f));
+        RectTransform detailPanel = EnsurePanel(cardRoot, "DetailPanel", new Color(0.06f, 0.11f, 0.12f, 0.97f));
         SetAnchors(detailPanel, new Vector2(0.42f, 0f), new Vector2(1f, 1f), new Vector2(12f, 28f), new Vector2(-28f, -148f));
 
         listTitleText = EnsureText(listPanel, "ListTitle");
@@ -307,7 +307,7 @@ public sealed class InventoryOverlayUI : MonoBehaviour
         listTitleText.fontSizeMin = 18f;
         listTitleText.fontSizeMax = 28f;
         listTitleText.fontStyle = FontStyles.Bold | FontStyles.SmallCaps;
-        listTitleText.color = new Color(0.96f, 0.93f, 0.82f, 1f);
+        listTitleText.color = new Color(0.99f, 0.95f, 0.84f, 1f);
         listTitleText.outlineWidth = 0.16f;
         listTitleText.outlineColor = new Color(0.08f, 0.06f, 0.03f, 0.72f);
         listTitleText.raycastTarget = false;
@@ -340,7 +340,7 @@ public sealed class InventoryOverlayUI : MonoBehaviour
 
         VerticalLayoutGroup listLayout = EnsureComponent<VerticalLayoutGroup>(itemListContent.gameObject);
         listLayout.padding = new RectOffset(0, 0, 0, 0);
-        listLayout.spacing = 10f;
+        listLayout.spacing = 12f;
         listLayout.childAlignment = TextAnchor.UpperCenter;
         listLayout.childControlWidth = true;
         listLayout.childControlHeight = false;
@@ -365,7 +365,7 @@ public sealed class InventoryOverlayUI : MonoBehaviour
         emptyListText.raycastTarget = false;
         StretchRect(emptyListText.rectTransform, new Vector2(22f, 22f), new Vector2(-22f, -22f));
 
-        RectTransform iconFrame = EnsurePanel(detailPanel, "DetailIconFrame", new Color(0.14f, 0.15f, 0.16f, 1f));
+        RectTransform iconFrame = EnsurePanel(detailPanel, "DetailIconFrame", new Color(0.17f, 0.14f, 0.08f, 1f));
         SetAnchors(iconFrame, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -20f), new Vector2(140f, -140f));
 
         RectTransform iconRect = EnsureRect(iconFrame, "DetailIcon");
@@ -628,16 +628,19 @@ public sealed class InventoryOverlayUI : MonoBehaviour
 
         if (compactLayout)
         {
-            float totalTabsWidth = Mathf.Max(240f, cardRoot.rect.width - 32f);
+            float totalTabsWidth = Mathf.Max(180f, cardRoot.rect.width - 32f);
             float tabGap = 10f;
-            float tabWidth = Mathf.Max(110f, (totalTabsWidth - tabGap) * 0.5f);
-            SetTopLeft((RectTransform)orbsTabButton.transform, 16f, tabsTop, tabWidth, tabHeight);
-            SetTopLeft((RectTransform)relicsTabButton.transform, 16f + tabWidth + tabGap, tabsTop, tabWidth, tabHeight);
+            float tabWidth = Mathf.Max(82f, (totalTabsWidth - tabGap) * 0.5f);
+            float tabLeft = Mathf.Max(16f, (cardRoot.rect.width - (tabWidth * 2f + tabGap)) * 0.5f);
+            SetTopLeft((RectTransform)orbsTabButton.transform, tabLeft, tabsTop, tabWidth, tabHeight);
+            SetTopLeft((RectTransform)relicsTabButton.transform, tabLeft + tabWidth + tabGap, tabsTop, tabWidth, tabHeight);
         }
         else
         {
-            SetTopLeft((RectTransform)orbsTabButton.transform, 28f, tabsTop, 160f, tabHeight);
-            SetTopLeft((RectTransform)relicsTabButton.transform, 198f, tabsTop, 200f, tabHeight);
+            float tabGap = 12f;
+            float tabWidth = Mathf.Clamp((cardRoot.rect.width - 56f - tabGap) * 0.5f, 148f, 216f);
+            SetTopLeft((RectTransform)orbsTabButton.transform, 28f, tabsTop, tabWidth, tabHeight);
+            SetTopLeft((RectTransform)relicsTabButton.transform, 28f + tabWidth + tabGap, tabsTop, tabWidth, tabHeight);
         }
 
         RectTransform listPanel = FindDescendant(cardRoot, "ListPanel") as RectTransform;
@@ -688,9 +691,9 @@ public sealed class InventoryOverlayUI : MonoBehaviour
             SetFill(detailIconImage.rectTransform, 12f, 12f, 12f, 12f);
 
         float detailTextLeft = compactLayout ? 112f : 156f;
-        float detailStatsTop = compactLayout ? 114f : 156f;
-        float detailStatsBottom = compactLayout ? 198f : 286f;
-        float detailDescriptionTop = detailStatsBottom + 12f;
+        float detailStatsTop = compactLayout ? 112f : 156f;
+        float detailStatsBottom = compactLayout ? 206f : 286f;
+        float detailDescriptionTop = detailStatsBottom + 14f;
 
         if (detailNameText != null)
             SetTopStretch(detailNameText.rectTransform, detailTextLeft, 20f, 20f, compactLayout ? 52f : 60f);
@@ -743,15 +746,15 @@ public sealed class InventoryOverlayUI : MonoBehaviour
         ColorBlock colors = button.colors;
         if (selected)
         {
-            colors.normalColor = new Color(0.36f, 0.46f, 0.62f, 1f);
-            colors.highlightedColor = new Color(0.42f, 0.54f, 0.72f, 1f);
-            colors.pressedColor = new Color(0.3f, 0.38f, 0.54f, 1f);
+            colors.normalColor = new Color(0.35f, 0.44f, 0.58f, 1f);
+            colors.highlightedColor = new Color(0.43f, 0.53f, 0.68f, 1f);
+            colors.pressedColor = new Color(0.28f, 0.36f, 0.48f, 1f);
         }
         else
         {
-            colors.normalColor = new Color(0.22f, 0.23f, 0.28f, 1f);
-            colors.highlightedColor = new Color(0.3f, 0.33f, 0.4f, 1f);
-            colors.pressedColor = new Color(0.18f, 0.2f, 0.25f, 1f);
+            colors.normalColor = new Color(0.18f, 0.19f, 0.23f, 1f);
+            colors.highlightedColor = new Color(0.26f, 0.28f, 0.34f, 1f);
+            colors.pressedColor = new Color(0.15f, 0.17f, 0.21f, 1f);
         }
 
         button.colors = colors;
@@ -871,8 +874,8 @@ public sealed class InventoryOverlayUI : MonoBehaviour
 
         RectTransform buttonRect = button.transform as RectTransform;
         LayoutElement layout = EnsureComponent<LayoutElement>(button.gameObject);
-        layout.preferredHeight = 84f;
-        layout.minHeight = 84f;
+        layout.preferredHeight = 90f;
+        layout.minHeight = 90f;
         buttonRect.SetParent(itemListContent, false);
 
         RectTransform iconFrame = EnsurePanel(buttonRect, "IconFrame", new Color(0.16f, 0.17f, 0.18f, 0.96f));
@@ -941,8 +944,8 @@ public sealed class InventoryOverlayUI : MonoBehaviour
 
         RectTransform buttonRect = button.transform as RectTransform;
         LayoutElement layout = EnsureComponent<LayoutElement>(button.gameObject);
-        layout.preferredHeight = 84f;
-        layout.minHeight = 84f;
+        layout.preferredHeight = 90f;
+        layout.minHeight = 90f;
         buttonRect.SetParent(itemListContent, false);
 
         RectTransform iconFrame = EnsurePanel(buttonRect, "IconFrame", new Color(0.19f, 0.15f, 0.12f, 0.96f));
@@ -1002,14 +1005,14 @@ public sealed class InventoryOverlayUI : MonoBehaviour
 
         Button button = buttonObject.GetComponent<Button>();
         Color normalColor = selected
-            ? new Color(0.28f, 0.36f, 0.48f, 1f)
-            : new Color(0.16f, 0.17f, 0.18f, 1f);
+            ? new Color(0.25f, 0.35f, 0.5f, 1f)
+            : new Color(0.14f, 0.15f, 0.17f, 1f);
         Color highlightedColor = selected
-            ? new Color(0.34f, 0.44f, 0.58f, 1f)
-            : new Color(0.22f, 0.24f, 0.28f, 1f);
+            ? new Color(0.31f, 0.42f, 0.6f, 1f)
+            : new Color(0.2f, 0.22f, 0.27f, 1f);
         Color pressedColor = selected
-            ? new Color(0.22f, 0.28f, 0.38f, 1f)
-            : new Color(0.14f, 0.15f, 0.18f, 1f);
+            ? new Color(0.2f, 0.28f, 0.42f, 1f)
+            : new Color(0.12f, 0.13f, 0.16f, 1f);
 
         UIArtUtility.ApplyButtonStyle(
             button,
