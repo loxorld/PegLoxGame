@@ -68,6 +68,7 @@ public partial class GameFlowManager : MonoBehaviour
     private bool pendingOrbApply;
     private bool pendingRelicApply;
     private GameState stateBeforePause = GameState.Combat;
+    private GameState stateBeforeInventory = GameState.Combat;
     private Dictionary<string, List<ShopOfferRunData>> shopCatalogsById => runState.ShopCatalogsById;
     private HashSet<string> resolvedEventNodeIds => runState.ResolvedEventNodeIds;
     private Dictionary<string, int> eventOptionCounters => runState.EventOptionCounters;
@@ -165,7 +166,7 @@ public partial class GameFlowManager : MonoBehaviour
 
         State = newState;
 
-        if (State == GameState.Paused || State == GameState.GameOver)
+        if (State == GameState.Paused || State == GameState.GameOver || State == GameState.Inventory)
             Time.timeScale = 0f;
         else
             Time.timeScale = 1f;
@@ -639,6 +640,7 @@ public partial class GameFlowManager : MonoBehaviour
         if (State == GameState.GameOver) return;
         if (State == GameState.RewardChoice) return;
         if (State == GameState.Paused) return;
+        if (State == GameState.Inventory) return;
 
         stateBeforePause = State;
         SaveRun();
@@ -660,6 +662,35 @@ public partial class GameFlowManager : MonoBehaviour
     {
         if (State == GameState.Paused) Resume();
         else Pause();
+    }
+
+    public void OpenInventory()
+    {
+        if (State == GameState.GameOver) return;
+        if (State == GameState.RewardChoice) return;
+        if (State == GameState.Paused) return;
+        if (State == GameState.Inventory) return;
+
+        stateBeforeInventory = State;
+        SaveRun();
+        SetState(GameState.Inventory);
+    }
+
+    public void CloseInventory()
+    {
+        if (State != GameState.Inventory) return;
+
+        GameState resumeState = stateBeforeInventory == GameState.Inventory
+            ? GameState.Combat
+            : stateBeforeInventory;
+
+        SetState(resumeState);
+    }
+
+    public void ToggleInventory()
+    {
+        if (State == GameState.Inventory) CloseInventory();
+        else OpenInventory();
     }
 
     private void OnApplicationQuit()

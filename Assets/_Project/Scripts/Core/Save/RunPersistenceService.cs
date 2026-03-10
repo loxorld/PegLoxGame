@@ -98,7 +98,7 @@ public class RunPersistenceService
 
     public static GameState NormalizeLoadedState(GameState loadedState)
     {
-        if (loadedState == GameState.Paused || loadedState == GameState.GameOver)
+        if (loadedState == GameState.Paused || loadedState == GameState.GameOver || loadedState == GameState.Inventory)
             return GameState.Combat;
 
         return loadedState;

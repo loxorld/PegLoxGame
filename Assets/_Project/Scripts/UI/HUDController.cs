@@ -217,6 +217,7 @@ public partial class HUDController : MonoBehaviour
             string nextText = s switch
             {
                 GameState.Combat => "",
+                GameState.Inventory => "INVENTARIO",
                 GameState.RewardChoice => "RECOMPENSA",
                 GameState.Paused => "PAUSA",
                 GameState.GameOver => "DERROTA",
@@ -390,6 +391,7 @@ public partial class HUDController : MonoBehaviour
         StyleCombatStatsTexts();
         StyleOrbSwitchPanel();
         StylePauseButton();
+        EnsureInventoryOverlay();
         RefreshCombatantLabels(battle != null ? battle.CurrentEnemy : null);
         RefreshStateBadge(lastState);
 
@@ -421,6 +423,7 @@ public partial class HUDController : MonoBehaviour
 
         Color badgeColor = state switch
         {
+            GameState.Inventory => new Color(0.2f, 0.3f, 0.49f, 0.94f),
             GameState.RewardChoice => new Color(0.12f, 0.36f, 0.37f, 0.94f),
             GameState.Paused => new Color(0.52f, 0.34f, 0.12f, 0.94f),
             GameState.GameOver => new Color(0.49f, 0.15f, 0.15f, 0.94f),
@@ -651,7 +654,7 @@ public partial class HUDController : MonoBehaviour
         {
             orbNameText.transform.SetParent(rightCard, false);
             StyleOrbInfoText(orbNameText);
-            StretchInsideCard(orbNameText.rectTransform, 18f, 14f, 142f, 16f);
+            StretchInsideCard(orbNameText.rectTransform, 18f, 14f, 250f, 16f);
         }
 
         if (stateText != null)

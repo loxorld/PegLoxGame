@@ -346,8 +346,8 @@ public sealed class MapGraphLayoutService
 
         float left = (-layoutWidth * 0.5f) + horizontalPadding;
         float right = (layoutWidth * 0.5f) - horizontalPadding;
-        float bottom = (-layoutHeight * 0.5f) + bottomPadding;
-        float top = (layoutHeight * 0.5f) - topPadding - bossSpacing;
+        float bottom = bottomPadding;
+        float top = layoutHeight - topPadding - bossSpacing;
 
         int maxStepIndex = Mathf.Max(0, steps.Count - 1);
         for (int stepIndex = 0; stepIndex < steps.Count; stepIndex++)
@@ -369,7 +369,7 @@ public sealed class MapGraphLayoutService
             }
         }
 
-        float bossY = (layoutHeight * 0.5f) - Mathf.Max(nodeSize.y * 1.25f, 84f);
+        float bossY = layoutHeight - Mathf.Max(nodeSize.y * 1.25f, 84f);
         if (bossY <= top)
             bossY = top + Mathf.Max(nodeSize.y * 1.3f, 72f);
 

@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using System.Collections;
 
 /// <summary>
@@ -12,7 +12,7 @@ public class ScreenFader : MonoBehaviour
     [SerializeField] private GameFlowManager flow;
 
     [Header("Settings")]
-    [Tooltip("Duración del fade in y fade out (segundos)")]
+    [Tooltip("DuraciÃ³n del fade in y fade out (segundos)")]
     [SerializeField] private float fadeDuration = 0.35f;
     [Tooltip("Tiempo que se mantiene la pantalla negra (segundos)")]
     [SerializeField] private float holdDuration = 0.10f;
@@ -37,6 +37,7 @@ public class ScreenFader : MonoBehaviour
     {
         if (state == GameState.RewardChoice) return;
         if (state == GameState.Paused) return;
+        if (state == GameState.Inventory) return;
 
         StartCoroutine(FadeRoutine());
     }
@@ -57,7 +58,7 @@ public class ScreenFader : MonoBehaviour
         }
         canvasGroup.alpha = 1f;
 
-        // Pequeña pausa
+        // PequeÃ±a pausa
         yield return new WaitForSecondsRealtime(holdDuration);
 
         // Fade out (transparente)
@@ -71,3 +72,4 @@ public class ScreenFader : MonoBehaviour
         canvasGroup.alpha = 0f;
     }
 }
+

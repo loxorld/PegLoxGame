@@ -6,14 +6,18 @@ public class MapNavigationUI : MonoBehaviour
 {
     public static MapNavigationUI Instance;
 
+    private static readonly Vector2 BottomCenterAnchor = new Vector2(0.5f, 0f);
+
     [SerializeField] private MapManager mapManager;
     [SerializeField] private TMP_Text titleLabel;
     [SerializeField] private Transform nodeContainer;
     [SerializeField] private GameObject nodePrefab;
 
     [Header("Graph Layout")]
-    [SerializeField] private Vector2 graphNodeSize = new Vector2(172f, 76f);
-    [SerializeField, Min(1f)] private float connectionThickness = 8f;
+    [SerializeField] private Vector2 graphNodeSize = new Vector2(228f, 108f);
+    [SerializeField, Min(1f)] private float connectionThickness = 12f;
+    [SerializeField, Range(2f, 4f)] private float visibleStepWindow = 3f;
+    [SerializeField, Range(0.08f, 0.34f)] private float currentNodeViewportAnchor = 0.18f;
 
     [Header("Graph Colors")]
     [SerializeField] private Color currentNodeColor = new Color(1f, 1f, 1f, 1f);
@@ -28,7 +32,9 @@ public class MapNavigationUI : MonoBehaviour
 
     private readonly MapGraphLayoutService layoutService = new MapGraphLayoutService();
     private RectTransform graphHost;
+    private RectTransform graphViewport;
     private RectTransform nodesLayer;
+    private ScrollRect graphScrollRect;
     private MapGraphConnectionsGraphic connectionsGraphic;
     private MapNodeData lastShownNode;
     private MapNodeData lastForcedBossNode;
@@ -109,18 +115,30 @@ public class MapNavigationUI : MonoBehaviour
             return;
 
         PrepareGraphLayers();
+        if (graphHost == null)
+            return;
+
         ClearNodes();
         Canvas.ForceUpdateCanvases();
 
-        Rect graphRect = graphHost != null ? graphHost.rect : new Rect(0f, 0f, 1200f, 700f);
-        if (graphRect.width <= 1f || graphRect.height <= 1f)
-            graphRect = new Rect(0f, 0f, 1200f, 700f);
+        Rect viewportRect = graphViewport != null ? graphViewport.rect : graphHost.rect;
+        if (viewportRect.width <= 1f || viewportRect.height <= 1f)
+            viewportRect = new Rect(0f, 0f, 1200f, 700f);
 
         GameFlowManager flow = GameFlowManager.Instance;
         int stageIndex = flow != null ? Mathf.Max(0, flow.CurrentStageIndex) : 0;
         int nodesVisited = flow != null ? flow.NodesVisited : 0;
         int bossAfterNodes = mapManagerRef.GetBossAfterNodes();
-        activeGraphNodeSize = ResolveGraphNodeSize(graphRect, bossAfterNodes);
+        activeGraphNodeSize = ResolveGraphNodeSize(viewportRect);
+        float contentHeight = ResolveGraphContentHeight(
+            viewportRect.height,
+            activeGraphNodeSize,
+            bossAfterNodes,
+            mapManagerRef.CurrentMapStage.bossNode != null);
+        ApplyGraphContentSizing(contentHeight);
+        Canvas.ForceUpdateCanvases();
+
+        Rect graphRect = new Rect(0f, 0f, Mathf.Max(320f, viewportRect.width), Mathf.Max(viewportRect.height, contentHeight));
         activeConnectionThickness = ResolveConnectionThickness(activeGraphNodeSize);
 
         MapGraphLayoutService.LayoutResult layout = layoutService.Build(
@@ -136,6 +154,8 @@ public class MapNavigationUI : MonoBehaviour
         RenderConnections(layout);
         RenderNodes(layout);
         UpdateTitle(layout);
+        Canvas.ForceUpdateCanvases();
+        FocusGraphOnCurrent(layout);
     }
 
     private MapManager ResolveMapManager()
@@ -166,6 +186,7 @@ public class MapNavigationUI : MonoBehaviour
 
     private void PrepareGraphLayers()
     {
+        EnsureScrollableViewport();
         graphHost = ResolveGraphHost();
         if (graphHost == null)
             return;
@@ -184,23 +205,41 @@ public class MapNavigationUI : MonoBehaviour
 
     private RectTransform ResolveGraphHost()
     {
-        if (graphHost != null)
-            return graphHost;
-
-        RectTransform host = nodeContainer as RectTransform;
-        if (host == null)
-            host = transform as RectTransform;
+        RectTransform host = ResolveOrCreateGraphHost();
 
         if (host == null)
             return null;
 
-        host.anchorMin = Vector2.zero;
-        host.anchorMax = Vector2.one;
+        host.anchorMin = new Vector2(0f, 0f);
+        host.anchorMax = new Vector2(1f, 0f);
+        host.pivot = BottomCenterAnchor;
         host.anchoredPosition = Vector2.zero;
-        host.sizeDelta = Vector2.zero;
         host.localScale = Vector3.one;
         graphHost = host;
         return graphHost;
+    }
+
+    private RectTransform ResolveOrCreateGraphHost()
+    {
+        RectTransform host = nodeContainer as RectTransform;
+        if (host == null)
+        {
+            Transform existing = (graphViewport != null ? graphViewport : transform).Find("GraphContent");
+            host = existing as RectTransform;
+            if (host == null)
+            {
+                var hostObject = new GameObject("GraphContent", typeof(RectTransform));
+                host = hostObject.GetComponent<RectTransform>();
+                host.SetParent(graphViewport != null ? graphViewport : transform, false);
+            }
+
+            nodeContainer = host;
+        }
+
+        if (graphViewport != null && host.parent != graphViewport)
+            host.SetParent(graphViewport, false);
+
+        return host;
     }
 
     private static void DisableLegacyLayout(GameObject target)
@@ -223,7 +262,7 @@ public class MapNavigationUI : MonoBehaviour
         RectTransform layer = existing as RectTransform;
         if (layer == null && graphHost != null)
         {
-            var layerObject = new GameObject(layerName, typeof(RectTransform));
+            var layerObject = new GameObject(layerName, typeof(RectTransform), typeof(CanvasRenderer));
             layer = layerObject.GetComponent<RectTransform>();
             layer.SetParent(graphHost, false);
         }
@@ -231,8 +270,11 @@ public class MapNavigationUI : MonoBehaviour
         if (layer == null)
             return null;
 
+        EnsureCanvasRenderer(layer.gameObject);
+
         layer.anchorMin = Vector2.zero;
         layer.anchorMax = Vector2.one;
+        layer.pivot = BottomCenterAnchor;
         layer.anchoredPosition = Vector2.zero;
         layer.sizeDelta = Vector2.zero;
         layer.localScale = Vector3.one;
@@ -313,7 +355,12 @@ public class MapNavigationUI : MonoBehaviour
 
         RectTransform rectTransform = nodeObject.transform as RectTransform;
         if (rectTransform != null)
+        {
+            rectTransform.anchorMin = BottomCenterAnchor;
+            rectTransform.anchorMax = BottomCenterAnchor;
             rectTransform.anchoredPosition = nodeLayout.Position;
+            rectTransform.localScale = Vector3.one;
+        }
 
         MapNodeUI nodeUI = nodeObject.GetComponent<MapNodeUI>();
         if (nodeUI == null)
@@ -341,36 +388,36 @@ public class MapNavigationUI : MonoBehaviour
             case MapGraphLayoutService.NodeVisualState.Current:
                 baseColor = currentNodeColor;
                 labelColor = new Color(0.17f, 0.12f, 0.07f, 1f);
-                scale = 0.82f;
-                size = baseNodeSize * 0.78f;
+                scale = 1.04f;
+                size = baseNodeSize;
                 showLabel = true;
                 break;
             case MapGraphLayoutService.NodeVisualState.Available:
                 baseColor = availableNodeColor;
                 labelColor = new Color(0.15f, 0.19f, 0.11f, 1f);
-                scale = 0.74f;
-                size = baseNodeSize * 0.7f;
+                scale = 1f;
+                size = baseNodeSize * 0.94f;
                 showLabel = true;
                 break;
             case MapGraphLayoutService.NodeVisualState.BossAvailable:
                 baseColor = bossAvailableColor;
                 labelColor = new Color(0.18f, 0.11f, 0.05f, 1f);
-                scale = 0.92f;
-                size = baseNodeSize * 0.88f;
+                scale = 1.08f;
+                size = baseNodeSize * 1.04f;
                 showLabel = true;
                 break;
             case MapGraphLayoutService.NodeVisualState.BossLocked:
                 baseColor = bossLockedColor;
                 labelColor = new Color(0.34f, 0.17f, 0.13f, 1f);
-                scale = 0.72f;
-                size = baseNodeSize * 0.72f;
+                scale = 0.98f;
+                size = baseNodeSize * 0.92f;
                 showLabel = true;
                 break;
             default:
                 baseColor = upcomingNodeColor;
                 labelColor = new Color(0.23f, 0.25f, 0.29f, 1f);
-                scale = 0.42f;
-                size = baseNodeSize * 0.42f;
+                scale = 0.96f;
+                size = baseNodeSize * 0.78f;
                 showLabel = false;
                 break;
         }
@@ -387,27 +434,162 @@ public class MapNavigationUI : MonoBehaviour
             scale);
     }
 
-    private Vector2 ResolveGraphNodeSize(Rect graphRect, int bossAfterNodes)
+    private Vector2 ResolveGraphNodeSize(Rect graphRect)
     {
         float safeHeight = Mathf.Max(360f, graphRect.height);
-        float safeWidth = Mathf.Max(220f, graphRect.width);
+        float safeWidth = Mathf.Max(320f, graphRect.width);
+        float laneHeight = safeHeight / Mathf.Max(2.35f, visibleStepWindow);
         float targetHeight = Mathf.Clamp(
-            safeHeight / Mathf.Max(9.5f, bossAfterNodes + 6.5f),
-            38f,
+            laneHeight * 0.42f,
+            64f,
             graphNodeSize.y);
         float targetWidth = Mathf.Clamp(
-            targetHeight * 1.95f,
-            76f,
-            Mathf.Min(graphNodeSize.x, safeWidth * 0.26f));
+            targetHeight * 2.08f,
+            140f,
+            Mathf.Min(graphNodeSize.x, safeWidth * 0.46f));
 
         return new Vector2(targetWidth, targetHeight);
     }
 
+    private float ResolveGraphContentHeight(float viewportHeight, Vector2 nodeSize, int bossAfterNodes, bool hasBossNode)
+    {
+        float safeViewportHeight = Mathf.Max(360f, viewportHeight);
+        int regularStepCount = Mathf.Max(1, bossAfterNodes + 1);
+        int maxStepIndex = Mathf.Max(0, regularStepCount - 1);
+        float bottomPadding = Mathf.Max(nodeSize.y * 1.6f, 92f);
+        float topPadding = Mathf.Max(nodeSize.y * 2.8f, 168f);
+        float bossSpacing = hasBossNode ? Mathf.Max(nodeSize.y * 1.35f, 70f) : 0f;
+        float desiredStepSpacing = Mathf.Max(
+            nodeSize.y * 2.15f,
+            safeViewportHeight / Mathf.Max(2f, visibleStepWindow));
+
+        return Mathf.Max(
+            safeViewportHeight,
+            bottomPadding + topPadding + bossSpacing + (desiredStepSpacing * maxStepIndex));
+    }
+
+    private void ApplyGraphContentSizing(float contentHeight)
+    {
+        if (graphHost == null)
+            return;
+
+        graphHost.anchorMin = new Vector2(0f, 0f);
+        graphHost.anchorMax = new Vector2(1f, 0f);
+        graphHost.pivot = BottomCenterAnchor;
+        graphHost.anchoredPosition = Vector2.zero;
+        graphHost.SetSizeWithCurrentAnchors(
+            RectTransform.Axis.Vertical,
+            Mathf.Max(contentHeight, graphViewport != null ? graphViewport.rect.height : contentHeight));
+    }
+
     private float ResolveConnectionThickness(Vector2 nodeSize)
     {
-        float fallbackSize = Mathf.Max(4f, connectionThickness);
-        float derivedThickness = Mathf.Clamp(nodeSize.y * 0.075f, 3.5f, fallbackSize);
+        float fallbackSize = Mathf.Max(6f, connectionThickness);
+        float derivedThickness = Mathf.Clamp(nodeSize.y * 0.11f, 5f, fallbackSize);
         return derivedThickness;
+    }
+
+    private void EnsureScrollableViewport()
+    {
+        RectTransform rootRect = transform as RectTransform;
+        if (rootRect == null)
+            return;
+
+        graphScrollRect = GetComponent<ScrollRect>();
+        if (graphScrollRect == null)
+            graphScrollRect = gameObject.AddComponent<ScrollRect>();
+
+        graphScrollRect.horizontal = false;
+        graphScrollRect.vertical = true;
+        graphScrollRect.movementType = ScrollRect.MovementType.Clamped;
+        graphScrollRect.scrollSensitivity = 36f;
+        graphScrollRect.inertia = true;
+        graphScrollRect.decelerationRate = 0.1f;
+
+        Transform existingViewport = transform.Find("GraphViewport");
+        graphViewport = existingViewport as RectTransform;
+        if (graphViewport == null)
+        {
+            var viewportObject = new GameObject("GraphViewport", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(RectMask2D));
+            graphViewport = viewportObject.GetComponent<RectTransform>();
+            graphViewport.SetParent(transform, false);
+        }
+
+        EnsureCanvasRenderer(graphViewport.gameObject);
+        graphViewport.anchorMin = Vector2.zero;
+        graphViewport.anchorMax = Vector2.one;
+        graphViewport.pivot = BottomCenterAnchor;
+        graphViewport.anchoredPosition = Vector2.zero;
+        graphViewport.sizeDelta = Vector2.zero;
+        graphViewport.localScale = Vector3.one;
+        graphViewport.SetAsFirstSibling();
+
+        Image viewportImage = graphViewport.GetComponent<Image>();
+        if (viewportImage == null)
+            viewportImage = graphViewport.gameObject.AddComponent<Image>();
+
+        viewportImage.color = new Color(1f, 1f, 1f, 0.001f);
+        viewportImage.raycastTarget = true;
+
+        RectMask2D mask = graphViewport.GetComponent<RectMask2D>();
+        if (mask == null)
+            mask = graphViewport.gameObject.AddComponent<RectMask2D>();
+
+        mask.padding = Vector4.zero;
+        graphScrollRect.viewport = graphViewport;
+        graphScrollRect.content = ResolveOrCreateGraphHost();
+    }
+
+    private static void EnsureCanvasRenderer(GameObject target)
+    {
+        if (target == null || target.GetComponent<CanvasRenderer>() != null)
+            return;
+
+        target.AddComponent<CanvasRenderer>();
+    }
+
+    private void FocusGraphOnCurrent(MapGraphLayoutService.LayoutResult layout)
+    {
+        if (graphHost == null || graphViewport == null || graphScrollRect == null)
+            return;
+
+        float viewportHeight = Mathf.Max(0f, graphViewport.rect.height);
+        float contentHeight = Mathf.Max(viewportHeight, graphHost.rect.height);
+        float maxOffset = Mathf.Max(0f, contentHeight - viewportHeight);
+        if (maxOffset <= 0.5f)
+        {
+            graphHost.anchoredPosition = Vector2.zero;
+            graphScrollRect.verticalNormalizedPosition = 0f;
+            return;
+        }
+
+        Vector2 focusPosition = ResolveFocusPosition(layout);
+        float viewportAnchorOffset = Mathf.Clamp(
+            viewportHeight * currentNodeViewportAnchor,
+            32f,
+            viewportHeight * 0.42f);
+        float targetOffset = Mathf.Clamp(focusPosition.y - viewportAnchorOffset, 0f, maxOffset);
+
+        graphScrollRect.StopMovement();
+        graphHost.anchoredPosition = new Vector2(0f, targetOffset);
+        graphScrollRect.verticalNormalizedPosition = targetOffset / maxOffset;
+    }
+
+    private static Vector2 ResolveFocusPosition(MapGraphLayoutService.LayoutResult layout)
+    {
+        for (int i = 0; i < layout.Nodes.Count; i++)
+        {
+            if (layout.Nodes[i].VisualState == MapGraphLayoutService.NodeVisualState.Current)
+                return layout.Nodes[i].Position;
+        }
+
+        for (int i = 0; i < layout.Nodes.Count; i++)
+        {
+            if (layout.Nodes[i].VisualState == MapGraphLayoutService.NodeVisualState.Available)
+                return layout.Nodes[i].Position;
+        }
+
+        return layout.Nodes.Count > 0 ? layout.Nodes[0].Position : Vector2.zero;
     }
 
     private void ApplyVisualDefaultsIfNeeded()
